@@ -78,3 +78,7 @@ AdoneX neste workspace Synapse.
 - [vick] 2026-07-10T16:54:39.596Z sentimento=neutro confianca=low prompt="em detectar Tiane dos clientes"
 - [vick] 2026-07-10T16:54:57.254Z sentimento=neutro confianca=low prompt="eu vou inserir os arquivos na pasta data quando o projeto for criado"
 - [vick] 2026-07-10T16:55:08.353Z sentimento=neutro confianca=low prompt="alto"
+
+## 2026-07-13 - Codex
+- Resultado: projeto Synapse auditado, validado e publicado no repositorio privado `MaiconAdone/synapse`, branch `main`, usando Git e o Git Credential Manager ja instalados, sem instalar GitHub CLI.
+- Validacoes: frontend TypeScript aprovado; AdoneX 117/117 testes; backend 105/105 testes; artefatos de runtime e credenciais locais excluidos do versionamento.
