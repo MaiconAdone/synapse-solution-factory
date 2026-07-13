@@ -114,7 +114,11 @@ const fragmentShaderSource = `
     // O fundo escuro permanece estável; só a rede luminosa recebe movimento.
     float protectedBackground = smoothstep(0.02, 0.18, originalLight);
     vec3 finalColor = mix(original, alive, max(liveBranches, protectedBackground * movingCurrent));
-    gl_FragColor = vec4(finalColor, 1.0);
+
+    // Fundo escuro da foto vira transparente; so a rede luminosa fica visivel.
+    float outLum = luminance(finalColor);
+    float alpha = smoothstep(0.02, 0.16, outLum);
+    gl_FragColor = vec4(finalColor, alpha);
   }
 `;
 
@@ -181,8 +185,9 @@ export default function VickNeuralCanvas({ speaking, thinking }: VickNeuralCanva
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const gl = canvas.getContext("webgl", {
-      alpha: false,
+      alpha: true,
       antialias: true,
+      premultipliedAlpha: false,
       powerPreference: "high-performance",
       preserveDrawingBuffer: false,
     });
