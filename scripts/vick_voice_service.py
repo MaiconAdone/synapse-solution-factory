@@ -217,6 +217,7 @@ def main() -> int:
     parser.add_argument("--no-microphone", action="store_true")
     args = parser.parse_args()
 
+    print("iniciando servico de voz local da Vick", flush=True)
     state = VoiceState(args.wake_word)
     Handler.state = state
     if not args.no_microphone:

@@ -70,7 +70,6 @@
         "Start-Sleep -Seconds 3; Start-Process \"http://127.0.0.1:3000\""
       ],
       "dependsOn": [
-        "Vick: Serviço local de voz",
         "Dev: Backend FastAPI no VS Code",
         "Dev: Frontend Next.js no VS Code"
       ],
@@ -107,6 +106,9 @@
         "cwd": "${workspaceFolder}"
       },
       "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
       "problemMatcher": {
         "owner": "vick-local-voice",
         "pattern": {
@@ -115,7 +117,7 @@
         },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": "Vick voice local",
+          "beginsPattern": "iniciando servico de voz",
           "endsPattern": "Vick voice local em"
         }
       },
