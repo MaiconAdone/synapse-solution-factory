@@ -1,0 +1,855 @@
+{
+  "name": "adonex",
+  "displayName": "AdoneX",
+  "description": "Agente de engenharia de IA para VS Code com OpenAI, Ollama, MCP e integracao Synapse.",
+  "version": "0.6.16",
+  "publisher": "synapse-ai",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onChatParticipant:synapse-ai.adonex",
+    "onView:adonex.chatView",
+    "onCommand:adonex.openChat",
+    "onCommand:adonex.voice.vick.start",
+    "onCommand:adonex.voice.vick.stop",
+    "onCommand:adonex.voice.vick.toggleMute",
+    "onCommand:adonex.voice.vick.simulateCommand",
+    "onCommand:adonex.ollama.testConnection",
+    "onCommand:adonex.analyzeWorkspace",
+    "onCommand:adonex.planTask",
+    "onCommand:adonex.implementTask",
+    "onCommand:adonex.reviewCode",
+    "onCommand:adonex.runTests",
+    "onCommand:adonex.generateDocs",
+    "onCommand:adonex.explainSelection",
+    "onCommand:adonex.fixTerminalError",
+    "onCommand:adonex.createCommitMessage",
+    "onCommand:adonex.configureApiKey",
+    "onCommand:adonex.resetCostUsage",
+    "onCommand:adonex.runEvalSuite",
+    "onCommand:adonex.memory.init",
+    "onCommand:adonex.memory.open",
+    "onCommand:adonex.memory.readCurrentState",
+    "onCommand:adonex.memory.syncFromWorkspace",
+    "onCommand:adonex.memory.snapshot",
+    "onCommand:adonex.memory.updateAfterTask",
+    "onCommand:adonex.handoff.generateCodexPrompt",
+    "onCommand:adonex.handoff.importCodexResult",
+    "onCommand:adonex.handoff.openCodexPrompt",
+    "onCommand:adonex.handoff.openCodexResult",
+    "onCommand:adonex.memory.registerTask",
+    "onCommand:adonex.memory.addDecision",
+    "onCommand:adonex.memory.addIssue",
+    "onCommand:adonex.memory.resolveIssue",
+    "onCommand:adonex.synapse.analyzeArchitecture",
+    "onCommand:adonex.synapse.createAgent",
+    "onCommand:adonex.synapse.createMcpTool",
+    "onCommand:adonex.synapse.reviewPipeline",
+    "onCommand:adonex.synapse.generateRoadmap",
+    "onCommand:adonex.synapse.configurePeerMessaging",
+    "onCommand:adonex.synapse.openPeerMessagingDocs"
+  ],
+  "main": "./dist/extension.js",
+  "repository": {
+    "type": "git",
+    "url": "file:..",
+    "directory": "adonex"
+  },
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "synapse-ai.adonex",
+        "name": "adonex",
+        "fullName": "AdoneX",
+        "description": "Engenheiro de IA local-first para analise, planejamento e execucao governada.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "plan",
+            "description": "Cria um plano tecnico local com arquivos, riscos e testes."
+          },
+          {
+            "name": "planejar",
+            "description": "Alias em portugues para criar um plano tecnico local."
+          },
+          {
+            "name": "implement",
+            "description": "Prepara uma implementacao com diff e aprovacoes no painel AdoneX."
+          },
+          {
+            "name": "review",
+            "description": "Revisa codigo e arquitetura pelo Ollama local."
+          },
+          {
+            "name": "test",
+            "description": "Prepara a execucao governada dos testes relevantes."
+          },
+          {
+            "name": "agent",
+            "description": "Prepara um agente governado para projetos Synapse."
+          },
+          {
+            "name": "mcp",
+            "description": "Prepara uma ferramenta MCP tipada e com menor privilegio."
+          },
+          {
+            "name": "projeto",
+            "description": "Inicia pelo chat o briefing obrigatorio de projeto Synapse ML/IA."
+          },
+          {
+            "name": "project",
+            "description": "Starts the required Synapse ML/AI project briefing in chat."
+          },
+          {
+            "name": "roadmap",
+            "description": "Gera um roadmap tecnico Synapse local-first."
+          },
+          {
+            "name": "memoria",
+            "description": "Mostra um resumo da memoria compartilhada do projeto."
+          },
+          {
+            "name": "status",
+            "description": "Mostra o estado atual versionado do projeto."
+          },
+          {
+            "name": "sync-memoria",
+            "description": "Propoe sincronizar a memoria com o workspace."
+          },
+          {
+            "name": "snapshot",
+            "description": "Cria um snapshot versionavel do estado atual."
+          },
+          {
+            "name": "handoff-codex",
+            "description": "Gera um prompt completo e seguro para Codex."
+          },
+          {
+            "name": "importar-codex",
+            "description": "Importa CODEX_RESULT.md e o Git diff para a memoria."
+          },
+          {
+            "name": "registrar-tarefa",
+            "description": "Registra uma tarefa manual na memoria."
+          },
+          {
+            "name": "decisao",
+            "description": "Registra uma decisao tecnica versionavel."
+          },
+          {
+            "name": "pendencia",
+            "description": "Registra bug, risco, divida ou bloqueio."
+          },
+          {
+            "name": "resolver-pendencia",
+            "description": "Marca uma pendencia registrada como resolvida."
+          }
+        ],
+        "disambiguation": [
+          {
+            "category": "engenharia de software e IA",
+            "description": "Use para tarefas no workspace que exigem contexto de codigo, arquitetura Synapse, Ollama, agentes, Ruflo ou MCP.",
+            "examples": [
+              "revise a arquitetura deste projeto",
+              "planeje um agente de validacao",
+              "prepare uma ferramenta MCP",
+              "encontre os testes relevantes"
+            ]
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "adonex.openChat",
+        "title": "AdoneX: Open Chat"
+      },
+      {
+        "command": "adonex.voice.vick.start",
+        "title": "Vick: Start Voice Assistant"
+      },
+      {
+        "command": "adonex.voice.vick.stop",
+        "title": "Vick: Stop Voice Assistant"
+      },
+      {
+        "command": "adonex.voice.vick.toggleMute",
+        "title": "Vick: Toggle Mute"
+      },
+      {
+        "command": "adonex.voice.vick.simulateCommand",
+        "title": "Vick: Simulate Voice Command"
+      },
+      {
+        "command": "adonex.ollama.testConnection",
+        "title": "AdoneX: Test Ollama Connection"
+      },
+      {
+        "command": "adonex.analyzeWorkspace",
+        "title": "AdoneX: Analyze Workspace"
+      },
+      {
+        "command": "adonex.planTask",
+        "title": "AdoneX: Plan Task"
+      },
+      {
+        "command": "adonex.implementTask",
+        "title": "AdoneX: Implement Task"
+      },
+      {
+        "command": "adonex.reviewCode",
+        "title": "AdoneX: Review Code"
+      },
+      {
+        "command": "adonex.runTests",
+        "title": "AdoneX: Run Tests"
+      },
+      {
+        "command": "adonex.generateDocs",
+        "title": "AdoneX: Generate Documentation"
+      },
+      {
+        "command": "adonex.explainSelection",
+        "title": "AdoneX: Explain Selection"
+      },
+      {
+        "command": "adonex.fixTerminalError",
+        "title": "AdoneX: Fix Terminal Error"
+      },
+      {
+        "command": "adonex.createCommitMessage",
+        "title": "AdoneX: Create Commit Message"
+      },
+      {
+        "command": "adonex.configureApiKey",
+        "title": "AdoneX: Configure API Key"
+      },
+      {
+        "command": "adonex.resetCostUsage",
+        "title": "AdoneX: Reset Cost Usage"
+      },
+      {
+        "command": "adonex.runEvalSuite",
+        "title": "AdoneX: Run Eval Suite"
+      },
+      {
+        "command": "adonex.memory.init",
+        "title": "AdoneX: Initialize Shared Memory"
+      },
+      {
+        "command": "adonex.memory.open",
+        "title": "AdoneX: Open Shared Memory"
+      },
+      {
+        "command": "adonex.memory.readCurrentState",
+        "title": "AdoneX: Read Current State"
+      },
+      {
+        "command": "adonex.memory.syncFromWorkspace",
+        "title": "AdoneX: Sync Memory From Workspace"
+      },
+      {
+        "command": "adonex.memory.snapshot",
+        "title": "AdoneX: Create Memory Snapshot"
+      },
+      {
+        "command": "adonex.memory.updateAfterTask",
+        "title": "AdoneX: Update Memory After Task"
+      },
+      {
+        "command": "adonex.handoff.generateCodexPrompt",
+        "title": "AdoneX: Generate Codex Handoff"
+      },
+      {
+        "command": "adonex.handoff.importCodexResult",
+        "title": "AdoneX: Import Codex Result"
+      },
+      {
+        "command": "adonex.handoff.openCodexPrompt",
+        "title": "AdoneX: Open Codex Prompt"
+      },
+      {
+        "command": "adonex.handoff.openCodexResult",
+        "title": "AdoneX: Open Codex Result"
+      },
+      {
+        "command": "adonex.memory.registerTask",
+        "title": "AdoneX: Register Memory Task"
+      },
+      {
+        "command": "adonex.memory.addDecision",
+        "title": "AdoneX: Record Technical Decision"
+      },
+      {
+        "command": "adonex.memory.addIssue",
+        "title": "AdoneX: Record Open Issue"
+      },
+      {
+        "command": "adonex.memory.resolveIssue",
+        "title": "AdoneX: Resolve Open Issue"
+      },
+      {
+        "command": "adonex.synapse.analyzeArchitecture",
+        "title": "AdoneX Synapse Analyze Architecture"
+      },
+      {
+        "command": "adonex.synapse.createAgent",
+        "title": "AdoneX Synapse Create Agent"
+      },
+      {
+        "command": "adonex.synapse.createMcpTool",
+        "title": "AdoneX Synapse Create MCP Tool"
+      },
+      {
+        "command": "adonex.synapse.reviewPipeline",
+        "title": "AdoneX Synapse Review Pipeline"
+      },
+      {
+        "command": "adonex.synapse.generateRoadmap",
+        "title": "AdoneX Synapse Generate Roadmap"
+      },
+      {
+        "command": "adonex.synapse.configurePeerMessaging",
+        "title": "AdoneX Synapse: Configure Peer Messaging"
+      },
+      {
+        "command": "adonex.synapse.openPeerMessagingDocs",
+        "title": "AdoneX Synapse: Open Peer Messaging Docs"
+      }
+    ],
+    "configuration": {
+      "title": "AdoneX",
+      "properties": {
+        "adonex.openai.apiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Deprecated fallback. Prefer **AdoneX: Configure API Key**, which uses VS Code SecretStorage.",
+          "scope": "window"
+        },
+        "adonex.openai.modelStrong": {
+          "type": "string",
+          "default": "gpt-5.1"
+        },
+        "adonex.openai.modelBalanced": {
+          "type": "string",
+          "default": "gpt-5-mini"
+        },
+        "adonex.openai.modelCheap": {
+          "type": "string",
+          "default": "gpt-5-nano"
+        },
+        "adonex.ollama.enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.ollama.baseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434"
+        },
+        "adonex.ollama.model": {
+          "type": "string",
+          "default": "qwen2.5-coder:3b",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local rapido do AdoneX. No Synapse, use qwen2.5-coder:3b por padrao e escale via gateway/model router quando a tarefa exigir."
+        },
+        "adonex.ollama.modelReasoning": {
+          "type": "string",
+          "default": "deepseek-coder-v2:lite",
+          "markdownDescription": "Modelo local usado para tarefas de maior raciocinio, como arquitetura, revisao, correcao e implementacao. Pode usar modelos maiores quando ja baixados no Ollama.",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ]
+        },
+        "adonex.ollama.modelGeneral": {
+          "type": "string",
+          "default": "qwen3:8b",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local para explicacoes, documentacao leve, perguntas gerais e sintese final."
+        },
+        "adonex.ollama.modelCodeReview": {
+          "type": "string",
+          "default": "deepseek-coder-v2:lite",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local para code review, bugs, stack traces, seguranca e reparos pequenos."
+        },
+        "adonex.ollama.modelCodeStrong": {
+          "type": "string",
+          "default": "qwen2.5-coder:14b",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local para implementacoes maiores, scripts, endpoints e integracoes."
+        },
+        "adonex.ollama.modelPlanningStrong": {
+          "type": "string",
+          "default": "qwen3:14b",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local para arquitetura, governanca, planejamento agentico e roadmap."
+        },
+        "adonex.ollama.modelReasoningStrong": {
+          "type": "string",
+          "default": "deepseek-r1:14b",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local para causa raiz, validacao logica e raciocinio dificil."
+        },
+        "adonex.ollama.modelCodeCritical": {
+          "type": "string",
+          "default": "qwen2.5-coder:32b",
+          "enum": [
+            "qwen2.5-coder:3b",
+            "qwen3:8b",
+            "deepseek-coder-v2:lite",
+            "qwen2.5-coder:14b",
+            "qwen3:14b",
+            "deepseek-r1:14b",
+            "qwen2.5-coder:32b"
+          ],
+          "markdownDescription": "Modelo local mais forte para codigo critico, revisao final e refatoracoes de alto risco por pedido explicito."
+        },
+        "adonex.ollama.embeddingModel": {
+          "type": "string",
+          "default": "nomic-embed-text:latest",
+          "enum": [
+            "nomic-embed-text:latest"
+          ],
+          "markdownDescription": "Modelo local de embeddings para memoria, RAG e busca semantica. Nao e usado para chat."
+        },
+        "adonex.semanticIndex.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Ativa re-ranking semantico local do workspace com embeddings Ollama. Se Ollama estiver indisponivel, AdoneX volta automaticamente ao ranking textual."
+        },
+        "adonex.semanticIndex.maxCandidates": {
+          "type": "number",
+          "default": 80,
+          "minimum": 10,
+          "maximum": 300,
+          "markdownDescription": "Quantidade maxima de candidatos de arquivo enviados ao indice semantico local por tarefa."
+        },
+        "adonex.semanticIndex.timeoutSeconds": {
+          "type": "number",
+          "default": 8,
+          "minimum": 2,
+          "maximum": 60,
+          "markdownDescription": "Timeout curto para embeddings locais. Em falha ou timeout, o AdoneX usa ranking textual sem interromper a tarefa."
+        },
+        "adonex.ollama.apiStyle": {
+          "type": "string",
+          "enum": [
+            "chat",
+            "generate"
+          ],
+          "default": "chat",
+          "markdownDescription": "Endpoint local usado pelo AdoneX. Use chat para Ollama atual (/api/chat). Use generate apenas para compatibilidade legada."
+        },
+        "adonex.ollama.timeoutSeconds": {
+          "type": "number",
+          "default": 120,
+          "minimum": 30,
+          "markdownDescription": "Tempo maximo para uma geracao local. Perguntas simples em CPU usam no minimo 120 segundos para evitar fallback prematuro."
+        },
+        "adonex.ollama.numCtx": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 2048,
+          "markdownDescription": "Janela de contexto local enviada ao Ollama."
+        },
+        "adonex.ollama.temperature": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Temperatura de geracao local. Use 0 para respostas deterministicas."
+        },
+        "adonex.ollama.topP": {
+          "type": "number",
+          "default": 0.9,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "adonex.ollama.repeatPenalty": {
+          "type": "number",
+          "default": 1.08,
+          "minimum": 1
+        },
+        "adonex.ollama.keepAlive": {
+          "type": "string",
+          "default": "10m",
+          "markdownDescription": "How long Ollama keeps the selected model loaded after a response."
+        },
+        "adonex.ollama.maxRetries": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 5,
+          "markdownDescription": "Numero de tentativas extras para falhas transitórias do Ollama antes de reportar erro."
+        },
+        "adonex.ollama.retryDelayMs": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "maximum": 5000,
+          "markdownDescription": "Atraso entre retries do cliente local para reduzir pressão sobre o modelo."
+        },
+        "adonex.cost.dailyBudgetUsd": {
+          "type": "number",
+          "default": 2,
+          "minimum": 0
+        },
+        "adonex.cost.monthlyBudgetUsd": {
+          "type": "number",
+          "default": 20,
+          "minimum": 0
+        },
+        "adonex.agent.defaultMode": {
+          "type": "string",
+          "enum": [
+            "economic",
+            "balanced",
+            "strong",
+            "local",
+            "synapse"
+          ],
+          "default": "local",
+          "markdownDescription": "Modo padrao do AdoneX. Use local para priorizar Ollama e reduzir custo por tokens; escolha balanced/strong apenas quando cloud for explicitamente necessaria."
+        },
+        "adonex.security.requireApprovalBeforeWrite": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.security.requireApprovalBeforeCommand": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.patch.applyMode": {
+          "type": "string",
+          "enum": [
+            "prepare",
+            "apply"
+          ],
+          "default": "prepare",
+          "markdownDescription": "Controla edicoes propostas pelo AdoneX. Use prepare para preparar patch, resumo falado e aguardar confirmacao; use apply para aplicar automaticamente quando a politica Synapse permitir."
+        },
+        "adonex.voice.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Ativa o assistente de voz Vick no painel AdoneX. A captura real de audio deve rodar em servico local separado para nao travar o Extension Host."
+        },
+        "adonex.voice.wakeWord": {
+          "type": "string",
+          "default": "Vick",
+          "markdownDescription": "Palavra/frase de ativacao local do assistente de voz."
+        },
+        "adonex.voice.startWithVSCode": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Inicia o Vick automaticamente quando o VS Code terminar de carregar a extensao."
+        },
+        "adonex.voice.autoOpenCockpit": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Abre automaticamente o cockpit AdoneX/Vick ao iniciar o VS Code."
+        },
+        "adonex.voice.engine": {
+          "type": "string",
+          "enum": [
+            "simulated",
+            "local_service",
+            "openwakeword",
+            "vosk",
+            "faster_whisper"
+          ],
+          "default": "simulated",
+          "markdownDescription": "Motor de voz do Vick. simulated usa o cockpit e comandos de teste; local_service delega captura/STT para processo local; openwakeword, vosk e faster_whisper ficam reservados para integracoes locais."
+        },
+        "adonex.voice.localServiceUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8765",
+          "markdownDescription": "Endpoint local esperado para captura wake-word/STT do Vick quando voice.engine=local_service."
+        },
+        "adonex.voice.commandListenSeconds": {
+          "type": "number",
+          "default": 8,
+          "minimum": 2,
+          "maximum": 30,
+          "markdownDescription": "Janela maxima de escuta de comando apos detectar o wake word."
+        },
+        "adonex.voice.requireConfirmationForPatch": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Exige confirmacao conversacional antes de aplicar patches iniciados por voz."
+        },
+        "adonex.synapse.autonomous": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Executa tarefas governadas quando o workspace for detectado como Synapse. Com patch.applyMode=prepare, prepara patches com resumo e aguarda confirmacao antes de aplicar. Comandos perigosos, secrets e caminhos sensiveis continuam bloqueados."
+        },
+        "adonex.synapse.rufloCouncil.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Ativa o conselho Ruflo local no Synapse Mode. Por padrao, o AdoneX seleciona poucos papeis relevantes e comprime o conselho antes do Ollama; os 60 papeis exigem pedido explicito."
+        },
+        "adonex.synapse.rufloCouncil.maxAgents": {
+          "type": "number",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 60,
+          "markdownDescription": "Quantidade maxima de papeis Ruflo ativos por padrao. Use 8 para desempenho; aumente ou peca explicitamente os 60 agentes para auditorias amplas."
+        },
+        "adonex.synapse.rufloCouncil.llmConcurrency": {
+          "type": "number",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 4,
+          "markdownDescription": "Numero maximo de chamadas locais ao Ollama usadas para consolidar o conselho. Use 1 em maquinas com 16 GB RAM."
+        },
+        "adonex.synapse.rufloCouncil.maxChars": {
+          "type": "number",
+          "default": 8000,
+          "minimum": 1000,
+          "maximum": 24000,
+          "markdownDescription": "Tamanho maximo do contexto sintetico e comprimido do conselho Ruflo enviado ao Ollama."
+        },
+        "adonex.synapse.llmGateway.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Tenta usar o LLM Gateway do Synapse antes de chamar Ollama diretamente em workspaces Synapse."
+        },
+        "adonex.synapse.llmGateway.requireGateway": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Quando ativo, bloqueia fallback direto para Ollama se o LLM Gateway do Synapse estiver indisponivel."
+        },
+        "adonex.synapse.llmGateway.baseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000",
+          "markdownDescription": "Base URL do backend Synapse usado pelo LLM Gateway."
+        },
+        "adonex.synapse.llmGateway.apiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "API key local opcional para chamar o backend Synapse em ambientes protegidos."
+        },
+        "adonex.synapse.llmGateway.projectId": {
+          "type": "string",
+          "default": "adonex",
+          "markdownDescription": "Identificador de projeto enviado para auditoria do LLM Gateway."
+        },
+        "adonex.promptEngineering.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Compila deterministicamente a pergunta do usuario em um prompt tecnico com papel, objetivo, contexto, contrato de resposta, seguranca e controle de custo antes de chamar Ollama ou OpenAI."
+        },
+        "adonex.memory.enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.memory.autoReadBeforeTask": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.memory.askBeforeUpdate": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.memory.createTaskLogAfterTask": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.memory.createSnapshotBeforeCodexHandoff": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.memory.maxDiffChars": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 1000
+        },
+        "adonex.memory.maxFileChars": {
+          "type": "number",
+          "default": 20000,
+          "minimum": 1000
+        },
+        "adonex.memory.redactSecrets": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.router.codexRecommendedForComplexTasks": {
+          "type": "boolean",
+          "default": true
+        },
+        "adonex.workspace.ignorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "node_modules",
+            ".git",
+            "dist",
+            "build",
+            ".venv",
+            "__pycache__",
+            "output",
+            "artifacts",
+            "logs",
+            "tmp",
+            ".cache",
+            ".claude-flow",
+            ".claude",
+            ".codex",
+            ".adonex",
+            ".next",
+            "frontend/.next",
+            "coverage",
+            ".vscode-test",
+            ".env"
+          ]
+        },
+        "adonex.synapse.peerMessaging.peerType": {
+          "type": "string",
+          "enum": [
+            "codex",
+            "claude",
+            "adonex",
+            "ruflo",
+            "ollama",
+            "human",
+            "other"
+          ],
+          "default": "adonex",
+          "markdownDescription": "Tipo de peer registrado no MCP local Synapse Peers quando AdoneX configura `.mcp.json`."
+        },
+        "adonex.synapse.peerMessaging.dbPath": {
+          "type": "string",
+          "default": "./artifacts/peers/synapse-peers.db",
+          "markdownDescription": "Banco SQLite local compartilhado por Codex, Claude, Ruflo e AdoneX para mensagens curtas."
+        },
+        "adonex.synapse.peerMessaging.maxMessageChars": {
+          "type": "number",
+          "default": 1200,
+          "minimum": 120,
+          "maximum": 4000,
+          "markdownDescription": "Limite de caracteres por mensagem local. Mantem coordenacao curta para reduzir custo por tokens."
+        },
+        "adonex.synapse.peerMessaging.maxSummaryChars": {
+          "type": "number",
+          "default": 360,
+          "minimum": 80,
+          "maximum": 1000,
+          "markdownDescription": "Limite de caracteres do resumo de trabalho compartilhado com outros peers locais."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "adonex",
+          "title": "AdoneX",
+          "icon": "media/adonex.svg"
+        }
+      ]
+    },
+    "views": {
+      "adonex": [
+        {
+          "type": "webview",
+          "id": "adonex.chatView",
+          "name": "AdoneX"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "adonex.explainSelection",
+          "when": "editorHasSelection",
+          "group": "navigation@90"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "bundle": "node scripts/build.js",
+    "compile": "npm run clean && tsc -p tsconfig.json && npm run bundle",
+    "watch": "tsc -w -p tsconfig.json",
+    "test:unit": "node --test dist/test/*.test.js",
+    "test:extension": "node scripts/run-extension-tests.js",
+    "test": "npm run compile && npm run test:unit",
+    "check": "npm test && npm run test:extension",
+    "package": "npm run compile && vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "openai": "^6.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/vscode": "^1.96.0",
+    "@vscode/test-electron": "^3.0.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.7.2"
+  }
+}

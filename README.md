@@ -1,0 +1,317 @@
+﻿# synapse-ai
+
+Enterprise AI/ML solution factory using Codex + Ruflo as the operational
+core. Synapse is the control plane and the only project factory.
+
+## Interfaces Oficiais
+
+O Synapse funciona de forma independente no navegador e no VS Code, com o
+mesmo nucleo de agentes, projetos, dados, evals e governanca. Consulte
+`docs/dual-interface-contract.md`.
+
+## Stack Oficial No VS Code
+
+- Codex no VS Code para dialogo, implementacao e revisao.
+- Ruflo com swarm hierarchical-mesh, 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
+- Project Factory em `scripts/create_ai_project.ps1`.
+- Memoria hibrida working/episodic/semantic.
+- RAG e Vector DB em `vector_db/`.
+- MLflow e FastAPI apenas como runtimes internos quando necessario.
+
+## Arquitetura Dos Projetos
+
+Somente o Synapse possui backend, frontend e fabrica de projetos. Um projeto
+criado pelo Synapse e um workspace de solucao
+administrado pelo Synapse, e nao uma copia da plataforma.
+
+Projetos gerados:
+
+- nao possuem `backend/` nem `frontend/`
+- nao possuem Supabase ou infraestrutura web do Synapse
+- nao possuem `scripts/create_ai_project.ps1`
+- nao podem criar outros projetos
+- possuem seu proprio runtime Ruflo, configuracao MCP, memoria e agentes
+- recebem dados, experimentos, prompts, evals, governanca, documentacao e
+  scripts analiticos conforme o universo escolhido
+- registram esse contrato em `config/synapse_solution_contract.json`
+
+Cada projeto executa seu proprio Ruflo e seus agentes, com 15 agentes core e
+45 especialistas sob demanda. O Synapse cria e administra o projeto, mas a
+execucao multiagente ocorre no contexto e na memoria do proprio projeto.
+
+Cada projeto tambem herda a camada de transformacao empresarial agentica:
+perfis governados, workflow, prompt, politica de risco, orientacao de KPIs e
+contratos de execucao simulation-first. Essa inteligencia nao adiciona backend
+ou frontend aos projetos de solucao.
+
+## IA Agentica Para Transformacao Empresarial
+
+O Synapse transforma objetivos empresariais em workflows auditaveis:
+
+```text
+objetivo -> diagnostico -> processo -> oportunidades -> priorizacao
+-> plano -> risco/aprovacao -> simulacao -> impacto
+```
+
+O runtime usa oito perfis funcionais sobre os 60 agentes Ruflo existentes:
+orquestracao, transformacao empresarial, processo, dados, automacao, KPIs,
+governanca de risco e aprovacao humana.
+
+- `LOW`: execucao automatica com auditoria.
+- `MEDIUM`: execucao com validacao e auditoria.
+- `HIGH`: exige aprovacao humana.
+- `CRITICAL`: exige aprovacao explicita e bloqueia acoes externas automaticas.
+
+Endpoints:
+
+- `POST /business/diagnosis`
+- `POST /business/opportunities`
+- `POST /business/transformation`
+- `POST /business/transformation/{workflow_id}/approve`
+- `GET /business/transformation/{workflow_id}`
+- `GET /business/transformation/{workflow_id}/audit`
+
+Consulte `docs/AGENTIC_AI_TRANSFORMATION.md`.
+
+## Criar Projetos Pelo VS Code
+
+O fluxo do VS Code nao exige abrir navegador nem acessar `localhost`.
+
+O caminho principal e a caixa de dialogo: Codex no VS Code, Claude Code ou
+`@adonex /projeto`. Antes de criar ou implementar, o assistente deve perguntar
+no chat qualquer campo faltante do briefing minimo: objetivo, problema de
+negocio, universo, metrica/criterio de aceite, dados/fontes disponiveis e risco.
+
+Exemplo:
+
+```text
+@adonex /projeto crie uma solucao de IA/RAG para atendimento ao cliente
+```
+
+Com o briefing completo, o Synapse consulta o BusinessSolutionAnalyzer, gera
+`config/business_solution_analysis.json` e segue arquitetura, testes, evals,
+governanca e custo local-first.
+
+As conversas compartilham memoria local: AdoneX registra pedidos do VS Code Chat
+em `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`.
+Codex e Claude Code devem ler esses arquivos e usar o MCP `synapse-peers` para
+mensagens curtas entre sessoes ativas.
+
+As tasks do VS Code continuam como atalhos opcionais:
+
+1. Abra `Ctrl+Shift+P`.
+2. Rode `Tasks: Run Task`.
+3. Escolha `Enterprise: Validar stack`.
+4. Escolha `Synapse: Preparar runtime VS Code sem navegador`.
+5. Escolha `AI Factory: Menu interativo` ou `AI Factory: Criar projeto com Codex + Ruflo 60 agents + tratamento dados`.
+
+O projeto sera criado localmente em `C:\Users\malves\Documents\Projetos`,
+com `data/`, experimentos, memoria, evals, guardrails, contratos e
+documentacao aplicaveis ao tipo ML, IA ou hibrido.
+
+### Conteudo Por Universo
+
+- **ML:** tratamento de dados, estatistica, contratos de dados, notebooks,
+  MLflow, model card, metricas, monitoramento e drift.
+- **IA:** prompts, agentes como contratos, RAG, retrieval evals, guardrails,
+  memoria, observabilidade e governanca.
+- **ML + IA:** combina os artefatos dos universos ML e IA.
+- **Todos:** engenharia de IA, governanca, seguranca, qualidade, tratamento de
+  dados e criterios de aceite.
+
+## Tratamento Estatistico De Dados
+
+Coloque arquivos brutos em `data/raw/` e converse com Codex no VS Code:
+
+```text
+trate data/raw/clientes.csv com Ruflo economico e especialistas sob demanda
+```
+
+O caminho integrado e:
+
+```text
+Tasks: Run Task -> Codex: Tratar dados com Ruflo economico
+```
+
+Esse fluxo valida o stack, ativa um subconjunto economico dos 15 core agents, registra o contexto da
+conversa e executa o tratamento estatistico. Para rodar somente o script de
+tratamento sem ativar Ruflo, use:
+
+```text
+Tasks: Run Task -> Dados: Tratar dataset estatistico
+```
+
+Ou pelo terminal integrado:
+
+```powershell
+python .\scripts\treat_dataset.py --input .\data\raw\clientes.csv
+```
+
+O script gera dataset tratado em `data/processed/` e relatorio em
+`output/data_treatment/`. Por padrao ele corrige nomes/tipos, remove
+duplicatas exatas, trata ausentes com justificativa estatistica, agrupa
+categorias raras e cria flags de outliers sem remove-los automaticamente.
+
+## VS Code Project Factory
+
+You can create and validate IA/ML projects from VS Code tasks:
+
+1. Open `Ctrl+Shift+P`.
+2. Run `Tasks: Run Task`.
+3. Choose `AI Factory: Menu interativo`,
+   `AI Factory: Criar projeto com Codex + Ruflo 60 agents + tratamento dados`, or
+   `Synapse: Preparar runtime VS Code sem navegador`.
+
+See `docs/vscode-workflow.md`.
+
+The project factory configures `config/runtime_manifest.json`,
+`config/enterprise.yaml`, `config/project_universe.json`,
+`config/synapse_solution_contract.json`, and solution lifecycle contracts with
+the project name and selected universe.
+
+It also inherits `config/business_transformation.json`,
+`config/workflows/ruflo/business-transformation.json`,
+`agents/definitions/business_transformation_agents.yaml`,
+`prompts/business_transformation.md`, and
+`docs/AGENTIC_AI_TRANSFORMATION.md`.
+
+It also creates `.env.example`, project data/experiment/artifact folders,
+project-specific prompt/eval seeds, a data contract, a model card, runbooks,
+a first setup checklist, a creation report, and runs validation by default.
+Artifacts that do not apply to the selected universe are removed. For example,
+an IA-only project does not receive an ML model card, while an ML-only project
+does not receive the RAG and AI framework layers.
+
+To create a project:
+
+```powershell
+.\criar_projeto_ia.ps1 -NomeProjeto compradores_B2B2C_IA
+```
+
+The generated project contains no application backend, frontend or factory
+script. It does contain its own Ruflo runtime, MCP configuration, memory,
+workflows and agent catalog.
+
+## Ruflo Runtime Interno
+
+O Ruflo usa o MCP configurado em `.mcp.json` e os workflows versionados em
+`config/workflows/ruflo/*.json`. O fluxo principal e pelo VS Code/Codex, nao
+por navegador. Cada projeto recebe `.mcp.json`,
+`scripts/start_ruflo_swarm.ps1`, `agents/definitions/enterprise_agents.yaml`
+e seus contratos de workflows e memoria.
+
+## Local Model Layer
+
+The backend includes a first ML model layer for local baselines:
+
+- trains `linear_regression` models from inline JSON data or JSONL files
+- stores versioned artifacts in `artifacts/models/`
+- maintains `artifacts/models/registry.json`
+- logs training runs to MLflow when `MLFLOW_TRACKING_URI` is available
+- registers MLflow pyfunc models for lifecycle aliases such as `candidate`,
+  `challenger`, and `champion`
+- serves predictions through `POST /models/{model_id}/predict`
+
+Example training payload:
+
+```json
+{
+  "model_name": "Revenue Baseline",
+  "feature_columns": ["leads", "price"],
+  "target_column": "revenue",
+  "dataset": [
+    {"leads": 1, "price": 10, "revenue": 20},
+    {"leads": 2, "price": 10, "revenue": 30},
+    {"leads": 3, "price": 10, "revenue": 40}
+  ]
+}
+```
+
+## Run MLflow Locally
+
+```powershell
+python -m mlflow server `
+  --backend-store-uri sqlite:///artifacts/mlflow/mlflow.db `
+  --default-artifact-root ./artifacts/mlflow/artifacts `
+  --host 127.0.0.1 `
+  --port 5000
+```
+
+The Synapse backend reads:
+
+```powershell
+MLFLOW_TRACKING_URI=http://localhost:5000
+MLFLOW_REGISTRY_URI=http://localhost:5000
+MLFLOW_EXPERIMENT_NAME=synapse-ai
+```
+
+MLflow runtime endpoints:
+
+- `GET /mlflow/status`
+- `GET /mlflow/experiments`
+- `GET /mlflow/runs`
+- `GET /mlflow/models`
+- `POST /mlflow/models/alias`
+
+## Run Model And AI Evals
+
+The evaluation layer is split between ML and AI prompt checks:
+
+- `POST /evals/ml` reads `evals/ml_cases.jsonl`, checks ML quality gates,
+  and computes prediction metrics when a `model_id` is provided with cases that
+  include `features` and `expected`.
+- `POST /evals/ai` reads `evals/prompt_cases.jsonl`, checks prompt readiness,
+  expected terms, and simple prompt-injection guards.
+
+Both eval paths log results to MLflow when the local tracking server is
+available, and fall back to structured API responses when it is offline.
+
+From VS Code, run:
+
+- `Evals: Rodar testes ML`
+- `Evals: Rodar testes IA`
+
+Or from PowerShell:
+
+```powershell
+.\scripts\run_ml_evals.ps1
+.\scripts\run_ai_evals.ps1
+```
+
+Synapse's product goal is a no-code ML and AI agent factory: the user describes
+the desired outcome to Codex in VS Code, the LLM asks for missing context, and
+Ruflo routes the work to specialized agents in parallel. See
+`docs/architecture/no-code-ai-factory.md`.
+
+## Enterprise Principles
+
+The architecture incorporates production AI practices from AI engineering,
+LLM engineering, prompt engineering, production LLM systems, ML systems design,
+mathematics for ML, and agentic coding:
+
+- define evals before shipping model behavior
+- keep prompts, tools, retrieval, and memory versionable
+- separate control plane, data plane, and application surfaces
+- use typed contracts at system boundaries
+- track lineage, observability, and failure modes
+- make retrieval measurable with recall and faithfulness checks
+- keep agents specialized but coordinated by a manager
+- redesign business processes before scaling automation
+- connect decisions to owners, approvals, KPIs, adoption, and value
+- keep deterministic workflow state around probabilistic model reasoning
+
+## Book-Inspired Practice Layer
+
+The project includes executable practice artifacts inspired by AI engineering,
+prompt engineering, LLM engineering, production LLMs, ML systems design,
+mathematics for ML, and agentic coding:
+
+- `playbooks/`
+- `prompts/`
+- `evals/`
+- `llm_ops/`
+- `ml_systems/`
+- `rag_pipelines/`
+- `guardrails/`
+- `notebooks/foundations/`
+- `docs/books/implementation_map.md`

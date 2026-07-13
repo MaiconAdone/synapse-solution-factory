@@ -1,0 +1,68 @@
+{
+  "id": "synapse-data-treatment-policy",
+  "version": "1.0.0",
+  "master_prompt": "prompts/master_data_treatment.md",
+  "engine": "scripts/treat_dataset.py",
+  "report_output": "output/data_treatment/",
+  "principles": {
+    "differentiate_cleaning_from_statistical_treatment": true,
+    "justify_each_automatic_decision": true,
+    "preserve_traceability_flags": true,
+    "never_remove_outliers_without_explicit_instruction": true,
+    "human_review_required_for_domain_semantics": true
+  },
+  "execution_modes": {
+    "automatic": [
+      "schema_overview",
+      "column_name_standardization",
+      "exact_duplicate_removal",
+      "missing_value_summary",
+      "high_missing_column_drop",
+      "constant_column_drop",
+      "numeric_descriptive_statistics",
+      "z_score_outlier_analysis",
+      "normality_tests",
+      "pearson_spearman_correlation_selection",
+      "chi_square_association",
+      "confidence_intervals",
+      "bootstrap_uncertainty",
+      "numeric_missing_imputation_mean_or_median",
+      "categorical_missing_imputation_mode_or_unknown",
+      "iqr_outlier_flagging",
+      "optional_iqr_winsorization",
+      "rare_category_grouping",
+      "markdown_report"
+    ],
+    "assisted_by_prompt": [
+      "business_objective_review",
+      "domain_semantic_review",
+      "outlier_classification",
+      "modeling_readiness_decision",
+      "encoding_strategy_recommendation"
+    ],
+    "advanced_not_automatic_yet": [
+      "multivariate_outlier_distance",
+      "qq_plots",
+      "box_cox_or_yeo_johnson_transformations",
+      "multicollinearity_diagnostics",
+      "parametric_or_nonparametric_test_selection",
+      "mice_imputation"
+    ]
+  },
+  "default_thresholds": {
+    "drop_missing_column_ratio": 0.8,
+    "rare_category_ratio": 0.01,
+    "quasi_constant_ratio": 0.99,
+    "iqr_multiplier": 1.5
+  },
+  "required_report_sections": [
+    "master_prompt_alignment",
+    "data_overview",
+    "problems_found",
+    "statistical_treatment_applied",
+    "technical_justifications",
+    "treated_dataset",
+    "recommendations",
+    "advanced_pending_checks"
+  ]
+}

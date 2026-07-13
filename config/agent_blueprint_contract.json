@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "name": "synapse-agent-blueprint-contract",
+  "purpose": "Standard contract for designing agents and AI solutions before implementation.",
+  "required_fields": [
+    "agent_id",
+    "objective",
+    "model_strategy",
+    "tools",
+    "memory",
+    "context",
+    "boundaries",
+    "success_criteria",
+    "fleet",
+    "evals",
+    "observability",
+    "cost_budget",
+    "risk_level",
+    "authority_level",
+    "allowed_model_profiles",
+    "escalation_rule",
+    "quality_gate"
+  ],
+  "model_strategy": {
+    "local_first_allowed": true,
+    "free_local_models": [
+      "nomic-embed-text:latest",
+      "qwen2.5-coder:3b",
+      "qwen3:8b",
+      "deepseek-coder-v2:lite",
+      "qwen2.5-coder:14b",
+      "qwen3:14b",
+      "deepseek-r1:14b",
+      "qwen2.5-coder:32b"
+    ],
+    "teacher_review_models": ["gpt", "claude"],
+    "escalate_to_paid_model_when": [
+      "architecture_is_critical",
+      "security_or_compliance_risk",
+      "local_model_output_fails_validation",
+      "production_release_decision"
+    ]
+  },
+  "architecture_decision_gate": {
+    "single_agent_first": true,
+    "single_agent_when": [
+      "task_is_simple",
+      "one_domain",
+      "low_risk",
+      "no_parallel_execution_needed",
+      "no_conflicting_tool_permissions"
+    ],
+    "multiagent_when": [
+      "multiple_domains",
+      "rag_or_mcp_required",
+      "security_or_compliance_review",
+      "parallel_research_or_implementation",
+      "conflict_resolution_needed",
+      "production_quality_gate"
+    ]
+  },
+  "agent_role_contract": {
+    "required_sections": [
+      "role",
+      "authority_level",
+      "allowed_tools",
+      "allowed_model_profiles",
+      "memory_scope",
+      "escalation_rule",
+      "quality_gate",
+      "observability"
+    ],
+    "authority_levels": ["advisory", "drafting", "tool_use", "external_action"],
+    "default_authority_level": "advisory",
+    "external_action_requires_human_approval": true,
+    "model_access": "via_llm_gateway_only"
+  },
+  "a2a_message_contract": {
+    "enabled": true,
+    "transport": "synapse-peers",
+    "max_message_chars": 1200,
+    "schema_fields": [
+      "objective",
+      "from_agent",
+      "to_agent",
+      "context_summary",
+      "evidence",
+      "decision_requested",
+      "risk_level",
+      "token_budget",
+      "status"
+    ]
+  },
+  "lifecycle_callbacks": [
+    "on_plan_created",
+    "on_agent_selected",
+    "on_model_routed",
+    "on_tool_called",
+    "on_memory_read",
+    "on_validation_failed",
+    "on_human_approval_required",
+    "on_execution_completed"
+  ],
+  "pattern_catalog_file": "config/agentic_architectural_patterns.json",
+  "validation_rules": [
+    "must_match_agent_trust_framework",
+    "must_map_to_existing_fleet",
+    "must_define_human_approval_boundaries",
+    "must_define_evals_before_release",
+    "must_define_observability_before_production",
+    "must_respect_cost_optimization_policy",
+    "must_use_a2a_message_contract_for_peer_handoffs",
+    "must_emit_lifecycle_callbacks_for_governed_execution",
+    "must_route_models_through_llm_gateway"
+  ]
+}

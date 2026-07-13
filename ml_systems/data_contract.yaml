@@ -1,0 +1,13 @@
+﻿version: 1
+dataset:
+  name: SYNAPSE_project_dataset
+  owner: data-engineering
+  label_source: defined_per_project_before_training
+  refresh_policy: defined_per_project_before_production
+validation:
+  required:
+    - schema
+    - null_rate
+    - duplicate_rate
+    - label_distribution
+    - leakage_checks

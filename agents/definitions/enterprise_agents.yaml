@@ -1,0 +1,371 @@
+﻿version: 1
+swarm:
+  name: synapse-ai-swarm
+  topology: hierarchical-mesh
+  max_agents: 60
+  core_agent_count: 15
+  specialist_agent_count: 45
+  activation_policy: cost_aware_core_subset_and_route_specialists_on_demand
+  coordination: distributed
+  consensus: majority
+agents:
+  - id: orchestration-manager
+    tier: core
+    domain: orchestration
+    cognitive_pattern: systems
+    memory: semantic
+    mission: conduz dialogo sem codigo, aplica playbooks, aciona os 15 core agents e roteia especialistas sob demanda
+  - id: product-strategy
+    tier: core
+    domain: product
+    cognitive_pattern: strategic
+    memory: semantic
+    mission: traduz conversa em objetivo de negocio, metrica de sucesso e criterios de aceite
+  - id: data-engineering
+    tier: core
+    domain: data
+    cognitive_pattern: systems
+    memory: semantic
+    mission: organiza uploads, contrato de dados, validacao e linhagem
+  - id: data-science
+    tier: core
+    domain: analytics
+    cognitive_pattern: critical
+    memory: semantic
+    mission: analisa dados, estatistica, hipoteses, vieses e estrategia de features
+  - id: machine-learning
+    tier: core
+    domain: ml
+    cognitive_pattern: critical
+    memory: semantic
+    mission: define dados, baseline, metricas, treino, avaliacao e model card
+  - id: llm-engineering
+    tier: core
+    domain: llm
+    cognitive_pattern: adaptive
+    memory: semantic
+    mission: projeta prompts, ferramentas, guardrails e agentes de IA
+  - id: rag-engineering
+    tier: core
+    domain: rag
+    cognitive_pattern: systems
+    memory: semantic
+    mission: prepara ingestao, chunking, embeddings, indice e avaliacao de recuperacao
+  - id: backend-engineering
+    tier: core
+    domain: backend
+    cognitive_pattern: convergent
+    memory: episodic
+    mission: expoe APIs seguras para criacao, projetos, dados, modelos e agentes
+  - id: frontend-engineering
+    tier: core
+    domain: frontend
+    cognitive_pattern: convergent
+    memory: episodic
+    mission: mantem experiencia no-code com dialogo do usuario e resposta do LLM
+  - id: integration-automation
+    tier: core
+    domain: integration
+    cognitive_pattern: adaptive
+    memory: episodic
+    mission: conecta Codex, Ruflo, MCP, APIs, automacoes e ferramentas dos agentes
+  - id: security-compliance
+    tier: core
+    domain: security
+    cognitive_pattern: critical
+    memory: semantic
+    mission: define autenticacao, permissoes, privacidade, LGPD, limites de autonomia e policies
+  - id: observability-ops
+    tier: core
+    domain: operations
+    cognitive_pattern: systems
+    memory: episodic
+    mission: monitora traces, custo, latencia, tokens, drift, qualidade e saude operacional
+  - id: devops
+    tier: core
+    domain: platform
+    cognitive_pattern: critical
+    memory: episodic
+    mission: ativa Ruflo, paraleliza execucoes e controla custo, latencia e tokens
+  - id: testing-qa
+    tier: core
+    domain: quality
+    cognitive_pattern: critical
+    memory: episodic
+    mission: cria gates de ML, IA, RAG, seguranca e regressao
+  - id: documentation
+    tier: core
+    domain: docs
+    cognitive_pattern: convergent
+    memory: episodic
+    mission: gera documentacao operacional, decisoes e proximos passos para usuario nao tecnico
+  - id: prompt-evaluator
+    tier: specialist
+    domain: llm
+    cognitive_pattern: critical
+    memory: semantic
+    mission: avalia prompts quanto a qualidade, robustez, regressao e seguranca
+  - id: prompt-versioning
+    tier: specialist
+    domain: llm
+    cognitive_pattern: systems
+    memory: episodic
+    mission: versiona prompts, changelogs, rollback e linhagem de avaliacoes
+  - id: tool-calling-engineer
+    tier: specialist
+    domain: llm
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha tool calling seguro, permissoes e validacao de resultados
+  - id: function-schema-designer
+    tier: specialist
+    domain: llm
+    cognitive_pattern: convergent
+    memory: semantic
+    mission: desenha schemas de funcoes, validacao de entrada e contratos de saida
+  - id: mcp-integration-specialist
+    tier: specialist
+    domain: integration
+    cognitive_pattern: adaptive
+    memory: episodic
+    mission: projeta adapters MCP, handshakes, fallbacks e diagnosticos runtime
+  - id: agent-a2a-coordinator
+    tier: specialist
+    domain: orchestration
+    cognitive_pattern: systems
+    memory: semantic
+    mission: define contratos A2A, regras de conflito e limites de contexto compartilhado
+  - id: crewai-architect
+    tier: specialist
+    domain: orchestration
+    cognitive_pattern: strategic
+    memory: semantic
+    mission: avalia quando CrewAI deve implementar times de agentes por papeis
+  - id: swarms-architect
+    tier: specialist
+    domain: orchestration
+    cognitive_pattern: strategic
+    memory: semantic
+    mission: avalia quando Swarms deve implementar grupos paralelos maiores
+  - id: firecrawl-researcher
+    tier: specialist
+    domain: integration
+    cognitive_pattern: research
+    memory: semantic
+    mission: planeja Firecrawl para coleta web, extracao e governanca de fontes
+  - id: vector-db-engineer
+    tier: specialist
+    domain: rag
+    cognitive_pattern: systems
+    memory: semantic
+    mission: escolhe bancos vetoriais, adapters e estrategias de indexacao
+  - id: embedding-specialist
+    tier: specialist
+    domain: rag
+    cognitive_pattern: critical
+    memory: semantic
+    mission: define embeddings, dimensoes, similaridade e estrategia de refresh
+  - id: hybrid-search-engineer
+    tier: specialist
+    domain: rag
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha busca hibrida lexical e semantica com filtros de metadados
+  - id: reranking-specialist
+    tier: specialist
+    domain: rag
+    cognitive_pattern: critical
+    memory: semantic
+    mission: desenha reranking, criterios de avaliacao e budgets de latencia
+  - id: context-compression-specialist
+    tier: specialist
+    domain: rag
+    cognitive_pattern: adaptive
+    memory: semantic
+    mission: comprime contexto e empacota evidencias com eficiencia de tokens
+  - id: parent-child-retrieval-engineer
+    tier: specialist
+    domain: rag
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha parent-child retrieval para chunks precisos com contexto rico
+  - id: graph-rag-engineer
+    tier: specialist
+    domain: rag
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha entidades, relacoes, travessia e citacoes para GraphRAG
+  - id: knowledge-governance
+    tier: specialist
+    domain: rag
+    cognitive_pattern: critical
+    memory: semantic
+    mission: define frescor, permissao, proveniencia e descarte de conhecimento
+  - id: data-quality-analyst
+    tier: specialist
+    domain: data
+    cognitive_pattern: critical
+    memory: semantic
+    mission: perfila datasets, ausentes, duplicatas, drift de schema e outliers
+  - id: data-contract-auditor
+    tier: specialist
+    domain: data
+    cognitive_pattern: critical
+    memory: semantic
+    mission: audita contratos de dados, linhagem, ownership e validacoes
+  - id: feature-engineering-specialist
+    tier: specialist
+    domain: ml
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha features, transformacoes, leakage checks e documentacao
+  - id: ml-baseline-engineer
+    tier: specialist
+    domain: ml
+    cognitive_pattern: convergent
+    memory: semantic
+    mission: cria planos de baseline, comparacao e thresholds de release
+  - id: model-evaluation-specialist
+    tier: specialist
+    domain: ml
+    cognitive_pattern: critical
+    memory: semantic
+    mission: define metricas offline, intervalos, slices e riscos
+  - id: drift-monitoring-specialist
+    tier: specialist
+    domain: ml
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha drift monitoring, alertas e gatilhos de retreino
+  - id: mlflow-ops-specialist
+    tier: specialist
+    domain: ml
+    cognitive_pattern: systems
+    memory: episodic
+    mission: gerencia MLflow, registry aliases e promocao de modelos
+  - id: model-card-reviewer
+    tier: specialist
+    domain: ml
+    cognitive_pattern: critical
+    memory: episodic
+    mission: revisa model cards, limitacoes, metricas e rollback
+  - id: statistics-reviewer
+    tier: specialist
+    domain: analytics
+    cognitive_pattern: critical
+    memory: semantic
+    mission: revisa estatistica, amostragem, incerteza e interpretacao de metricas
+  - id: math-for-ml-specialist
+    tier: specialist
+    domain: analytics
+    cognitive_pattern: critical
+    memory: semantic
+    mission: verifica premissas matematicas, similaridade, perdas e incerteza
+  - id: privacy-lgpd-reviewer
+    tier: specialist
+    domain: security
+    cognitive_pattern: critical
+    memory: semantic
+    mission: revisa privacidade, PII, retencao, consentimento e riscos LGPD
+  - id: threat-modeling-specialist
+    tier: specialist
+    domain: security
+    cognitive_pattern: critical
+    memory: semantic
+    mission: modela abusos, prompt injection, misuse de ferramentas e ameaÃ§as de deploy
+  - id: policy-guardrails-engineer
+    tier: specialist
+    domain: security
+    cognitive_pattern: systems
+    memory: semantic
+    mission: implementa policies, limites de autonomia e regras de aprovacao
+  - id: cost-optimizer
+    tier: specialist
+    domain: operations
+    cognitive_pattern: systems
+    memory: episodic
+    mission: otimiza roteamento de modelos, tokens, cache e custo de paralelismo
+  - id: latency-optimizer
+    tier: specialist
+    domain: operations
+    cognitive_pattern: systems
+    memory: episodic
+    mission: otimiza recuperacao, model calls, batching e latencia de workflows
+  - id: token-budget-analyst
+    tier: specialist
+    domain: operations
+    cognitive_pattern: critical
+    memory: episodic
+    mission: define budgets de tokens, compressao e contexto por agente
+  - id: structured-logging-engineer
+    tier: specialist
+    domain: operations
+    cognitive_pattern: systems
+    memory: episodic
+    mission: desenha logs estruturados, traces, redacao e diagnosticos
+  - id: metrics-instrumentation
+    tier: specialist
+    domain: operations
+    cognitive_pattern: systems
+    memory: episodic
+    mission: define metricas, dashboards, sinais de qualidade e health checks
+  - id: ci-cd-release-manager
+    tier: specialist
+    domain: platform
+    cognitive_pattern: systems
+    memory: episodic
+    mission: planeja CI/CD, promocao de ambientes, release checks e rollback
+  - id: container-platform-engineer
+    tier: specialist
+    domain: platform
+    cognitive_pattern: systems
+    memory: episodic
+    mission: mantem Docker, runtime config e portabilidade de deploy
+  - id: database-architect
+    tier: specialist
+    domain: backend
+    cognitive_pattern: systems
+    memory: semantic
+    mission: desenha schemas, migracoes, boundaries de storage e performance
+  - id: api-contract-reviewer
+    tier: specialist
+    domain: backend
+    cognitive_pattern: critical
+    memory: episodic
+    mission: revisa contratos API, schemas, erros, auth e compatibilidade
+  - id: frontend-ux-reviewer
+    tier: specialist
+    domain: frontend
+    cognitive_pattern: critical
+    memory: episodic
+    mission: revisa workflows, densidade de UI, navegacao e ergonomia
+  - id: accessibility-reviewer
+    tier: specialist
+    domain: frontend
+    cognitive_pattern: critical
+    memory: episodic
+    mission: revisa acessibilidade, teclado, contraste, semantica e responsividade
+  - id: qa-adversarial-tester
+    tier: specialist
+    domain: quality
+    cognitive_pattern: critical
+    memory: episodic
+    mission: desenha testes adversariais para prompts, tools, RAG, APIs e permissoes
+  - id: regression-test-engineer
+    tier: specialist
+    domain: quality
+    cognitive_pattern: systems
+    memory: episodic
+    mission: mantem regressao, contratos e checks de risco de release
+  - id: docs-runbook-writer
+    tier: specialist
+    domain: docs
+    cognitive_pattern: convergent
+    memory: episodic
+    mission: escreve runbooks, incident notes e procedimentos por projeto
+  - id: business-value-analyst
+    tier: specialist
+    domain: product
+    cognitive_pattern: strategic
+    memory: semantic
+    mission: conecta entregas a metricas de negocio, ROI, adocao e aceite

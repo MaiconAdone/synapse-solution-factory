@@ -1,0 +1,17 @@
+version: 1
+prompt:
+  required_pass_rate: 0.95
+  injection_check: required
+rag:
+  recall_at_k_min: 0.85
+  faithfulness_min: 0.90
+  citation_required: true
+ml:
+  baseline_required: true
+  model_card_required: true
+  data_contract_required: true
+llm_ops:
+  latency_budget_ms: 8000
+  cost_budget_required: true
+  rollback_required: true
+

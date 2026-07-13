@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "name": "synapse-agent-improvement-loop",
+  "purpose": "Capture feedback, failures, teacher reviews, and approved examples so local models improve through memory and retrieval over time.",
+  "loop_steps": [
+    "capture_agent_output",
+    "validate_schema_and_trust_framework",
+    "classify_failure_or_success",
+    "request_teacher_review_when_needed",
+    "store_approved_example",
+    "create_or_update_eval_case",
+    "promote_pattern_by_scope",
+    "measure_next_run_delta"
+  ],
+  "learning_scopes": [
+    "global",
+    "tenant",
+    "user",
+    "project",
+    "fleet",
+    "agent"
+  ],
+  "teacher_review": {
+    "providers": ["gpt", "claude"],
+    "required_for": [
+      "high_risk_agent",
+      "security_or_compliance_decision",
+      "new_global_pattern",
+      "production_release",
+      "local_model_validation_failure"
+    ]
+  },
+  "memory_targets": {
+    "approved_agent_blueprints": "memory/approved_agent_blueprints.jsonl",
+    "approved_architecture_patterns": "memory/approved_architecture_patterns.jsonl",
+    "teacher_review_cases": "evals/teacher_review_cases.jsonl",
+    "learning_events": "memory/synapse_learning_memory.jsonl"
+  },
+  "runtime": {
+    "enabled": true,
+    "mode": "retrieval_augmented_continual_learning",
+    "project_memory_namespace_prefix": "synapse-learning-",
+    "automatic_project_scope_capture": true,
+    "automatic_weight_updates": false,
+    "training_dataset": "data/learning/ollama_training.jsonl",
+    "training_example_requires_human_score": 0.8,
+    "global_promotion_requires_human_approval": true
+  },
+  "quality_metrics": [
+    "schema_pass_rate",
+    "eval_pass_rate",
+    "teacher_acceptance_rate",
+    "cost_per_successful_agent",
+    "latency_ms",
+    "rollback_rate"
+  ],
+  "privacy_controls": [
+    "sanitize_pii_before_learning",
+    "never_promote_private_tenant_data_to_global_without_approval",
+    "store_scope_and_approver",
+    "redact_secrets",
+    "audit_learning_promotions"
+  ]
+}

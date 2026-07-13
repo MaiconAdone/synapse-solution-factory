@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "name": "synapse-agentic-architectural-patterns",
+  "purpose": "Reusable local-first patterns for building governed enterprise multi-agent systems.",
+  "source_note": "Inspired by public agentic architecture practices and enterprise multi-agent system design. This file defines Synapse-specific contracts and does not copy book content.",
+  "default_policy": {
+    "single_agent_first": true,
+    "activate_specialists_on_demand": true,
+    "activate_all_agents_requires_human_approval": true,
+    "llm_calls_must_pass_gateway": true,
+    "cloud_requires_explicit_user_request_and_human_approval": true,
+    "sensitive_content_local_only": true,
+    "context_must_be_minimized": true
+  },
+  "patterns": [
+    {
+      "id": "orchestrator-specialist",
+      "name": "Orchestrator Specialist",
+      "intent": "Use one lead orchestrator to route work to the smallest useful specialist set.",
+      "use_when": [
+        "multiple domains are required",
+        "a fleet lead must synthesize specialist advice",
+        "task complexity exceeds a single agent"
+      ],
+      "synapse_mapping": {
+        "lead": "orchestration-manager",
+        "runtime": "GovernedSwarmExecutionService",
+        "selection": "CostAwareRouter + AgenticMeshGovernanceService",
+        "default_agent_count": 1
+      },
+      "guardrails": [
+        "do not simulate separate model calls unless they happened",
+        "do not activate all 60 agents by default",
+        "record selected agents and decision fingerprint"
+      ]
+    },
+    {
+      "id": "critic-reviewer-gate",
+      "name": "Critic Reviewer Gate",
+      "intent": "Route risky outputs through review roles and quality gates before release.",
+      "use_when": [
+        "security or compliance risk is present",
+        "production release decision is requested",
+        "local model output fails validation"
+      ],
+      "synapse_mapping": {
+        "reviewers": [
+          "testing-qa",
+          "security-compliance",
+          "observability-ops",
+          "model-evaluation-specialist"
+        ],
+        "quality_gates": "evals/quality_gates.yaml",
+        "audit": "artifacts/governance/swarm-executions.jsonl"
+      },
+      "guardrails": [
+        "human approval is required for high-risk irreversible actions",
+        "review findings must be linked to evidence",
+        "failed quality checks must not be hidden by fallback"
+      ]
+    },
+    {
+      "id": "a2a-message-contract",
+      "name": "Agent To Agent Message Contract",
+      "intent": "Exchange short structured messages between Codex, Claude, AdoneX, Ruflo and humans.",
+      "use_when": [
+        "another assistant already has useful context",
+        "token cost can be reduced by sharing summaries",
+        "handoff requires traceability"
+      ],
+      "message_schema": {
+        "objective": "string",
+        "from_agent": "string",
+        "to_agent": "string",
+        "context_summary": "string",
+        "evidence": "string",
+        "decision_requested": "string",
+        "risk_level": "LOW|MEDIUM|HIGH|CRITICAL",
+        "token_budget": "integer",
+        "status": "proposed|accepted|blocked|completed"
+      },
+      "synapse_mapping": {
+        "server": "synapse-peers",
+        "store": "artifacts/peers/synapse-peers.db",
+        "max_message_chars": 1200,
+        "max_summary_chars": 360
+      },
+      "guardrails": [
+        "no secrets in peer messages",
+        "send summaries before asking for full context",
+        "keep messages local unless cloud is explicitly approved"
+      ]
+    },
+    {
+      "id": "tool-gateway",
+      "name": "Tool Gateway",
+      "intent": "Keep tool access behind explicit permissions, scopes and audit records.",
+      "use_when": [
+        "tools can read files, run commands or affect external systems",
+        "agents need different permissions",
+        "actions need rollback or human approval"
+      ],
+      "synapse_mapping": {
+        "model_gateway": "backend/app/services/llm_gateway.py",
+        "governed_swarm": "backend/app/services/governed_swarm_execution.py",
+        "trust_framework": "config/agent_trust_framework.json"
+      },
+      "guardrails": [
+        "least privilege by default",
+        "external side effects require approval",
+        "tool calls must be logged with project, agent and request id"
+      ]
+    },
+    {
+      "id": "model-router",
+      "name": "Model Router",
+      "intent": "Route requests by task type, cost, sensitivity and quality instead of letting agents call models directly.",
+      "use_when": [
+        "multiple local or cloud models exist",
+        "cost and latency must be controlled",
+        "fallback and cache behavior must be auditable"
+      ],
+      "synapse_mapping": {
+        "gateway": "backend/app/services/llm_gateway.py",
+        "router": "backend/app/services/hybrid_llm_router.py",
+        "provider_config": "config/model_providers.json"
+      },
+      "guardrails": [
+        "local-first routing",
+        "cloud opt-in only",
+        "deterministic local cache for temperature zero",
+        "large models selected only by strong signal or explicit profile"
+      ]
+    },
+    {
+      "id": "shared-memory-retrieval",
+      "name": "Shared Memory Retrieval",
+      "intent": "Retrieve concise prior context before asking a model to reason from scratch.",
+      "use_when": [
+        "project memory may contain relevant lessons",
+        "RAG or semantic search can reduce prompt size",
+        "similar tasks were already completed"
+      ],
+      "synapse_mapping": {
+        "learning": "backend/app/services/continual_learning_service.py",
+        "memory_namespace": "synapse-governed-execution",
+        "embedding_profile": "nomic-embed-text:latest"
+      },
+      "guardrails": [
+        "approved memory before weight updates",
+        "retrieve summaries before raw artifacts",
+        "cite or identify memory source when it affects decisions"
+      ]
+    },
+    {
+      "id": "lifecycle-callbacks",
+      "name": "Lifecycle Callbacks",
+      "intent": "Expose stable execution events for observability, governance and debugging.",
+      "use_when": [
+        "an agent plan is created",
+        "a model route is selected",
+        "tools or memory are used",
+        "quality or approval gates decide execution"
+      ],
+      "callbacks": [
+        "on_plan_created",
+        "on_agent_selected",
+        "on_model_routed",
+        "on_tool_called",
+        "on_memory_read",
+        "on_validation_failed",
+        "on_human_approval_required",
+        "on_execution_completed"
+      ],
+      "synapse_mapping": {
+        "audit_log": "artifacts/governance/swarm-executions.jsonl",
+        "llm_audit": "artifacts/llm-routing/audit.jsonl",
+        "metrics": "llm_ops/observability.yaml"
+      },
+      "guardrails": [
+        "callbacks are audit events, not extra model calls",
+        "callbacks must not include secrets",
+        "callback payloads must use ids and summaries"
+      ]
+    }
+  ],
+  "inheritance": {
+    "generated_projects": true,
+    "copy_to_projects": true,
+    "project_runtime_path": "config/agentic_architectural_patterns.json",
+    "docs_path": "docs/specifications/agentic_architectural_patterns.md"
+  }
+}

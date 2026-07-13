@@ -1,0 +1,82 @@
+﻿services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.7.0
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri
+      - sqlite:////mlflow/mlflow.db
+      - --default-artifact-root
+      - /mlflow/artifacts
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./artifacts/mlflow:/mlflow
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env.example
+    environment:
+      ENVIRONMENT: production
+      APP_API_KEY: ${APP_API_KEY:-}
+      DATABASE_URL: ${DATABASE_URL:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      PROJECT_CREATION_MODE: managed
+      ALLOW_INSECURE_LOCAL_AUTH: "false"
+      PROJECT_FACTORY_BASE_PATH: /projects
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_REGISTRY_URI: http://mlflow:5000
+      LOCAL_LLM_ENABLED: ${LOCAL_LLM_ENABLED:-true}
+      OLLAMA_BASE_URL: ${OLLAMA_DOCKER_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:3b}
+      OLLAMA_BALANCED_MODEL: ${OLLAMA_BALANCED_MODEL:-deepseek-coder-v2:lite}
+      OLLAMA_CODE_REVIEW_MODEL: ${OLLAMA_CODE_REVIEW_MODEL:-deepseek-coder-v2:lite}
+      OLLAMA_LARGE_MODEL: ${OLLAMA_LARGE_MODEL:-deepseek-coder-v2:lite}
+      OLLAMA_CONTEXT_WINDOW: ${OLLAMA_CONTEXT_WINDOW:-4096}
+      OLLAMA_MAX_OUTPUT_TOKENS: ${OLLAMA_MAX_OUTPUT_TOKENS:-512}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
+      LLM_ROUTING_METRICS_PATH: /artifacts/llm-routing/events.jsonl
+      GOVERNED_SWARM_AUDIT_PATH: /artifacts/governance/swarm-executions.jsonl
+      BUSINESS_TRANSFORMATION_STORE_PATH: /artifacts/business-transformations
+      LEARNING_EVENTS_PATH: /artifacts/learning/synapse_learning_memory.jsonl
+      LOCAL_TRAINING_DATASET_PATH: /artifacts/learning/ollama_training.jsonl
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/artifacts
+    depends_on:
+      - mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=10)"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+    environment:
+      API_BASE_URL: http://backend:8000
+      ALLOW_SERVER_API_KEY_PROXY: "false"
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"

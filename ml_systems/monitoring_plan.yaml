@@ -1,0 +1,16 @@
+version: 1
+signals:
+  data_drift:
+    enabled: true
+  prediction_drift:
+    enabled: true
+  business_metric_drift:
+    enabled: true
+  latency:
+    enabled: true
+  error_rate:
+    enabled: true
+actions:
+  alert_owner: orchestration-manager
+  retraining_trigger: approved_data_or_model_drift_threshold_breach
+  rollback_trigger: approved_quality_safety_or_business_metric_regression

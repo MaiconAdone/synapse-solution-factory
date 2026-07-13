@@ -1,0 +1,20 @@
+{
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.next": true,
+    "**/node_modules": true
+  },
+  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "powershell.scriptAnalysis.enable": true,
+  "task.allowAutomaticTasks": "on",
+  "adonex.voice.startWithVSCode": true,
+  "adonex.voice.autoOpenCockpit": true,
+  "adonex.voice.wakeWord": "Vick",
+  "adonex.voice.engine": "local_service",
+  "adonex.voice.localServiceUrl": "http://127.0.0.1:8765",
+  "adonex.voice.requireConfirmationForPatch": true,
+  "adonex.security.requireApprovalBeforeWrite": true,
+  "adonex.security.requireApprovalBeforeCommand": true
+}

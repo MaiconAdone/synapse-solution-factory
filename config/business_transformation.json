@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "name": "synapse-agentic-business-transformation",
+  "purpose": "Transform business objectives into governed, measurable and executable agentic workflows.",
+  "conceptual_foundations": [
+    "agents pursue business objectives and produce auditable actions",
+    "AI is an operational layer connecting data, processes, tools and decisions",
+    "business processes are redesigned before automation is scaled",
+    "stateful workflows separate reasoning, decision, execution and validation",
+    "human authority increases with risk and irreversibility",
+    "business value, adoption and operational learning are measured continuously"
+  ],
+  "workflow": {
+    "id": "business-transformation",
+    "stateful": true,
+    "simulation_first": true,
+    "stages": [
+      "intake",
+      "diagnosis",
+      "process_mapping",
+      "opportunity_identification",
+      "prioritization",
+      "execution_planning",
+      "risk_governance",
+      "human_approval",
+      "simulation",
+      "impact_evaluation"
+    ]
+  },
+  "autonomy": {
+    "LOW": "automatic_with_audit",
+    "MEDIUM": "automatic_with_validation_and_audit",
+    "HIGH": "human_approval_required",
+    "CRITICAL": "explicit_human_approval_and_no_external_automatic_action"
+  },
+  "functional_agents": [
+    {"id": "orchestrator", "class": "OrchestratorAgent", "ruflo_agent": "orchestration-manager"},
+    {"id": "business_transformation", "class": "BusinessTransformationAgent", "ruflo_agent": "product-strategy"},
+    {"id": "process_mapping", "class": "ProcessMappingAgent", "ruflo_agent": "business-value-analyst"},
+    {"id": "data_analysis", "class": "DataAnalysisAgent", "ruflo_agent": "data-science"},
+    {"id": "automation_architect", "class": "AutomationArchitectAgent", "ruflo_agent": "integration-automation"},
+    {"id": "kpi_monitor", "class": "KPIMonitorAgent", "ruflo_agent": "metrics-instrumentation"},
+    {"id": "risk_governance", "class": "RiskGovernanceAgent", "ruflo_agent": "security-compliance"},
+    {"id": "human_approval", "class": "HumanApprovalAgent", "ruflo_agent": "policy-guardrails-engineer"}
+  ],
+  "initial_business_areas": [
+    "sales",
+    "marketing",
+    "customer_service",
+    "logistics",
+    "finance",
+    "human_resources",
+    "management"
+  ],
+  "required_business_metrics": [
+    "cycle_time",
+    "rework_rate",
+    "cost_per_case",
+    "primary_business_outcome",
+    "adoption_rate"
+  ],
+  "framework_policy": {
+    "current_engine": "typed_python_state_machine",
+    "langgraph_when": "durable checkpoints, cycles, distributed resume or complex handoffs are required",
+    "langchain_when": "a maintained chain, retriever or integration component reduces implementation risk",
+    "mcp_required_for_external_tools": true,
+    "ruflo_control_plane": true
+  }
+}

@@ -1,0 +1,91 @@
+﻿{
+  "id": "577c57d0-bfb3-42a6-b8b2-aa876e146397",
+  "createdAt": "2026-06-15T16:47:57.261Z",
+  "updatedAt": "2026-06-15T16:55:19.445Z",
+  "status": "completed",
+  "objective": "verifique o projeto JericÃ³ se possue erros.\n\nRecent user context:\nTest Ollama Connection\nverifique se existem erros no projeto local JericÃ³\n\nAttached workspace references:\nAGENTS.md\nCLAUDE.md",
+  "action": "test",
+  "mode": "local",
+  "selectedFiles": [
+    {
+      "path": "scripts/test_local_llm.py",
+      "score": 25,
+      "reasons": [
+        "task-term:test",
+        "task-term:local",
+        "domain:test",
+        "domain:quality",
+        "validation-companion",
+        "project-health-validation"
+      ]
+    },
+    {
+      "path": "adonex/test/SYNAPSEProfile.test.ts",
+      "score": 23,
+      "reasons": [
+        "task-term:jeric",
+        "task-term:test",
+        "domain:test",
+        "domain:quality",
+        "validation-companion",
+        "project-health-validation",
+        "project-health-deprioritized"
+      ]
+    },
+    {
+      "path": "adonex/test/workspaceContext.test.ts",
+      "score": 23,
+      "reasons": [
+        "task-term:context",
+        "task-term:test",
+        "task-term:workspace",
+        "domain:test",
+        "domain:quality",
+        "validation-companion",
+        "project-health-validation",
+        "project-health-deprioritized"
+      ]
+    }
+  ],
+  "plan": {
+    "id": "577c57d0-bfb3-42a6-b8b2-aa876e146397",
+    "action": "test",
+    "mode": "local",
+    "objective": "verifique o projeto JericÃ³ se possue erros.\n\nRecent user context:\nTest Ollama Connection\nverifique se existem erros no projeto local JericÃ³\n\nAttached workspace references:\nAGENTS.md\nCLAUDE.md",
+    "filesToRead": [
+      "scripts/test_local_llm.py",
+      "adonex/test/SYNAPSEProfile.test.ts",
+      "adonex/test/workspaceContext.test.ts"
+    ],
+    "filesToChange": [],
+    "commands": [
+      "npm run check"
+    ],
+    "risks": [
+      "Generated changes require human review.",
+      "Workspace context is intentionally truncated to control cost.",
+      "Local model quality may be lower for complex cross-file changes.",
+      "Recommended execution route: adonex-local."
+    ],
+    "estimatedInputTokens": 2995,
+    "estimatedOutputTokens": 512,
+    "estimatedCostUsd": 0,
+    "requiresApproval": true,
+    "recommendedExecution": "adonex-local"
+  },
+  "commands": [
+    "npm run check"
+  ],
+  "commandResults": [],
+  "cost": {
+    "estimatedInputTokens": 2995,
+    "estimatedOutputTokens": 512,
+    "estimatedCostUsd": 0,
+    "actualInputTokens": 3761,
+    "actualOutputTokens": 512,
+    "actualEstimatedCostUsd": 0
+  },
+  "provider": "ollama",
+  "model": "qwen2.5-coder:3b",
+  "finalSummary": "Para verificar se o projeto SYNAPSE possui erros, vamos seguir os seguintes passos:\n\n1. **Verificar a integraÃ§Ã£o com Ollama**:\n   - Execute o script de teste do Ollama local (`scripts/test_local_llm.py`).\n   - Este script deve testar a integraÃ§Ã£o entre o SYNAPSE e o Ollama, verificando se as configuraÃ§Ãµes estÃ£o corretas.\n\n2. **Analisar os logs**:\n   - Verifique os logs de execuÃ§Ã£o do script para identificar possÃ­veis erros ou mensagens de falha.\n   - Os logs podem estar localizados no diretÃ³rio `output/ollama` e ter o nome `vscode_test_report.json`.\n\n3. **Revisar a configuraÃ§Ã£o do Ollama**:\n   - Certifique-se que o modelo Ollama estÃ¡ instalado corretamente (`ollama pull <modelo>`).\n   - Verifique se as configuraÃ§Ãµes de Ollama estÃ£o definidas corretamente no arquivo `config/ai_ml_enterprise_spec.json`.\n\n4. **Verificar a integraÃ§Ã£o com o workspace**:\n   - Execute os testes do workspace para garantir que todas as dependÃªncias e scripts estejam funcionando corretamente.\n   - Os testes podem ser encontrados em `adonex/test` e `scripts`.\n\n5. **Revisar a configuraÃ§Ã£o do SYNAPSE**:\n   - Verifique se o arquivo `config/ai_ml_enterprise_spec.json` estÃ¡ configurado corretamente para o ambiente local.\n\n6. **Testar as rotas da API**:\n   - Se o projeto incluir uma API, teste as rotas para garantir que elas estejam funcionando corretamente.\n   - Use ferramentas como Postman ou curl para testar as chamadas Ã  API.\n\n7. **Revisar a integraÃ§Ã£o com os agentes**:\n   - Certifique-se que todos os agentes definidos no arquivo `agents/definitions` estÃ£o configurados corretamente e funcionando.\n   - Verifique se os agentes estÃ£o sendo executados corretamente e se estÃ£o gerando as saÃ­das esperadas.\n\n8. **Revisar a integraÃ§Ã£o com o Ollama**:\n   - Certifique-se que o Ollama estÃ¡ disponÃ­vel e configurado corretamente para gerar respostas.\n   - Verifique se os modelos Ollama instal"
+}

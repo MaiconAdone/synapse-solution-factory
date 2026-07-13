@@ -1,0 +1,101 @@
+version: 1
+workflows:
+  - id: new-ai-project
+    strategy: hybrid
+    owner: orchestration-manager
+    parallel_agent_activation: true
+    parallel_groups:
+      - [product-strategy, data-engineering, data-science, machine-learning]
+      - [llm-engineering, rag-engineering, integration-automation, security-compliance]
+      - [backend-engineering, frontend-engineering, observability-ops, devops]
+      - [orchestration-manager, testing-qa, documentation]
+    agents:
+      - orchestration-manager
+      - product-strategy
+      - data-engineering
+      - data-science
+      - machine-learning
+      - llm-engineering
+      - rag-engineering
+      - backend-engineering
+      - frontend-engineering
+      - integration-automation
+      - security-compliance
+      - observability-ops
+      - devops
+      - testing-qa
+      - documentation
+    steps:
+      - dialog_briefing
+      - apply_book_playbooks
+      - define_business_outcome
+      - prepare_data_folder
+      - design_data_contract
+      - run_data_analysis_plan
+      - design_ml_baseline
+      - design_ai_agents
+      - design_rag_pipeline
+      - plan_integrations
+      - define_security_guardrails
+      - create_no_code_ui
+      - wire_backend_runtime
+      - define_observability
+      - initialize_memory
+      - initialize_swarm
+      - optimize_parallel_execution
+      - write_project_docs
+      - validate_stack
+  - id: rag-build
+    strategy: adaptive
+    owner: rag-engineering
+    agents:
+      - data-engineering
+      - llm-engineering
+      - testing-qa
+    steps:
+      - ingest_sources
+      - validate_documents
+      - chunk_documents
+      - generate_embeddings
+      - build_vector_index
+      - evaluate_retrieval
+  - id: ml-release
+    strategy: hierarchical
+    owner: machine-learning
+    agents:
+      - data-engineering
+      - testing-qa
+      - devops
+      - documentation
+    steps:
+      - define_problem
+      - design_eval
+      - train_or_tune
+      - validate
+      - release
+      - monitor
+  - id: business-transformation
+    strategy: stateful-governed
+    owner: orchestration-manager
+    agents:
+      - orchestration-manager
+      - product-strategy
+      - data-science
+      - integration-automation
+      - security-compliance
+      - testing-qa
+      - business-value-analyst
+      - metrics-instrumentation
+      - policy-guardrails-engineer
+    steps:
+      - intake
+      - diagnosis
+      - process_mapping
+      - data_readiness
+      - opportunity_identification
+      - prioritization
+      - execution_planning
+      - risk_governance
+      - human_approval
+      - simulation
+      - impact_evaluation

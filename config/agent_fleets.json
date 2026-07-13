@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "name": "synapse-agentic-mesh-fleets",
+  "description": "Governed fleets that compose Synapse's 60-agent Ruflo swarm into reusable AI, ML, RAG, MCP, security, cost, and project-factory teams.",
+  "fleet_defaults": {
+    "activation_policy": "cost_aware_on_demand",
+    "max_available_agents": 60,
+    "default_active_agents": 1,
+    "enterprise_active_agents": 8,
+    "trust_framework": "config/agent_trust_framework.json",
+    "human_approval_required_for_all_60_agents": true
+  },
+  "fleets": [
+    {
+      "id": "project_factory_fleet",
+      "name": "Project Factory Fleet",
+      "purpose": "Create ML, IA, hybrid, and Chatbolt projects with SDD, data treatment, cost-aware orchestration, and production checks.",
+      "universe": ["ml", "ia", "hybrid", "chatbolt"],
+      "lead_agent": "orchestration-manager",
+      "core_agents": ["orchestration-manager", "product-strategy", "data-engineering", "llm-engineering", "testing-qa"],
+      "specialist_agents": ["cost-optimizer", "token-budget-analyst", "agent-a2a-coordinator", "business-value-analyst"],
+      "success_metrics": ["project_created", "diagnostics_pass", "cost_policy_active", "sdd_complete"]
+    },
+    {
+      "id": "ml_fleet",
+      "name": "ML Fleet",
+      "purpose": "Design, train, evaluate, monitor, and release production ML systems.",
+      "universe": ["ml", "hybrid"],
+      "lead_agent": "machine-learning",
+      "core_agents": ["data-engineering", "data-science", "machine-learning", "testing-qa", "observability-ops"],
+      "specialist_agents": ["feature-engineering-specialist", "ml-baseline-engineer", "model-evaluation-specialist", "drift-monitoring-specialist", "mlflow-ops-specialist"],
+      "success_metrics": ["baseline_defined", "mlflow_logged", "model_card_complete", "drift_plan_defined"]
+    },
+    {
+      "id": "rag_fleet",
+      "name": "RAG Fleet",
+      "purpose": "Build governed RAG pipelines with retrieval evaluation, citations, and hallucination controls.",
+      "universe": ["ia", "hybrid", "chatbolt"],
+      "lead_agent": "rag-engineering",
+      "core_agents": ["llm-engineering", "rag-engineering", "data-engineering", "testing-qa", "security-compliance"],
+      "specialist_agents": ["vector-db-engineer", "embedding-specialist", "hybrid-search-engineer", "reranking-specialist", "context-compression-specialist", "graph-rag-engineer", "knowledge-governance"],
+      "success_metrics": ["retrieval_precision", "faithfulness", "citation_coverage", "latency_budget_met"]
+    },
+    {
+      "id": "mcp_fleet",
+      "name": "MCP and Tooling Fleet",
+      "purpose": "Design MCP adapters, tool calling, function schemas, and safe tool execution boundaries.",
+      "universe": ["ia", "hybrid", "chatbolt"],
+      "lead_agent": "integration-automation",
+      "core_agents": ["integration-automation", "backend-engineering", "llm-engineering", "security-compliance", "testing-qa"],
+      "specialist_agents": ["mcp-integration-specialist", "tool-calling-engineer", "function-schema-designer", "api-contract-reviewer", "policy-guardrails-engineer"],
+      "success_metrics": ["tool_contracts_valid", "permissions_reviewed", "fallbacks_defined", "mcp_health_checked"]
+    },
+    {
+      "id": "security_fleet",
+      "name": "Security and Trust Fleet",
+      "purpose": "Apply policy-governed autonomy, LGPD/privacy, threat modeling, and certification gates.",
+      "universe": ["ml", "ia", "hybrid", "chatbolt"],
+      "lead_agent": "security-compliance",
+      "core_agents": ["security-compliance", "testing-qa", "observability-ops", "documentation"],
+      "specialist_agents": ["privacy-lgpd-reviewer", "threat-modeling-specialist", "policy-guardrails-engineer", "qa-adversarial-tester"],
+      "success_metrics": ["policy_pass", "privacy_review_complete", "threat_model_complete", "approval_matrix_defined"]
+    },
+    {
+      "id": "cost_optimization_fleet",
+      "name": "Cost Optimization Fleet",
+      "purpose": "Reduce OpenAI/Anthropic token cost, latency, redundant context, and unnecessary agent activation.",
+      "universe": ["ml", "ia", "hybrid", "chatbolt"],
+      "lead_agent": "observability-ops",
+      "core_agents": ["observability-ops", "devops", "llm-engineering", "testing-qa"],
+      "specialist_agents": ["cost-optimizer", "latency-optimizer", "token-budget-analyst", "context-compression-specialist"],
+      "success_metrics": ["active_agents_below_60_by_default", "cached_token_ratio", "cost_per_request", "latency_ms"]
+    },
+    {
+      "id": "business_transformation_fleet",
+      "name": "Business Transformation Fleet",
+      "purpose": "Redesign enterprise processes, prioritize agentic opportunities, govern autonomy and measure business impact.",
+      "universe": ["ml", "ia", "hybrid", "chatbolt"],
+      "lead_agent": "orchestration-manager",
+      "core_agents": ["orchestration-manager", "product-strategy", "data-science", "integration-automation", "security-compliance", "testing-qa"],
+      "specialist_agents": ["business-value-analyst", "metrics-instrumentation", "policy-guardrails-engineer", "agent-a2a-coordinator"],
+      "success_metrics": ["business_baseline_defined", "process_mapped", "opportunities_prioritized", "approval_policy_enforced", "business_impact_measured"]
+    }
+  ]
+}

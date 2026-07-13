@@ -1,0 +1,369 @@
+{
+  "version": 1,
+  "name": "synapse-ai-framework-selection",
+  "selection_policy": {
+    "applies_to_universes": ["ia", "hybrid", "chatbolt"],
+    "codex_analyzes_request_first": true,
+    "ruflo_max_agents": 60,
+    "core_agents_always_active": 15,
+    "specialists_on_demand": 45,
+    "sdd_required_before_implementation": true,
+    "frameworks_are_candidates_not_mandatory_dependencies": true,
+    "selection_outputs": [
+      "scenario_classification",
+      "recommended_frameworks",
+      "agent_blueprint",
+      "rag_blueprint",
+      "llm_blueprint",
+      "mcp_blueprint",
+      "evaluation_plan",
+      "production_risks"
+    ]
+  },
+  "book_alignment": [
+    "AI Engineering - Chip Huyen: evals, feedback loops, product metrics, cost and latency tradeoffs.",
+    "Artificial Intelligence - Patrick Winston: problem representation, search, planning, decomposition, and explainability.",
+    "Cybernetics - Norbert Wiener: feedback loops, control signals, stability, communication, and human intervention thresholds.",
+    "The Society of Mind - Marvin Minsky: small specialized processes, orchestrated synthesis, conflict handling, and bounded roles.",
+    "The Emotion Machine - Marvin Minsky: operational state signals such as uncertainty, confidence, urgency, risk, and blocked execution.",
+    "Introduction to Algorithms - CLRS: correctness, complexity, graph workflows, queues, caches, scheduling, and routing tradeoffs.",
+    "Prompt Engineering for LLMs - Ziegler and Berryman: prompt contracts, examples, structured outputs, and regression cases.",
+    "The LLM Engineer's Handbook - Iusztin and Labonne: LLMOps, RAG, fine-tuning decisions, observability, and production pipelines.",
+    "Build a Large Language Model From Scratch - Sebastian Raschka: tokenization, embeddings, attention, model limits, and architectural intuition.",
+    "Production LLMs - Bouchard and Peters: reliability, monitoring, guardrails, fallbacks, deployment readiness, and cost control.",
+    "AI Agents in Action - Micheal Lanham: explicit tools, practical agent roles, planning, execution, and traceability.",
+    "Agentic Artificial Intelligence - Pascal Bornet and Jochen Wirtz: objective-driven agents, controlled autonomy, and human-agent collaboration.",
+    "Building Applications with AI Agents - Michael Albada: agent design, framework tradeoffs, single-agent versus multiagent decisions, and improvement loops."
+  ],
+  "frameworks": [
+    {
+      "id": "langgraph",
+      "name": "LangGraph",
+      "category": "agent_orchestration",
+      "best_for": ["stateful_agents", "graph_workflows", "human_in_the_loop", "durable_agent_state"],
+      "capabilities": ["agents", "llm", "tools", "workflow_graphs"],
+      "select_when": ["workflow_has_state", "handoffs_need_control", "agent_flow_needs_cycles_or_branches"],
+      "avoid_when": ["simple_single_prompt_task"]
+    },
+    {
+      "id": "llamaindex",
+      "name": "LlamaIndex",
+      "category": "rag_data_framework",
+      "best_for": ["rag", "document_ingestion", "query_engines", "data_connectors"],
+      "capabilities": ["rag", "llm", "indexing", "retrieval"],
+      "select_when": ["knowledge_base_is_primary", "many_document_sources", "retrieval_quality_is_core"],
+      "avoid_when": ["no_external_knowledge_needed"]
+    },
+    {
+      "id": "haystack",
+      "name": "Haystack",
+      "category": "rag_pipeline_framework",
+      "best_for": ["production_rag_pipelines", "components", "retrieval_qa", "search"],
+      "capabilities": ["rag", "pipelines", "retrieval", "evaluation"],
+      "select_when": ["pipeline_modularity_matters", "search_pipeline_needs_clear_components"],
+      "avoid_when": ["small_prompt_only_agent"]
+    },
+    {
+      "id": "openai-agents-sdk",
+      "name": "OpenAI Agents SDK",
+      "category": "agent_sdk",
+      "best_for": ["openai_native_agents", "tools", "handoffs", "tracing"],
+      "capabilities": ["agents", "llm", "tools", "handoffs", "observability"],
+      "select_when": ["openai_models_are_primary", "tool_calling_and_tracing_are_required", "agent_handoffs_are_needed"],
+      "avoid_when": ["provider_neutral_runtime_is_required"]
+    },
+    {
+      "id": "pydantic-ai",
+      "name": "Pydantic AI",
+      "category": "typed_agent_framework",
+      "best_for": ["typed_outputs", "structured_agents", "dependency_injection", "python_services"],
+      "capabilities": ["agents", "llm", "schemas", "validation"],
+      "select_when": ["typed_contracts_are_critical", "fastapi_pydantic_stack_is_primary"],
+      "avoid_when": ["visual_no_code_builder_is_required"]
+    },
+    {
+      "id": "crewai",
+      "name": "CrewAI",
+      "category": "role_based_agents",
+      "best_for": ["role_based_crews", "business_workflows", "sequential_or_collaborative_tasks"],
+      "capabilities": ["agents", "tasks", "tools", "multi_agent_workflows"],
+      "select_when": ["clear_roles_exist", "business_process_has_steps", "team_of_agents_should_collaborate"],
+      "avoid_when": ["low_level_graph_control_is_required"]
+    },
+    {
+      "id": "autogen",
+      "name": "AutoGen",
+      "category": "multi_agent_conversation_framework",
+      "best_for": ["multi_agent_conversations", "collaborative_problem_solving", "agent_chat_patterns", "research_and_coding_teams"],
+      "capabilities": ["agents", "multi_agent", "llm", "tools", "conversation_orchestration"],
+      "select_when": ["agents_need_to_discuss_or_critique_each_other", "multi_agent_collaboration_is_primary", "research_or_coding_agents_need_turn_taking"],
+      "avoid_when": ["deterministic_graph_control_is_required", "visual_no_code_builder_is_required"]
+    },
+    {
+      "id": "microsoft-agent-framework-semantic-kernel",
+      "name": "Microsoft Agent Framework / Semantic Kernel",
+      "category": "enterprise_agent_orchestration",
+      "best_for": ["enterprise_integrations", "skills_plugins", "dotnet_or_microsoft_stack", "semantic_functions"],
+      "capabilities": ["agents", "llm", "tools", "plugins", "enterprise_integration"],
+      "select_when": ["microsoft_stack_is_required", "plugin_architecture_is_core", "enterprise_governance_is_high"],
+      "avoid_when": ["minimal_python_only_stack_is_preferred"]
+    },
+    {
+      "id": "dify",
+      "name": "Dify",
+      "category": "llm_app_platform",
+      "best_for": ["no_code_llm_apps", "chatbots", "workflow_apps", "ops_ui"],
+      "capabilities": ["llm_apps", "rag", "workflows", "observability"],
+      "select_when": ["visual_app_builder_is_required", "operators_need_no_code_control"],
+      "avoid_when": ["fully_code_native_architecture_is_required"]
+    },
+    {
+      "id": "flowise",
+      "name": "Flowise",
+      "category": "visual_llm_flow_builder",
+      "best_for": ["visual_flows", "prototype_chains", "operator_editable_pipelines"],
+      "capabilities": ["llm", "rag", "flows", "tools"],
+      "select_when": ["visual_chain_builder_is_requested", "rapid_prototyping_is_primary"],
+      "avoid_when": ["strict_code_reviewed_backend_is_required"]
+    },
+    {
+      "id": "ragflow",
+      "name": "RAGFlow",
+      "category": "rag_platform",
+      "best_for": ["document_rag", "knowledge_base_qa", "enterprise_search"],
+      "capabilities": ["rag", "document_parsing", "retrieval", "qa"],
+      "select_when": ["document_understanding_is_primary", "rag_product_needs_ui_and_ingestion"],
+      "avoid_when": ["custom_lightweight_retrieval_is_enough"]
+    },
+    {
+      "id": "r2r",
+      "name": "R2R",
+      "category": "rag_api_platform",
+      "best_for": ["rag_api", "knowledge_graph_rag", "retrieval_service", "production_rag_backend"],
+      "capabilities": ["rag", "api", "knowledge_graph", "retrieval"],
+      "select_when": ["rag_should_be_exposed_as_api", "knowledge_graph_or_search_service_is_needed"],
+      "avoid_when": ["agent_only_solution_without_retrieval"]
+    },
+    {
+      "id": "mcp-sdks",
+      "name": "MCP SDKs",
+      "category": "tool_context_protocol",
+      "best_for": ["mcp_servers", "mcp_clients", "tool_exposure", "standardized_context"],
+      "capabilities": ["mcp", "tools", "resources", "prompts", "integration"],
+      "select_when": ["external_tools_or_context_must_be_exposed", "codex_ruflo_needs_standard_tool_boundary"],
+      "avoid_when": ["no_tools_or_external_context_needed"]
+    },
+    {
+      "id": "swarms",
+      "name": "Swarms",
+      "category": "large_multi_agent_orchestration",
+      "best_for": ["large_agent_teams", "parallel_exploration", "distributed_reasoning", "specialist_swarms"],
+      "capabilities": ["agents", "multi_agent", "parallelism", "orchestration"],
+      "select_when": ["many_specialists_are_needed", "parallel_exploration_is_beneficial", "task_can_be_decomposed_widely"],
+      "avoid_when": ["strict_small_deterministic_workflow_is_required"]
+    }
+  ],
+  "default_technology_recommendation": ["fastapi", "ollama", "mcp-servers"],
+  "technology_catalog": [
+    {
+      "id": "crewai",
+      "name": "CrewAI",
+      "category": "agentic_coding_and_business_agents",
+      "capabilities": ["agents", "role_based_workflows", "tools"],
+      "best_for": ["role_based_crews", "business_process_automation"],
+      "select_when": ["clear_roles_exist", "business_process_has_steps", "crew"],
+      "templates": ["templates/agents/crewai_project.yaml"]
+    },
+    {
+      "id": "swarms",
+      "name": "Swarms",
+      "category": "agentic_coding_and_business_agents",
+      "capabilities": ["agents", "multi_agent", "parallelism"],
+      "best_for": ["large_agent_teams", "parallel_exploration"],
+      "select_when": ["many_specialists_are_needed", "parallel", "swarm"],
+      "templates": ["templates/agents/swarms_council.yaml"]
+    },
+    {
+      "id": "langchain",
+      "name": "LangChain",
+      "category": "llm_application_framework",
+      "capabilities": ["llm", "chains", "tools", "rag"],
+      "best_for": ["provider_neutral_llm_apps", "tool_chains", "retrieval_apps"],
+      "select_when": ["chains", "tools", "provider_neutral", "langchain"],
+      "templates": ["templates/llm/langchain_service.py"]
+    },
+    {
+      "id": "langgraph",
+      "name": "LangGraph",
+      "category": "agent_orchestration",
+      "capabilities": ["agents", "workflow_graphs", "state", "human_in_the_loop"],
+      "best_for": ["stateful_agents", "graph_workflows", "approval_flows"],
+      "select_when": ["workflow_has_state", "handoff", "approval", "graph"],
+      "templates": ["templates/agents/langgraph_state_machine.py"]
+    },
+    {
+      "id": "langflow",
+      "name": "LangFlow",
+      "category": "visual_llm_builder",
+      "capabilities": ["visual_flows", "llm", "rag", "prototyping"],
+      "best_for": ["visual_prototyping", "operator_editable_flows"],
+      "select_when": ["visual", "builder", "prototype", "langflow"],
+      "templates": ["templates/no_code/langflow_export.json"]
+    },
+    {
+      "id": "flowise",
+      "name": "Flowise",
+      "category": "visual_llm_builder",
+      "capabilities": ["visual_flows", "llm", "rag", "tools"],
+      "best_for": ["rapid_prototyping", "operator_editable_pipelines"],
+      "select_when": ["visual", "flowise", "chain builder", "operator"],
+      "templates": ["templates/no_code/flowise_chatflow.json"]
+    },
+    {
+      "id": "dify",
+      "name": "Dify",
+      "category": "llm_app_platform",
+      "capabilities": ["llm_apps", "chatbots", "workflows", "rag", "observability"],
+      "best_for": ["no_code_llm_apps", "ops_ui", "chatbot_workflows"],
+      "select_when": ["no-code", "chatbot", "ops ui", "dify"],
+      "templates": ["templates/no_code/dify_app.yaml"]
+    },
+    {
+      "id": "n8n",
+      "name": "n8n",
+      "category": "automation_orchestration",
+      "capabilities": ["automation", "integrations", "webhooks", "pipelines"],
+      "best_for": ["business_automation", "integration_workflows", "scheduled_jobs"],
+      "select_when": ["automation", "webhook", "integration", "schedule", "n8n"],
+      "templates": ["templates/automation/n8n_workflow.json"]
+    },
+    {
+      "id": "firecrawl",
+      "name": "Firecrawl",
+      "category": "web_ingestion",
+      "capabilities": ["crawl", "scrape", "web_ingestion", "rag"],
+      "best_for": ["web_to_rag", "market_research", "site_ingestion"],
+      "select_when": ["crawl", "scrape", "web", "site", "firecrawl"],
+      "templates": ["templates/ingestion/firecrawl_job.yaml"]
+    },
+    {
+      "id": "deep-research",
+      "name": "Deep Research",
+      "category": "research_workflow",
+      "capabilities": ["research", "source_triage", "synthesis", "citations"],
+      "best_for": ["competitive_analysis", "evidence_synthesis", "market_discovery"],
+      "select_when": ["research", "benchmark", "market", "sources", "citations"],
+      "templates": ["templates/research/deep_research_brief.md"]
+    },
+    {
+      "id": "awesome-lists",
+      "name": "Awesome Lists",
+      "category": "technology_discovery",
+      "capabilities": ["discovery", "curation", "reference_catalog"],
+      "best_for": ["technology_landscape", "candidate_shortlists", "open_source_mapping"],
+      "select_when": ["awesome", "landscape", "technology catalog", "open source"],
+      "templates": ["templates/research/awesome_list_scan.md"]
+    },
+    {
+      "id": "vector-dbs",
+      "name": "Vector DBs",
+      "category": "retrieval_storage",
+      "capabilities": ["embeddings", "vector_search", "hybrid_search", "rag"],
+      "best_for": ["semantic_search", "document_retrieval", "memory_store"],
+      "select_when": ["vector", "embedding", "semantic search", "retrieval"],
+      "templates": ["templates/rag/vector_db_adapter.py"]
+    },
+    {
+      "id": "rag-frameworks",
+      "name": "RAG Frameworks",
+      "category": "rag_architecture",
+      "capabilities": ["rag", "retrieval", "reranking", "citations", "evals"],
+      "best_for": ["grounded_answers", "knowledge_bases", "enterprise_search"],
+      "select_when": ["rag", "knowledge base", "documents", "documentos", "conhecimento", "busca", "citations", "citacoes", "fontes"],
+      "templates": ["templates/rag/rag_pipeline.py"]
+    },
+    {
+      "id": "kag-knowledge-graph",
+      "name": "KAG / Knowledge Graph",
+      "category": "knowledge_graph",
+      "capabilities": ["knowledge_graph", "entity_resolution", "graph_retrieval", "reasoning"],
+      "best_for": ["entity_heavy_domains", "relationship_reasoning", "auditability"],
+      "select_when": ["knowledge graph", "kag", "relationships", "entities", "ontology"],
+      "templates": ["templates/knowledge_graph/graph_schema.yaml"]
+    },
+    {
+      "id": "mlflow",
+      "name": "MLflow",
+      "category": "mlops",
+      "capabilities": ["experiments", "model_registry", "metrics", "artifacts"],
+      "best_for": ["model_tracking", "baseline_comparison", "model_registry"],
+      "select_when": ["ml", "model", "experiment", "training", "metrics"],
+      "templates": ["templates/mlops/mlflow_experiment.py"]
+    },
+    {
+      "id": "fastapi",
+      "name": "FastAPI",
+      "category": "api_backend",
+      "capabilities": ["api", "backend", "typed_contracts", "serving"],
+      "best_for": ["production_api", "model_serving", "agent_gateway"],
+      "select_when": ["api", "backend", "service", "serving", "fastapi"],
+      "templates": ["templates/backend/fastapi_service.py"]
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "category": "local_llm_runtime",
+      "capabilities": ["local_llm", "privacy", "offline_inference", "model_routing"],
+      "best_for": ["local_first_ai", "private_data", "cost_control"],
+      "select_when": ["local", "ollama", "privacy", "offline", "custo"],
+      "templates": ["templates/llm/ollama_router.py"]
+    },
+    {
+      "id": "mcp-servers",
+      "name": "MCP servers",
+      "category": "tool_context_protocol",
+      "capabilities": ["mcp", "tools", "resources", "prompts", "integration"],
+      "best_for": ["tool_boundaries", "codex_adonex_integration", "standard_context"],
+      "select_when": ["mcp", "tools", "integration", "context", "server"],
+      "templates": ["templates/mcp/server.py"]
+    }
+  ],
+  "selection_rules": [
+    {
+      "scenario": "stateful_agent_workflow",
+      "signals": ["state", "handoff", "approval", "human", "workflow", "orchestration"],
+      "recommended": ["langgraph", "openai-agents-sdk", "pydantic-ai", "mcp-sdks"]
+    },
+    {
+      "scenario": "enterprise_rag",
+      "signals": ["rag", "documents", "knowledge", "search", "retrieval", "citations", "knowledge base"],
+      "recommended": ["llamaindex", "haystack", "ragflow", "r2r", "mcp-sdks"]
+    },
+    {
+      "scenario": "business_agent_team",
+      "signals": ["roles", "team", "process", "workflow", "tasks", "crew"],
+      "recommended": ["crewai", "autogen", "langgraph", "openai-agents-sdk", "mcp-sdks"]
+    },
+    {
+      "scenario": "multi_agent_conversation",
+      "signals": ["conversation", "debate", "critic", "collaboration", "research agents", "coding agents"],
+      "recommended": ["autogen", "langgraph", "crewai", "mcp-sdks"]
+    },
+    {
+      "scenario": "no_code_llm_app",
+      "signals": ["no-code", "visual", "builder", "operator", "dashboard", "chatbot"],
+      "recommended": ["dify", "flowise", "ragflow"]
+    },
+    {
+      "scenario": "large_parallel_agent_system",
+      "signals": ["many agents", "parallel", "swarm", "specialists", "distributed"],
+      "recommended": ["swarms", "langgraph", "mcp-sdks"]
+    },
+    {
+      "scenario": "microsoft_enterprise_stack",
+      "signals": ["microsoft", "azure", "dotnet", ".net", "semantic kernel", "teams"],
+      "recommended": ["microsoft-agent-framework-semantic-kernel", "mcp-sdks"]
+    }
+  ],
+  "default_recommendation": ["langgraph", "openai-agents-sdk", "pydantic-ai", "llamaindex", "mcp-sdks"]
+}

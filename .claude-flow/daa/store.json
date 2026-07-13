@@ -1,0 +1,30 @@
+{
+  "agents": {
+    "orchestration-manager": {
+      "id": "orchestration-manager",
+      "name": "Orchestration Manager",
+      "type": "orchestration",
+      "status": "active",
+      "cognitivePattern": "systems",
+      "learningRate": 0.2,
+      "memory": true,
+      "capabilities": [
+        "swarm_coordination",
+        "distributed_planning",
+        "workflow_governance",
+        "anti_drift",
+        "quality_gates"
+      ],
+      "metrics": {
+        "tasksCompleted": 0,
+        "successRate": 1,
+        "adaptations": 0
+      },
+      "createdAt": "2026-05-15T16:24:49.506Z",
+      "lastActivity": "2026-05-15T16:24:49.506Z"
+    }
+  },
+  "workflows": {},
+  "knowledge": {},
+  "version": "3.0.0"
+}

@@ -1,0 +1,425 @@
+{
+  "schema": "synapse-business-solution-analysis.v1",
+  "status": "analyzed",
+  "requested_universe": "ia",
+  "recommended_universe": "hybrid",
+  "dialog_context": {
+    "project_goal": "Substituir a Vick existente por assistente virtual local integrado ao AdoneX, sem criar projeto separado",
+    "business_problem": "Operar integralmente o AdoneX por voz, incluindo edicao, testes e comandos",
+    "success_metric_or_acceptance_criteria": "Manter o layout atual na porta 3000, ativacao por Vick, transcricao local e execucao governada funcionando",
+    "available_data_or_knowledge_sources": "microfone, workspace, memoria compartilhada, Ollama e ferramentas MCP",
+    "risk_level": "high"
+  },
+  "domain": {
+    "id": "developer_productivity",
+    "score": 2
+  },
+  "ml_archetype": {
+    "id": "speech_recognition",
+    "label": "Speech recognition and voice interaction",
+    "score": 3,
+    "matched_keywords": [
+      "voz",
+      "transcricao",
+      "microfone"
+    ],
+    "techniques": [
+      "wake_word_detection",
+      "automatic_speech_recognition",
+      "voice_activity_detection",
+      "domain_lexicon",
+      "human_review"
+    ],
+    "metrics": [
+      "wake_activation_p95_ms",
+      "word_accuracy",
+      "command_completion_rate",
+      "false_activation_rate"
+    ]
+  },
+  "ai_archetype": {
+    "id": "voice_coding_agent",
+    "label": "Voice-driven agentic coding assistant",
+    "score": 2,
+    "matched_keywords": [
+      "adonex",
+      "vick"
+    ],
+    "techniques": [],
+    "metrics": [
+      "task_success_rate",
+      "patch_test_pass_rate",
+      "human_approval_rate",
+      "rollback_success_rate",
+      "p95_task_latency_ms"
+    ]
+  },
+  "solution_stack": [
+    "data_treatment",
+    "tests",
+    "evals",
+    "governance",
+    "mlops",
+    "wake_word_detection",
+    "automatic_speech_recognition",
+    "voice_activity_detection",
+    "domain_lexicon",
+    "human_review",
+    "rag",
+    "agents",
+    "guardrails",
+    "token_cost_control",
+    "local_llm_routing"
+  ],
+  "technology_layer": {
+    "schema": "synapse-technology-layer.v1",
+    "active": true,
+    "universe": "hybrid",
+    "recommended_technology_ids": [
+      "ollama",
+      "mcp-servers",
+      "mlflow",
+      "fastapi"
+    ],
+    "recommended_technologies": [
+      {
+        "id": "mlflow",
+        "name": "MLflow",
+        "category": "mlops",
+        "capabilities": [
+          "experiments",
+          "model_registry",
+          "metrics",
+          "artifacts"
+        ],
+        "best_for": [
+          "model_tracking",
+          "baseline_comparison",
+          "model_registry"
+        ],
+        "select_when": [
+          "ml",
+          "model",
+          "experiment",
+          "training",
+          "metrics"
+        ],
+        "templates": [
+          "templates/mlops/mlflow_experiment.py"
+        ]
+      },
+      {
+        "id": "fastapi",
+        "name": "FastAPI",
+        "category": "api_backend",
+        "capabilities": [
+          "api",
+          "backend",
+          "typed_contracts",
+          "serving"
+        ],
+        "best_for": [
+          "production_api",
+          "model_serving",
+          "agent_gateway"
+        ],
+        "select_when": [
+          "api",
+          "backend",
+          "service",
+          "serving",
+          "fastapi"
+        ],
+        "templates": [
+          "templates/backend/fastapi_service.py"
+        ]
+      },
+      {
+        "id": "ollama",
+        "name": "Ollama",
+        "category": "local_llm_runtime",
+        "capabilities": [
+          "local_llm",
+          "privacy",
+          "offline_inference",
+          "model_routing"
+        ],
+        "best_for": [
+          "local_first_ai",
+          "private_data",
+          "cost_control"
+        ],
+        "select_when": [
+          "local",
+          "ollama",
+          "privacy",
+          "offline",
+          "custo"
+        ],
+        "templates": [
+          "templates/llm/ollama_router.py"
+        ]
+      },
+      {
+        "id": "mcp-servers",
+        "name": "MCP servers",
+        "category": "tool_context_protocol",
+        "capabilities": [
+          "mcp",
+          "tools",
+          "resources",
+          "prompts",
+          "integration"
+        ],
+        "best_for": [
+          "tool_boundaries",
+          "codex_adonex_integration",
+          "standard_context"
+        ],
+        "select_when": [
+          "mcp",
+          "tools",
+          "integration",
+          "context",
+          "server"
+        ],
+        "templates": [
+          "templates/mcp/server.py"
+        ]
+      }
+    ],
+    "categories": [
+      "mlops",
+      "api_backend",
+      "local_llm_runtime",
+      "tool_context_protocol"
+    ],
+    "capabilities": [
+      "experiments",
+      "model_registry",
+      "metrics",
+      "artifacts",
+      "api",
+      "backend",
+      "typed_contracts",
+      "serving",
+      "local_llm",
+      "privacy",
+      "offline_inference",
+      "model_routing",
+      "mcp",
+      "tools",
+      "resources",
+      "prompts",
+      "integration"
+    ],
+    "template_paths": [
+      "templates/mlops/mlflow_experiment.py",
+      "templates/backend/fastapi_service.py",
+      "templates/llm/ollama_router.py",
+      "templates/mcp/server.py"
+    ],
+    "selection_reason": "Selected by business-problem signals, universe requirements, and local-first Synapse defaults."
+  },
+  "ml_foundations": {
+    "active": true,
+    "policy_path": "config/ml_foundations_policy.json",
+    "spec_path": "docs/specifications/ml_foundations.md",
+    "reason": "Use foundational ML gates before model selection, training, evaluation, or release.",
+    "required_reasoning_gates": [
+      {
+        "id": "learning_problem_mapping",
+        "description": "Map experience, task, and performance measure before choosing a model.",
+        "required_outputs": [
+          "experience_data",
+          "prediction_task",
+          "performance_measure"
+        ]
+      },
+      {
+        "id": "hypothesis_space_and_bias",
+        "description": "Name the hypothesis family, its assumptions, and expected bias/variance tradeoff.",
+        "required_outputs": [
+          "hypothesis_family",
+          "bias_assumptions",
+          "variance_risk"
+        ]
+      },
+      {
+        "id": "probabilistic_assumptions",
+        "description": "State whether the solution needs probabilistic outputs, calibration, independence assumptions, or distributional checks.",
+        "required_outputs": [
+          "probability_model",
+          "calibration_need",
+          "distribution_checks"
+        ]
+      },
+      {
+        "id": "estimation_objective",
+        "description": "Define the estimation or loss objective used to fit the model.",
+        "required_outputs": [
+          "loss_function",
+          "estimator",
+          "optimization_method"
+        ]
+      },
+      {
+        "id": "statistical_validation",
+        "description": "Use holdout/cross-validation, confidence intervals, or hypothesis checks before claiming improvement.",
+        "required_outputs": [
+          "evaluation_split",
+          "confidence_or_significance_check",
+          "baseline_delta"
+        ]
+      },
+      {
+        "id": "regularization_and_optimization",
+        "description": "Document regularization, convergence, and optimization limits for fitted models.",
+        "required_outputs": [
+          "regularization",
+          "convergence_criteria",
+          "failure_modes"
+        ]
+      },
+      {
+        "id": "attribute_selection_transformation",
+        "description": "Review feature relevance, leakage risk, transformations, and dimensionality before release.",
+        "required_outputs": [
+          "feature_selection_policy",
+          "leakage_check",
+          "transformations"
+        ]
+      }
+    ],
+    "algorithm_guidance": {},
+    "required_artifacts": [
+      "docs/specifications/ml_foundations.md",
+      "ml_systems/data_contract.yaml",
+      "ml_systems/model_card.md",
+      "ml_systems/monitoring_plan.yaml",
+      "evals/ml_cases.jsonl"
+    ]
+  },
+  "architecture_blueprint": {
+    "style": "hybrid_mlops_rag_agent_architecture",
+    "framework_ids": [
+      "langgraph",
+      "openai-agents-sdk",
+      "pydantic-ai",
+      "llamaindex",
+      "mcp-sdks"
+    ],
+    "technology_ids": [
+      "ollama",
+      "mcp-servers",
+      "mlflow",
+      "fastapi"
+    ],
+    "components": [
+      "api_gateway",
+      "governance",
+      "tests",
+      "evals",
+      "observability",
+      "experiment_tracking",
+      "model_registry",
+      "drift_monitoring"
+    ],
+    "local_first": true,
+    "cloud_requires_explicit_approval": true
+  },
+  "pipeline_blueprints": [
+    {
+      "id": "solution_discovery",
+      "stages": [
+        "business_problem",
+        "universe_classification",
+        "technology_selection",
+        "sdd_gate"
+      ]
+    },
+    {
+      "id": "mlops",
+      "stages": [
+        "baseline",
+        "train",
+        "track",
+        "register",
+        "monitor"
+      ]
+    }
+  ],
+  "solution_templates": [
+    "templates/mlops/mlflow_experiment.py",
+    "templates/backend/fastapi_service.py",
+    "templates/llm/ollama_router.py",
+    "templates/mcp/server.py"
+  ],
+  "architecture_decision": "Create a hybrid project combining MLOps with RAG/agents so predictive intelligence and task execution share data contracts, tests, evals, and governance.",
+  "data_strategy": {
+    "data_contract_required": true,
+    "baseline_required": true,
+    "monitoring_required": true,
+    "primary_metrics": [
+      "wake_activation_p95_ms",
+      "word_accuracy",
+      "command_completion_rate",
+      "false_activation_rate"
+    ]
+  },
+  "test_strategy": [
+    "tests/test_project_contract.py",
+    "tests/test_evals_contract.py",
+    "tests/test_data_contract.py",
+    "tests/test_ml_contract.py",
+    "tests/test_ai_contract.py"
+  ],
+  "eval_strategy": [
+    "evals/project_cases.jsonl",
+    "evals/quality_gates.yaml",
+    "evals/ml_cases.jsonl using wake_activation_p95_ms, word_accuracy, command_completion_rate, false_activation_rate",
+    "evals/prompt_cases.jsonl",
+    "evals/rag_cases.jsonl"
+  ],
+  "ruflo_strategy": {
+    "default": "start_with_one_orchestrator",
+    "core_agents": 15,
+    "max_agents": 60,
+    "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
+    "recommended_fleets": [
+      "project_factory_fleet",
+      "ml_fleet",
+      "rag_fleet",
+      "cost_optimization_fleet"
+    ]
+  },
+  "book_alignment": [
+    "AI Engineering: define quality, cost, latency, safety, and evaluation gates before scaling models or agents.",
+    "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
+    "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
+    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
+    "Speech and Language Processing: evaluate ASR with word error/accuracy, domain vocabulary, and representative speech cases.",
+    "Designing Voice User Interfaces: separate wake, listening, recognition, handling, confirmation, and recovery states.",
+    "Effective Conversational AI: measure intent success and continuously improve from observed failures instead of relying on generic fallback copy.",
+    "Agentic Coding: engineer repository context, tool permissions, reusable workflows, validation hooks, and controlled execution.",
+    "Prompt Engineering for LLMs: compile spoken intent into an explicit objective, constraints, evidence, tools, and response contract."
+  ],
+  "required_artifacts": [
+    "docs/briefings/business_solution_analysis.md",
+    "config/business_solution_analysis.json",
+    "config/ai_framework_selection.json",
+    "config/ml_foundations_policy.json",
+    "docs/specifications/ml_foundations.md",
+    "config/voice_agent_quality_gates.json",
+    "evals/voice_agent_cases.jsonl",
+    "docs/specifications/voice_agentic_coding.md",
+    "evals/agentic_coding_cases.jsonl",
+    "tests/test_project_contract.py",
+    "tests/test_evals_contract.py",
+    "tests/test_data_contract.py",
+    "tests/test_ml_contract.py",
+    "tests/test_ai_contract.py"
+  ],
+  "project": "synapse",
+  "source": "scripts/analyze_business_solution.py"
+}

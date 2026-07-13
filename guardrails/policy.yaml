@@ -1,0 +1,15 @@
+version: 1
+input:
+  prompt_injection_check: required
+  pii_check: required
+retrieval:
+  permission_filtering: required
+  source_allowlist: recommended
+tools:
+  authorization_by_agent: required
+  destructive_actions_require_approval: required
+output:
+  schema_validation: required
+  citations_for_rag: required
+  unsupported_claim_policy: block_or_clarify
+

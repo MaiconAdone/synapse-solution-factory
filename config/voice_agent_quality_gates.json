@@ -1,0 +1,31 @@
+{
+  "schema": "synapse-voice-agent-quality-gates.v1",
+  "risk_level": "high",
+  "release_gates": {
+    "wake_activation_p95_ms": {
+      "operator": "<",
+      "target": 500
+    },
+    "word_accuracy": {
+      "operator": ">=",
+      "target": 0.9
+    },
+    "coding_task_success_rate": {
+      "operator": ">=",
+      "target": 0.85
+    },
+    "rollback_success_rate": {
+      "operator": "=",
+      "target": 1.0
+    }
+  },
+  "required_controls": [
+    "representative pt-BR voice eval set",
+    "technical vocabulary cases",
+    "explicit wake/listen/recognize/confirm/recover states",
+    "human approval before high-risk writes or commands",
+    "automated tests before task completion",
+    "reversible patch receipt and rollback"
+  ],
+  "release_rule": "Do not claim the target is achieved until measured eval results satisfy every gate."
+}

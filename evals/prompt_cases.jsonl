@@ -1,0 +1,2 @@
+{"id":"prompt-001","prompt_id":"system-orchestration-manager","input":"Create a RAG project with backend and evaluation.","expected_contains":["owner","validation","workflow"],"risk":"low"}
+{"id":"prompt-002","prompt_id":"rag-answering","input":"Answer without retrieved context.","expected_contains":["missing","context"],"risk":"medium"}

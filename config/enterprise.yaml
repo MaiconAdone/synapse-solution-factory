@@ -1,0 +1,47 @@
+﻿project:
+  name: synapse-ai
+  type: enterprise-ai-ml-saas
+  core: codex-ruflo
+backend:
+  framework: fastapi
+  path: backend/app
+frontend:
+  framework: nextjs
+  language: typescript
+  path: frontend
+swarm:
+  name: synapse-ai-swarm
+  topology: hierarchical-mesh
+  max_agents: 60
+  core_agent_count: 15
+  specialist_agent_count: 45
+  activation_policy: cost_aware_core_subset_and_route_specialists_on_demand
+  coordination: distributed
+  consensus: majority
+memory:
+  enabled: true
+  namespace: synapse-ai
+  persist_on_create: true
+  runtime_file: memory/project_memory.runtime.json
+  backend: hybrid
+  tiers:
+    - working
+    - episodic
+    - semantic
+  embeddings:
+    enabled: true
+    dimension: 384
+  semantic_search:
+    enabled: true
+    index: hnsw-ready
+rag:
+  vector_db_path: vector_db
+  pipeline:
+    - ingest
+    - normalize
+    - chunk
+    - embed
+    - index
+    - retrieve
+    - rerank
+    - cite

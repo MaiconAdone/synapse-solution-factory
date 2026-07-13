@@ -1,0 +1,19 @@
+﻿{
+  "agents": {
+    "agent-1781441864246-svc2er": {
+      "agentId": "agent-1781441864246-svc2er",
+      "agentType": "coordinator",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "provider": "anthropic",
+        "task": "Activate orchestration-manager for SYNAPSE-ai. Domain=orchestration. Memory=semantic. Pattern=systems."
+      },
+      "createdAt": "2026-06-14T12:57:44.255Z",
+      "model": "opus",
+      "modelRoutedBy": "router"
+    }
+  },
+  "version": "3.0.0"
+}

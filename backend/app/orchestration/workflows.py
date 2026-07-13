@@ -1,0 +1,47 @@
+WORKFLOW_CATALOG: list[dict[str, object]] = [
+    {
+        "id": "new-ai-project",
+        "name": "Create no-code ML/AI agent project",
+        "strategy": "hybrid",
+        "parallel_agent_activation": True,
+        "steps": [
+            "dialog_briefing",
+            "apply_book_playbooks",
+            "prepare_data_folder",
+            "design_ml_agents_rag",
+            "initialize_swarm",
+            "parallel_agent_execution",
+            "validate_stack",
+        ],
+    },
+    {
+        "id": "rag-build",
+        "name": "Build RAG knowledge base",
+        "strategy": "adaptive",
+        "steps": ["ingest", "chunk", "embed", "index", "evaluate", "publish"],
+    },
+    {
+        "id": "ml-release",
+        "name": "Ship ML/LLM change",
+        "strategy": "hierarchical",
+        "steps": ["design", "implement", "test", "evaluate", "document", "deploy"],
+    },
+    {
+        "id": "business-transformation",
+        "name": "Apply agentic AI to enterprise transformation",
+        "strategy": "stateful-governed",
+        "parallel_agent_activation": True,
+        "steps": [
+            "intake",
+            "diagnosis",
+            "process_mapping",
+            "opportunity_identification",
+            "prioritization",
+            "execution_planning",
+            "risk_governance",
+            "human_approval",
+            "simulation",
+            "impact_evaluation",
+        ],
+    },
+]

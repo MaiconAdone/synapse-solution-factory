@@ -1,0 +1,19 @@
+{
+  "name": "synapse-ai-runtime",
+  "private": true,
+  "scripts": {
+    "ruflo": "ruflo",
+    "ruflo:version": "ruflo --version",
+    "ruflo:install-embeddings": "agentdb install-embeddings",
+    "check:enterprise": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_enterprise_stack.ps1",
+    "check:backend": "python -m pytest tests/test_backend_contracts.py -q",
+    "check:frontend": "npm --prefix frontend run lint && npm --prefix frontend run build",
+    "check": "npm run check:enterprise && npm run check:backend && npm run check:frontend"
+  },
+  "devDependencies": {
+    "ruflo": "3.10.43"
+  },
+  "overrides": {
+    "sharp": "0.34.5"
+  }
+}

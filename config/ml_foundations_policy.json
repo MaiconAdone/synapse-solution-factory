@@ -1,0 +1,82 @@
+{
+  "schema": "synapse-ml-foundations-policy.v1",
+  "source": "Conceptual synthesis from the user-provided local PDF 'Foundations of Machine Learning - Lecture Notes'; no book text is copied.",
+  "purpose": "Turn classical ML foundations into operational gates for Synapse ML and hybrid solution design.",
+  "applies_to_universes": ["ml", "hybrid"],
+  "required_reasoning_gates": [
+    {
+      "id": "learning_problem_mapping",
+      "description": "Map experience, task, and performance measure before choosing a model.",
+      "required_outputs": ["experience_data", "prediction_task", "performance_measure"]
+    },
+    {
+      "id": "hypothesis_space_and_bias",
+      "description": "Name the hypothesis family, its assumptions, and expected bias/variance tradeoff.",
+      "required_outputs": ["hypothesis_family", "bias_assumptions", "variance_risk"]
+    },
+    {
+      "id": "probabilistic_assumptions",
+      "description": "State whether the solution needs probabilistic outputs, calibration, independence assumptions, or distributional checks.",
+      "required_outputs": ["probability_model", "calibration_need", "distribution_checks"]
+    },
+    {
+      "id": "estimation_objective",
+      "description": "Define the estimation or loss objective used to fit the model.",
+      "required_outputs": ["loss_function", "estimator", "optimization_method"]
+    },
+    {
+      "id": "statistical_validation",
+      "description": "Use holdout/cross-validation, confidence intervals, or hypothesis checks before claiming improvement.",
+      "required_outputs": ["evaluation_split", "confidence_or_significance_check", "baseline_delta"]
+    },
+    {
+      "id": "regularization_and_optimization",
+      "description": "Document regularization, convergence, and optimization limits for fitted models.",
+      "required_outputs": ["regularization", "convergence_criteria", "failure_modes"]
+    },
+    {
+      "id": "attribute_selection_transformation",
+      "description": "Review feature relevance, leakage risk, transformations, and dimensionality before release.",
+      "required_outputs": ["feature_selection_policy", "leakage_check", "transformations"]
+    }
+  ],
+  "algorithm_guidance": {
+    "classification_scoring": {
+      "foundation_topics": ["decision_trees", "naive_bayes", "logistic_regression", "maximum_entropy", "perceptron", "svm", "calibration"],
+      "synapse_candidates": ["logistic_regression", "neural_network_classifier"],
+      "missing_candidates_to_consider": ["decision_tree_baseline", "naive_bayes_baseline", "svm_margin_baseline"],
+      "metrics": ["accuracy", "precision", "recall", "f1", "log_loss", "calibration_error"]
+    },
+    "forecasting": {
+      "foundation_topics": ["regression", "regularization", "bias_variance", "hypothesis_testing"],
+      "synapse_candidates": ["moving_average_forecast", "seasonal_naive_forecast", "linear_regression", "ridge_regression"],
+      "missing_candidates_to_consider": ["regularized_time_feature_regression"],
+      "metrics": ["mae", "rmse", "mape", "forecast_bias"]
+    },
+    "segmentation_recommendation": {
+      "foundation_topics": ["non_parametric_density", "knn", "kernel_density", "similarity"],
+      "synapse_candidates": ["embedding_similarity"],
+      "missing_candidates_to_consider": ["knn_baseline", "kernel_density_baseline"],
+      "metrics": ["silhouette", "map_at_k", "ndcg"]
+    },
+    "anomaly_optimization": {
+      "foundation_topics": ["probability", "density_estimation", "optimization", "kkt_duality"],
+      "synapse_candidates": ["sensor_time_series", "simulation"],
+      "missing_candidates_to_consider": ["density_anomaly_baseline", "optimization_baseline"],
+      "metrics": ["precision_at_alert", "false_positive_rate", "cost_savings"]
+    },
+    "document_intelligence": {
+      "foundation_topics": ["naive_bayes", "maximum_entropy", "multiclass_classification", "feature_transformation"],
+      "synapse_candidates": ["nlp", "computer_vision", "deep_learning"],
+      "missing_candidates_to_consider": ["text_naive_bayes_baseline", "linear_text_classifier_baseline"],
+      "metrics": ["accuracy", "entity_f1", "human_review_rate"]
+    }
+  },
+  "required_artifacts": [
+    "docs/specifications/ml_foundations.md",
+    "ml_systems/data_contract.yaml",
+    "ml_systems/model_card.md",
+    "ml_systems/monitoring_plan.yaml",
+    "evals/ml_cases.jsonl"
+  ]
+}

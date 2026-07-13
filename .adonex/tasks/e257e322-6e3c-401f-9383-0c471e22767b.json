@@ -1,0 +1,67 @@
+﻿{
+  "id": "e257e322-6e3c-401f-9383-0c471e22767b",
+  "createdAt": "2026-06-15T17:07:37.072Z",
+  "updatedAt": "2026-06-15T17:09:57.791Z",
+  "status": "completed",
+  "objective": "verifique o projeto JericÃ³ se possue erros.\n\nRecent user context:\nTest Ollama Connection\nverifique se existem erros no projeto local JericÃ³\n\nAttached workspace references:\nAGENTS.md\nCLAUDE.md",
+  "action": "test",
+  "mode": "local",
+  "selectedFiles": [
+    {
+      "path": "adonex/package.json",
+      "score": 18,
+      "reasons": [
+        "project-manifest",
+        "build-contract",
+        "project-health-contract"
+      ]
+    }
+  ],
+  "plan": {
+    "id": "e257e322-6e3c-401f-9383-0c471e22767b",
+    "action": "test",
+    "mode": "local",
+    "objective": "verifique o projeto JericÃ³ se possue erros.",
+    "filesToRead": [
+      "adonex/package.json"
+    ],
+    "filesToChange": [],
+    "commands": [
+      "npm run check"
+    ],
+    "risks": [
+      "Generated changes require human review.",
+      "Workspace context is intentionally truncated to control cost.",
+      "Local model quality may be lower for complex cross-file changes.",
+      "Recommended execution route: adonex-local."
+    ],
+    "estimatedInputTokens": 2828,
+    "estimatedOutputTokens": 512,
+    "estimatedCostUsd": 0,
+    "requiresApproval": true,
+    "recommendedExecution": "adonex-local"
+  },
+  "commands": [
+    "npm run check"
+  ],
+  "commandResults": [
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "stdout": "\n> check\n> npm run check:enterprise && npm run check:backend && npm run check:frontend\n\n\n> check:enterprise\n> powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_enterprise_stack.ps1\n\nListing 'backend\\\\app'...\r\nListing 'backend\\\\app\\\\adapters'...\r\nListing 'backend\\\\app\\\\agents'...\r\nListing 'backend\\\\app\\\\governance'...\r\nListing 'backend\\\\app\\\\models'...\r\nListing 'backend\\\\app\\\\orchestration'...\r\nListing 'backend\\\\app\\\\rag'...\r\nListing 'backend\\\\app\\\\repositories'...\r\nListing 'backend\\\\app\\\\routes'...\r\nListing 'backend\\\\app\\\\schemas'...\r\nListing 'backend\\\\app\\\\services'...\r\nListing 'backend\\\\app\\\\tools'...\r\nListing 'tests'...\r\nruntime_manifest_ok\r\npractice_paths_ok\r\nenterprise_ai_ml_spec_ok\r\nai_framework_selection_ok\r\ncost_aware_router_ok\r\nagentic_mesh_governance_ok\r\ngoverned_ruflo_ollama_bridge_ok\r\ncontinual_learning_governance_ok\r\nagent_blueprint_contract_ok\r\nruflo_adapter_contract_ok\r\nnew_project_parallel_activation_ok\r\nnew_project_60_agent_contract_ok\r\n\"next build\"\r\nenterprise_stack_ok\n\n> check:backend\n> python -m pytest tests/test_backend_contracts.py -q\n\n........................................................................ [ 87%]\r\n..........                                                               [100%]\r\n82 passed in 66.02s (0:01:06)\r\n\n> check:frontend\n> npm --prefix frontend run lint && npm --prefix frontend run build\n\n\n> lint\n> tsc --noEmit\n\n\n> build\n> next build\n\nâ–² Next.js 16.2.6 (Turbopack)\n\n  Creating an optimized production build ...\nâœ“ Compiled successfully in 7.5s\n  Running TypeScript ...\n  Finished TypeScript in 7.1s ...\n  Collecting page data using 11 workers ...\n  Generating static pages using 11 workers (0/11) ...\n  Generating static pages using 11 workers (2/11) \r\n  Generating static pages using 11 workers (5/11) \r\n  Generating static pages using 11 workers (8/11) \r\nâœ“ Generating static pages using 11 workers (11/11) in 938ms\n  Finalizing page optimization ...\n\nRoute (app)\nâ”Œ Æ’ /\nâ”œ â—‹ /_not-found\nâ”œ Æ’ /agents\nâ”œ Æ’ /api/SYNAPSE/[...path]\nâ”œ â—‹ /login\nâ”œ Æ’ /memory\nâ”œ Æ’ /mlflow\nâ”œ â—‹ /ops\nâ”œ â—‹ /projects\nâ”œ Æ’ /swarm\nâ”” Æ’ /workflows\n\n\nâ—‹  (Static)   prerendered as static content\nÆ’  (Dynamic)  server-rendered on demand\n\n",
+      "stderr": "",
+      "durationMs": 140648,
+      "timedOut": false
+    }
+  ],
+  "cost": {
+    "estimatedInputTokens": 2828,
+    "estimatedOutputTokens": 512,
+    "estimatedCostUsd": 0,
+    "actualInputTokens": 0,
+    "actualOutputTokens": 0,
+    "actualEstimatedCostUsd": 0
+  },
+  "finalSummary": "Objetivo: verifique o projeto JericÃ³ se possue erros.\nNenhum arquivo foi alterado.\nValidacao aprovada: npm run check.\nModo: local. Custo estimado: $0.000000.",
+  "commitSuggestion": "analyze(adonex): verifique o projeto jericÃ³ se possue erros"
+}

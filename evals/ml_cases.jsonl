@@ -1,0 +1,2 @@
+{"id":"ml-001","task":"classification","baseline_metric":"f1","minimum_delta":0.02,"requires_model_card":true}
+{"id":"ml-002","task":"forecasting","baseline_metric":"mae","maximum_regression":0.01,"requires_drift_plan":true}

@@ -1,0 +1,175 @@
+{
+  "schema": "synapse-llm-solution-factory-policy.v1",
+  "owner": "synapse",
+  "purpose": "Make every LLM assistant follow the same business-solution analysis, architecture, governance, tests, evals, and local-first model routing when creating or implementing projects.",
+  "applies_to": [
+    "Codex",
+    "Claude Code",
+    "AdoneX",
+    "VS Code chat",
+    "Ruflo",
+    "Ollama local models",
+    "project-specific generated assistants"
+  ],
+  "dialog_first": {
+    "required": true,
+    "description": "Project creation and implementation should be driven by the local chat/dialog request in VS Code, Claude Code, AdoneX or Codex. Browser UI and VS Code tasks are optional shortcuts, never the required path.",
+    "authorized_user_request_channels": [
+      "VS Code Chat",
+      "AdoneX chat participant",
+      "Claude Code chat/terminal",
+      "Codex chat"
+    ],
+    "content_collection_rule": "All user-provided goals, constraints, files, decisions, approvals, and missing business context for corporate solution creation must be requested and confirmed through these assistant chat channels.",
+    "non_primary_channels": [
+      "VS Code tasks",
+      "browser UI",
+      "scripts",
+      "MCP tools"
+    ],
+    "non_primary_channel_rule": "Non-primary channels may execute shortcuts, validation, scaffolding, or tool calls only after the assistant chat flow has collected or confirmed the required user content.",
+    "minimum_dialog_fields": [
+      "project_goal",
+      "business_problem",
+      "requested_universe",
+      "success_metric_or_acceptance_criteria",
+      "available_data_or_knowledge_sources",
+      "risk_level"
+    ],
+    "if_missing": "Ask only for the missing business context before implementation unless the user explicitly asks for discovery."
+  },
+  "missing_information_protocol": {
+    "required": true,
+    "rule": "If any minimum dialog field or universe-specific decision is missing, ask the user in the chat before creating or implementing.",
+    "communication_style": "clear, objective, short questions in Portuguese when the user is speaking Portuguese",
+    "max_questions_per_turn": 5,
+    "do_not_guess": [
+      "business_problem",
+      "success_metric_or_acceptance_criteria",
+      "available_data_or_knowledge_sources",
+      "risk_level",
+      "human_approval_for_cloud_or_all_60_agents"
+    ],
+    "allowed_inference": [
+      "requested_universe may be inferred from the user's wording, but must be confirmed when ambiguous",
+      "technical archetype may be inferred by BusinessSolutionAnalyzer after minimum dialog fields are present"
+    ],
+    "assistant_response_when_missing": "Return the missing fields and ask direct questions instead of implementing."
+  },
+  "mandatory_flow": [
+    "classify request as project creation, project implementation, data treatment, ML/DL/time-series, RAG, chatbot, agent, or hybrid",
+    "check minimum dialog fields and ask the user for missing information before implementation",
+    "read shared dialog memory before asking the user to repeat context",
+    "append a short task summary to shared dialog memory for chat-requested work",
+    "run or consult the business solution analyzer before choosing architecture",
+    "write or update config/business_solution_analysis.json and docs/briefings/business_solution_analysis.md for projects",
+    "for ML or hybrid projects, apply config/ml_foundations_policy.json before model selection, training, evaluation, or release",
+    "apply SDD gate before implementation",
+    "select the technology layer from config/ai_framework_selection.json before creating frameworks, agents, pipelines, templates, MCP servers, RAG or MLOps components",
+    "select universe and solution stack from the analysis",
+    "prefer local Ollama models for triage, classification, planning, summarization, and code review",
+    "use cloud models only after explicit user request and human approval",
+    "start with one orchestrator and scale Ruflo specialists only when the problem requires additional domains",
+    "never activate all 60 agents by default",
+    "create or update tests and evals according to the selected universe",
+    "validate with deterministic tests before reporting completion"
+  ],
+  "source_of_truth": {
+    "business_catalog": "config/business_solution_catalog.json",
+    "technology_catalog": "config/ai_framework_selection.json",
+    "technology_layer_spec": "docs/specifications/technology_layer.md",
+    "ml_foundations_policy": "config/ml_foundations_policy.json",
+    "ml_foundations_spec": "docs/specifications/ml_foundations.md",
+    "analyzer_service": "backend/app/services/business_solution_analyzer.py",
+    "analyzer_cli": "scripts/analyze_business_solution.py",
+    "analysis_json": "config/business_solution_analysis.json",
+    "analysis_briefing": "docs/briefings/business_solution_analysis.md",
+    "shared_dialog_memory": ".adonex/memory/SHARED_DIALOG_MEMORY.md",
+    "chat_tasks": ".adonex/memory/CHAT_TASKS.md",
+    "peer_mailbox": "synapse-peers",
+    "runtime_manifest": "config/runtime_manifest.json",
+    "enterprise_spec": "config/ai_ml_enterprise_spec.json",
+    "cost_policy": "config/cost_optimization_policy.json",
+    "agentic_mesh": [
+      "config/agent_trust_framework.json",
+      "config/agent_fleets.json",
+      "config/agent_blueprint_contract.json",
+      "config/agentic_architectural_patterns.json",
+      "config/agent_improvement_loop.json"
+    ],
+    "test_layer": "tests",
+    "eval_layer": "evals"
+  },
+  "architecture_rules": {
+    "ml": [
+      "Use MLOps architecture with data contract, baseline, feature pipeline, model card, MLflow artifacts, monitoring, drift checks, tests, and evals.",
+      "Map experience, task, performance measure, hypothesis space, assumptions, estimation objective, validation strategy, regularization, and feature transformations before choosing algorithms.",
+      "Use math/statistics metrics appropriate to the business problem before optimizing models."
+    ],
+    "ia": [
+      "Use AI engineering architecture with RAG, MCP/tool boundaries, agents when action is required, guardrails, token cost controls, local model routing, tests, and evals.",
+      "Prefer RAG for trusted knowledge and agents for multi-step execution."
+    ],
+    "chatbolt": [
+      "Use chatbot architecture for conversation, RAG for trusted answers, handoff policy, session memory, guardrails, safety evals, and chatbot-specific tests.",
+      "Do not treat chatbot, RAG, and agent as the same pattern."
+    ],
+    "hybrid": [
+      "Combine MLOps and AI engineering only when the business problem needs prediction plus knowledge or action.",
+      "Share data contracts, governance, tests, evals, observability, and cost policy across both sides."
+    ]
+  },
+  "assistant_contracts": {
+    "codex": [
+      "Read AGENTS.md and this policy before planning project creation or implementation.",
+      "Use scripts/analyze_business_solution.py or BusinessSolutionAnalyzer for architecture selection.",
+      "Collect or confirm all user-requested business content through Codex chat before relying on tasks, scripts, browser UI, or tools.",
+      "Use the same Synapse project artifacts as VS Code Chat, AdoneX, and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
+      "Implement the smallest safe change that satisfies the analysis and tests."
+    ],
+    "claude_code": [
+      "Read CLAUDE.md and this policy before planning.",
+      "Use the analysis as the architecture decision record for coding, review, and agent coordination.",
+      "Collect or confirm all user-requested business content through Claude Code chat/terminal before relying on tasks, scripts, browser UI, or tools.",
+      "Use the same Synapse project artifacts as VS Code Chat, AdoneX, and Codex: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
+      "Respect prompt caching and do not resend large catalogs unless required."
+    ],
+    "adonex": [
+      "In VS Code chat, route Synapse project-creation and implementation questions through the analyzer policy.",
+      "Use /projeto or natural language in the native VS Code chat to collect missing business context.",
+      "Collect or confirm all user-requested business content through the AdoneX chat participant before relying on tasks, scripts, browser UI, or tools.",
+      "Use the same Synapse project artifacts as VS Code Chat, Codex, and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
+      "Use Ollama local by default and produce Codex handoff only for complex multi-file work."
+    ],
+    "vscode_chat": [
+      "The user can request project creation or implementation directly in chat.",
+      "The assistant should ask for missing business context, run/consult analyzer, then create/update project artifacts.",
+      "Collect or confirm all user-requested business content through VS Code Chat before relying on tasks, scripts, browser UI, or tools.",
+      "Use the same Synapse project artifacts as AdoneX, Codex, and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
+      "Do not require browser access to finish the briefing or architecture decision."
+    ]
+  },
+  "validation": {
+    "required_paths": [
+      "config/llm_solution_factory_policy.json",
+      "config/business_solution_catalog.json",
+      "config/ai_framework_selection.json",
+      "backend/app/services/business_solution_analyzer.py",
+      "backend/app/services/ai_framework_selector.py",
+      "scripts/analyze_business_solution.py",
+      "docs/specifications/llm_solution_factory_governance.md",
+      "docs/specifications/technology_layer.md",
+      "docs/specifications/ml_foundations.md",
+      "AGENTS.md",
+      "CLAUDE.md"
+    ],
+    "project_required_paths": [
+      "config/business_solution_analysis.json",
+      "config/ml_foundations_policy.json",
+      "docs/briefings/business_solution_analysis.md",
+      "tests/test_project_contract.py",
+      "tests/test_evals_contract.py",
+      "tests/test_data_contract.py"
+    ]
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "name": "synapse-agentic-mesh-trust-framework",
+  "purpose": "Govern agents and fleets with identity, permissions, autonomy limits, observability, certification, and lifecycle controls.",
+  "layers": [
+    {
+      "id": "identity_authentication",
+      "name": "Identity and Authentication",
+      "required_controls": [
+        "stable_agent_id",
+        "version",
+        "owner",
+        "runtime_identity",
+        "mcp_identity_binding"
+      ]
+    },
+    {
+      "id": "authorization_tools",
+      "name": "Authorization and Tool Permissions",
+      "required_controls": [
+        "allowed_tools",
+        "denied_tools",
+        "human_approval_for_destructive_actions",
+        "least_privilege_tool_scope",
+        "governed_model_routing"
+      ]
+    },
+    {
+      "id": "purpose_policy",
+      "name": "Purpose and Policy",
+      "required_controls": [
+        "business_purpose",
+        "domain_boundaries",
+        "policy_guardrails",
+        "data_handling_rules"
+      ]
+    },
+    {
+      "id": "planning_explainability",
+      "name": "Planning and Explainability",
+      "required_controls": [
+        "plan_before_action",
+        "decision_rationale",
+        "handoff_contract",
+        "conflict_escalation"
+      ]
+    },
+    {
+      "id": "observability_sre",
+      "name": "Observability and Agent SRE",
+      "required_controls": [
+        "structured_logs",
+        "latency_metrics",
+        "token_metrics",
+        "cost_metrics",
+        "fleet_health",
+        "model_provider_audit",
+        "ruflo_memory_trace"
+      ]
+    },
+    {
+      "id": "certification_compliance",
+      "name": "Certification and Compliance",
+      "required_controls": [
+        "agent_evals",
+        "prompt_regression",
+        "tool_permission_review",
+        "security_review",
+        "certification_status"
+      ]
+    },
+    {
+      "id": "lifecycle_governance",
+      "name": "Lifecycle Governance",
+      "required_controls": [
+        "versioning",
+        "deprecation_policy",
+        "rollback_plan",
+        "owner_review",
+        "release_gate"
+      ]
+    }
+  ],
+  "autonomy_matrix": {
+    "allowed_autonomous_actions": [
+      "read_project_files",
+      "summarize_context",
+      "propose_architecture",
+      "generate_tests",
+      "run_non_destructive_validations",
+      "write_docs_and_specs_when_requested"
+    ],
+    "requires_human_approval": [
+      "delete_files",
+      "modify_secrets",
+      "deploy_to_production",
+      "change_auth_or_permissions",
+      "activate_all_60_agents",
+      "call_external_paid_services_at_scale"
+    ],
+    "prohibited_actions": [
+      "exfiltrate_secrets",
+      "bypass_sdd_gates",
+      "disable_security_controls",
+      "hide_tool_failures",
+      "fabricate_evaluation_results"
+    ]
+  },
+  "certification_statuses": [
+    "draft",
+    "validated",
+    "certified",
+    "deprecated"
+  ],
+  "default_agent_certification": "validated",
+  "default_fleet_certification": "validated"
+}

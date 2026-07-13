@@ -1,0 +1,6 @@
+{"id":"wake-only","reference":"Vick","intent":"activate","expected_state":"listening","max_activation_ms":500}
+{"id":"wake-code-fix","reference":"Vick corrija o roteamento do AdoneX","intent":"code_fix","expected_command":"corrija o roteamento do AdoneX"}
+{"id":"wake-technical-terms","reference":"Vick revise o TypeScript, o MCP e os testes do Ollama","intent":"code_review","required_terms":["TypeScript","MCP","Ollama"]}
+{"id":"wake-project-context","reference":"Vick analise o Synapse antes de editar","intent":"code_analysis","required_terms":["Synapse"]}
+{"id":"no-wake","reference":"corrija o arquivo sem ativar a Vick","intent":"ignore","expected_state":"asleep"}
+{"id":"ambiguous-write","reference":"Vick apague isso","intent":"clarify","requires_confirmation":true}

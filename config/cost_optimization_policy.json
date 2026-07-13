@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "name": "synapse-cost-aware-orchestration",
+  "goal": "Keep Ruflo capable of 60 agents while activating only the minimum useful agent set and model tier for each ML, IA, or hybrid request.",
+  "ruflo": {
+    "max_available_agents": 60,
+    "core_agent_count": 15,
+    "specialist_agent_count": 45,
+    "default_active_agents": 1,
+    "standard_active_agents": 3,
+    "enterprise_active_agents": 8,
+    "emergency_max_active_agents": 60,
+    "activate_all_60_requires_explicit_high_complexity": true
+  },
+  "activation_profiles": {
+    "simple": {
+      "active_agent_limit": 1,
+      "specialist_limit": 0,
+      "token_budget": 1200,
+      "model_tier": "economy",
+      "rag_mode": "metadata_or_keyword_first"
+    },
+    "standard": {
+      "active_agent_limit": 3,
+      "specialist_limit": 1,
+      "token_budget": 3000,
+      "model_tier": "balanced",
+      "rag_mode": "semantic_search_with_optional_hybrid"
+    },
+    "advanced": {
+      "active_agent_limit": 5,
+      "specialist_limit": 2,
+      "token_budget": 5000,
+      "model_tier": "balanced",
+      "rag_mode": "hybrid_search_with_context_compression"
+    },
+    "enterprise": {
+      "active_agent_limit": 8,
+      "specialist_limit": 4,
+      "token_budget": 8000,
+      "model_tier": "strong",
+      "rag_mode": "hybrid_search_rerank_when_needed"
+    },
+    "extreme": {
+      "active_agent_limit": 15,
+      "specialist_limit": 8,
+      "token_budget": 16000,
+      "model_tier": "strong",
+      "rag_mode": "advanced_rag_with_graph_only_when_needed"
+    }
+  },
+  "model_routing": {
+    "economy_tasks": [
+      "classification",
+      "routing",
+      "summarization",
+      "schema_checks",
+      "data_profiling",
+      "boilerplate_generation"
+    ],
+    "balanced_tasks": [
+      "implementation",
+      "rag_answering",
+      "agent_design",
+      "test_generation",
+      "data_pipeline_design"
+    ],
+    "strong_tasks": [
+      "architecture_review",
+      "security_review",
+      "conflict_resolution",
+      "final_decision",
+      "high_risk_production_changes"
+    ]
+  },
+  "token_controls": {
+    "prefer_prompt_cache": true,
+    "prefer_semantic_cache": true,
+    "compress_context_before_llm": true,
+    "deduplicate_context": true,
+    "send_only_role_specific_context": true,
+    "summarize_agent_outputs_before_consolidation": true,
+    "track_cached_tokens": true,
+    "track_uncached_input_tokens": true,
+    "track_output_tokens": true
+  },
+  "provider_guidance": {
+    "openai": {
+      "prompt_cache": "Keep stable system, tool, and architecture prefixes at the beginning of prompts and log cached_tokens from usage details."
+    },
+    "anthropic": {
+      "prompt_cache": "Use cacheable static context for system instructions, tools, specs, and long reusable documents when requests share the same prefix."
+    }
+  },
+  "rag_cost_policy": {
+    "default_order": [
+      "metadata_filtering",
+      "semantic_search",
+      "hybrid_search",
+      "context_compression",
+      "reranking",
+      "parent_child_retrieval",
+      "graph_rag"
+    ],
+    "rerank_only_when_confidence_below": 0.72,
+    "graph_rag_only_when_relationship_queries": true,
+    "max_context_chunks_default": 3,
+    "max_context_chunks_enterprise": 6
+  },
+  "success_metrics": [
+    "quality_score",
+    "cost_per_request",
+    "latency_ms",
+    "active_agent_count",
+    "cached_token_ratio",
+    "retrieval_precision",
+    "test_pass_rate"
+  ]
+}

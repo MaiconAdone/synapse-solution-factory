@@ -1,0 +1,37 @@
+version: 1
+pipeline:
+  ingest:
+    owner: data-engineering
+    checks:
+      - source_allowed
+      - pii_scan
+      - format_supported
+  chunk:
+    owner: rag-engineering
+    strategy: semantic_with_overlap
+    metadata_required:
+      - source_id
+      - document_id
+      - created_at
+      - permissions
+  embed:
+    owner: rag-engineering
+    dimension: 384
+  retrieve:
+    owner: rag-engineering
+    methods:
+      - semantic
+      - metadata_filter
+  rerank:
+    owner: llm-engineering
+    enabled: true
+  answer:
+    owner: llm-engineering
+    citations_required: true
+  evaluate:
+    owner: testing-qa
+    metrics:
+      - recall_at_k
+      - faithfulness
+      - answer_relevance
+

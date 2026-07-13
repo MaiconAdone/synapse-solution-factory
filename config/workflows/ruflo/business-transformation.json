@@ -1,0 +1,25 @@
+{
+  "name": "business-transformation",
+  "description": "Diagnose, redesign, govern and measure an enterprise process with agentic AI.",
+  "execution": {
+    "mode": "stateful-governed",
+    "coordination": "orchestration-manager",
+    "simulationFirst": true,
+    "humanApprovalFor": ["HIGH", "CRITICAL"],
+    "functionalAgentProfiles": "agents/definitions/business_transformation_agents.yaml"
+  },
+  "steps": [
+    {"name": "intake", "agent": "orchestration-manager"},
+    {"name": "diagnosis", "agent": "product-strategy"},
+    {"name": "process_mapping", "agent": "business-value-analyst"},
+    {"name": "data_readiness", "agent": "data-science"},
+    {"name": "opportunity_identification", "agent": "llm-engineering"},
+    {"name": "automation_architecture", "agent": "integration-automation"},
+    {"name": "kpi_design", "agent": "metrics-instrumentation"},
+    {"name": "risk_governance", "agent": "security-compliance"},
+    {"name": "human_approval", "agent": "policy-guardrails-engineer"},
+    {"name": "simulation", "agent": "testing-qa"},
+    {"name": "impact_evaluation", "agent": "business-value-analyst"},
+    {"name": "final_report", "agent": "documentation"}
+  ]
+}

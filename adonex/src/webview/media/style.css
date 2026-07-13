@@ -1,0 +1,348 @@
+﻿:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--vscode-foreground);
+  background: var(--vscode-sideBar-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-sideBar-background);
+}
+
+.brand {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.state-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--vscode-panel-border);
+  background: var(--vscode-editor-inactiveSelectionBackground);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.state-badge.info {
+  color: var(--vscode-textLink-foreground);
+}
+
+.state-badge.success {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.state-badge.error {
+  color: var(--vscode-errorForeground);
+}
+
+.synapse-status {
+  padding: 8px;
+  border-left: 3px solid var(--vscode-testing-iconPassed);
+  background: var(--vscode-editor-inactiveSelectionBackground);
+  font-size: 11px;
+}
+
+.vick-cockpit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--vscode-textLink-foreground) 10%, transparent), transparent 46%),
+    var(--vscode-editor-inactiveSelectionBackground);
+}
+
+.vick-meter {
+  display: grid;
+  grid-template-columns: repeat(5, 4px);
+  align-items: end;
+  gap: 3px;
+  width: 32px;
+  height: 26px;
+}
+
+.vick-meter span {
+  display: block;
+  min-height: 6px;
+  border-radius: 2px;
+  background: var(--vscode-textLink-foreground);
+  opacity: 0.55;
+}
+
+.vick-meter span:nth-child(2) {
+  height: 16px;
+}
+
+.vick-meter span:nth-child(3) {
+  height: 24px;
+}
+
+.vick-meter span:nth-child(4) {
+  height: 13px;
+}
+
+.vick-cockpit[data-state="listening"] .vick-meter span,
+.vick-cockpit[data-state="thinking"] .vick-meter span,
+.vick-cockpit[data-state="editing"] .vick-meter span,
+.vick-cockpit[data-state="validating"] .vick-meter span {
+  animation: vick-level 0.78s ease-in-out infinite alternate;
+  opacity: 0.95;
+}
+
+.vick-cockpit[data-state="muted"],
+.vick-cockpit[data-state="disabled"] {
+  opacity: 0.72;
+}
+
+.vick-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.vick-copy strong {
+  font-size: 15px;
+}
+
+#vickState {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.vick-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@keyframes vick-level {
+  from {
+    transform: scaleY(0.55);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+main {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+#history {
+  display: grid;
+  gap: 10px;
+  min-height: 120px;
+  max-height: 42vh;
+  overflow: auto;
+}
+
+.message {
+  padding-left: 8px;
+  border-left: 2px solid var(--vscode-textLink-foreground);
+}
+
+.message.error {
+  border-color: var(--vscode-errorForeground);
+}
+
+pre {
+  margin: 6px 0 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+}
+
+.composer,
+#plan,
+#diff {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.lifecycle {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  background: var(--vscode-editor-inactiveSelectionBackground);
+}
+
+.lifecycle-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.lifecycle-step {
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  border-left: 3px solid var(--vscode-panel-border);
+  background: var(--vscode-sideBar-background);
+}
+
+.lifecycle-step strong {
+  font-size: 12px;
+}
+
+.lifecycle-step span {
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.lifecycle-step p {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.lifecycle-step.active {
+  border-color: var(--vscode-textLink-foreground);
+}
+
+.lifecycle-step.completed {
+  border-color: var(--vscode-testing-iconPassed);
+}
+
+.lifecycle-step.blocked {
+  border-color: var(--vscode-errorForeground);
+}
+
+.lifecycle-step.skipped {
+  opacity: 0.65;
+}
+
+#validation,
+#final {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+textarea,
+select,
+button {
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 4px;
+  font: inherit;
+}
+
+textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 8px;
+  resize: vertical;
+}
+
+select,
+button {
+  min-height: 30px;
+  padding: 5px 8px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+button.primary {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 360px) {
+  .vick-actions,
+  .lifecycle-steps,
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+#estimate {
+  color: var(--vscode-descriptionForeground);
+  font-size: 11px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.diff-view {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--vscode-panel-border);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  white-space: pre;
+}
+
+.diff-view > div {
+  min-height: 18px;
+  padding: 1px 6px;
+}
+
+.diff-add {
+  background: var(--vscode-diffEditor-insertedTextBackground);
+}
+
+.diff-remove {
+  background: var(--vscode-diffEditor-removedTextBackground);
+}
+
+.diff-hunk {
+  color: var(--vscode-textLink-foreground);
+  background: var(--vscode-editor-inactiveSelectionBackground);
+}
+
+.diff-meta {
+  color: var(--vscode-descriptionForeground);
+}

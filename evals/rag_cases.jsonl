@@ -1,0 +1,2 @@
+{"id":"rag-001","query":"What is the enterprise swarm topology?","expected_source":"config/runtime_manifest.json","expected_answer_contains":["hierarchical-mesh"],"metric":"faithfulness"}
+{"id":"rag-002","query":"Which memory tiers are available?","expected_source":"config/runtime_manifest.json","expected_answer_contains":["working","episodic","semantic"],"metric":"recall_at_k"}

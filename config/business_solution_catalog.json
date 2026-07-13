@@ -1,0 +1,116 @@
+{
+  "schema": "synapse-business-solution-catalog.v1",
+  "source": "business problems supplied for ML/DL/time-series and AI/RAG/agent universes",
+  "principles": [
+    "translate business problem into measurable solution archetype before project creation",
+    "prefer data contracts, baselines, model cards, evals, tests, monitoring, and release gates",
+    "separate deterministic tests from probabilistic evals",
+    "prefer chatbot for conversation, RAG for trusted knowledge, and agents for multi-step execution",
+    "use local-first governed routing and activate Ruflo specialists on demand"
+  ],
+  "ml_archetypes": [
+    {
+      "id": "speech_recognition",
+      "label": "Speech recognition and voice interaction",
+      "keywords": ["voz", "asr", "wake word", "reconhecimento de voz", "transcricao", "fala", "microfone", "speech", "tts", "vui"],
+      "techniques": ["wake_word_detection", "automatic_speech_recognition", "voice_activity_detection", "domain_lexicon", "human_review"],
+      "required_artifacts": ["config/voice_agent_quality_gates.json", "evals/voice_agent_cases.jsonl", "docs/specifications/voice_agentic_coding.md"],
+      "metrics": ["wake_activation_p95_ms", "word_accuracy", "command_completion_rate", "false_activation_rate"]
+    },
+    {
+      "id": "forecasting",
+      "label": "Forecasting and planning",
+      "keywords": ["previsao", "forecast", "demanda", "vendas", "receita", "fluxo de caixa", "estoque", "ruptura", "capacidade", "energia", "ocupacao", "sazonalidade"],
+      "techniques": ["time_series", "regression", "baseline_forecast", "drift_monitoring"],
+      "required_artifacts": ["ml_systems/data_contract.yaml", "ml_systems/model_card.md", "ml_systems/monitoring_plan.yaml", "evals/ml_cases.jsonl"],
+      "metrics": ["MAE", "RMSE", "MAPE", "forecast_bias"]
+    },
+    {
+      "id": "classification_scoring",
+      "label": "Classification, scoring and prioritization",
+      "keywords": ["churn", "lead", "score", "risco", "inadimplencia", "conversao", "priorizacao", "turnover", "evasao", "sla", "cancelar", "propensao"],
+      "techniques": ["supervised_ml", "logistic_regression", "tree_ensembles", "calibration"],
+      "required_artifacts": ["ml_systems/data_contract.yaml", "ml_systems/model_card.md", "evals/ml_cases.jsonl"],
+      "metrics": ["AUC", "precision", "recall", "F1", "calibration_error"]
+    },
+    {
+      "id": "segmentation_recommendation",
+      "label": "Segmentation and recommendation",
+      "keywords": ["segmentacao", "cluster", "personalizacao", "recomendacao", "cross-sell", "upsell", "conteudo", "produto", "treinamento"],
+      "techniques": ["clustering", "recommendation", "ranking", "embedding_similarity"],
+      "required_artifacts": ["ml_systems/data_contract.yaml", "experiments/baselines", "evals/ml_cases.jsonl"],
+      "metrics": ["silhouette", "MAP@K", "NDCG", "conversion_lift"]
+    },
+    {
+      "id": "anomaly_optimization",
+      "label": "Anomaly detection and optimization",
+      "keywords": ["fraude", "anomalia", "falha", "manutencao", "desperdicio", "perda", "devolucao", "inconsistencia", "otimizacao", "rota", "preco"],
+      "techniques": ["anomaly_detection", "optimization", "simulation", "sensor_time_series"],
+      "required_artifacts": ["ml_systems/data_contract.yaml", "ml_systems/monitoring_plan.yaml", "evals/ml_cases.jsonl"],
+      "metrics": ["precision_at_alert", "false_positive_rate", "cost_savings", "downtime_reduction"]
+    },
+    {
+      "id": "document_intelligence",
+      "label": "Document, NLP and computer vision intelligence",
+      "keywords": ["ocr", "documento", "contrato", "nota fiscal", "boleto", "extracao", "classificacao documental", "imagem", "laudo", "sentimento", "texto"],
+      "techniques": ["nlp", "computer_vision", "ocr", "deep_learning", "human_review"],
+      "required_artifacts": ["ml_systems/data_contract.yaml", "guardrails/policy.yaml", "evals/ml_cases.jsonl"],
+      "metrics": ["accuracy", "entity_f1", "ocr_error_rate", "human_review_rate"]
+    }
+  ],
+  "ai_archetypes": [
+    {
+      "id": "voice_coding_agent",
+      "label": "Voice-driven agentic coding assistant",
+      "keywords": ["adonex", "vick", "coding agent", "edicao de codigo", "editar codigo", "programacao por voz", "comando de voz", "ide", "terminal", "rollback", "patch"],
+      "best_for": ["voice-driven software engineering", "context-aware code changes", "governed terminal and IDE workflows", "human-approved patches"],
+      "required_artifacts": ["docs/specifications/voice_agentic_coding.md", "config/voice_agent_quality_gates.json", "evals/voice_agent_cases.jsonl", "evals/agentic_coding_cases.jsonl"],
+      "metrics": ["task_success_rate", "patch_test_pass_rate", "human_approval_rate", "rollback_success_rate", "p95_task_latency_ms"]
+    },
+    {
+      "id": "chatbot",
+      "label": "Conversational chatbot",
+      "keywords": ["chatbot", "chat", "whatsapp", "duvidas", "faq", "atendimento", "triagem", "conversa", "orientar", "captar lead"],
+      "best_for": ["high-volume repetitive conversation", "first response", "lead capture", "guided triage"],
+      "required_artifacts": ["prompts/chatbot_assistant.md", "evals/chatbot_cases.jsonl", "docs/checklists/chatbot_quality_checklist.md"],
+      "metrics": ["containment_rate", "handoff_quality", "csat", "safety_refusal_quality"]
+    },
+    {
+      "id": "rag",
+      "label": "Retrieval augmented generation",
+      "keywords": ["rag", "documentos", "pdf", "politica", "manual", "base de conhecimento", "norma", "contrato", "runbook", "glossario", "fonte oficial"],
+      "best_for": ["trusted answers from internal knowledge", "policy lookup", "contract search", "technical documentation"],
+      "required_artifacts": ["rag_pipelines", "evals/rag_cases.jsonl", "guardrails/policy.yaml"],
+      "metrics": ["retrieval_recall", "groundedness", "citation_precision", "answer_relevance"]
+    },
+    {
+      "id": "agent",
+      "label": "AI agent workflow",
+      "keywords": ["agente", "executar", "abrir chamado", "enviar email", "atualizar crm", "consultar sistema", "gerar proposta", "remarcar", "automatizar", "workflow", "multiplos passos"],
+      "best_for": ["multi-step task execution", "system integration", "operational automation", "backoffice workflows"],
+      "required_artifacts": ["config/agent_blueprint_contract.json", "config/agent_fleets.json", "evals/project_cases.jsonl"],
+      "metrics": ["task_success_rate", "tool_error_rate", "approval_rate", "cost_per_task"]
+    },
+    {
+      "id": "chatbot_rag_agent",
+      "label": "Chatbot + RAG + agent",
+      "keywords": ["status do pedido", "segunda via", "reembolso", "agendamento", "suporte complexo", "pedido atrasado", "consulta e executa", "base oficial e acao"],
+      "best_for": ["conversation plus trusted knowledge plus action", "complex support", "sales assistance", "operational self-service"],
+      "required_artifacts": ["prompts/chatbot_assistant.md", "rag_pipelines", "config/agent_blueprint_contract.json", "evals/chatbot_cases.jsonl", "evals/rag_cases.jsonl"],
+      "metrics": ["task_success_rate", "groundedness", "handoff_quality", "cost_per_conversation"]
+    }
+  ],
+  "domains": [
+    {"id": "developer_productivity", "keywords": ["codigo", "coding", "programacao", "desenvolvedor", "ide", "terminal", "patch", "adonex", "vick", "synapse"]},
+    {"id": "sales_revenue", "keywords": ["vendas", "receita", "lead", "cliente", "cross-sell", "upsell", "proposta", "crm", "carrinho"]},
+    {"id": "marketing_customer", "keywords": ["marketing", "campanha", "sentimento", "conteudo", "personalizacao", "conversao", "marca"]},
+    {"id": "operations_supply_chain", "keywords": ["operacao", "logistica", "estoque", "entrega", "rota", "fornecedor", "compras", "suprimentos"]},
+    {"id": "finance_risk", "keywords": ["financeiro", "credito", "risco", "fraude", "inadimplencia", "caixa", "cobranca", "despesa"]},
+    {"id": "support_service", "keywords": ["suporte", "atendimento", "chamado", "sla", "reclamacao", "ticket"]},
+    {"id": "hr_people", "keywords": ["rh", "pessoas", "turnover", "curriculo", "ferias", "beneficio", "onboarding", "colaborador"]},
+    {"id": "industry_maintenance", "keywords": ["industria", "producao", "maquina", "sensor", "manutencao", "qualidade visual", "energia"]},
+    {"id": "documents_legal_compliance", "keywords": ["juridico", "contrato", "compliance", "documento", "fiscal", "nota fiscal", "auditoria"]},
+    {"id": "health_insurance", "keywords": ["saude", "clinica", "hospital", "seguro", "sinistro", "paciente", "exame"]},
+    {"id": "education_training", "keywords": ["educacao", "treinamento", "aluno", "curso", "aprendizagem", "evasao", "tutor"]}
+  ]
+}

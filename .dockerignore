@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+frontend/.next
+frontend/node_modules
+backend/.venv
+__pycache__
+.pytest_cache
+*.pyc
+*.pyo
+*.log
+agentdb.rvf
+agentdb.rvf.lock

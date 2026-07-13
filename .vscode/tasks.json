@@ -1,0 +1,611 @@
+{
+  "version": "2.0.0",
+  "inputs": [
+    {
+      "id": "projectName",
+      "type": "promptString",
+      "description": "Nome do novo projeto IA/ML"
+    },
+    {
+      "id": "projectType",
+      "type": "pickString",
+      "description": "Universo do projeto",
+      "options": [
+        "ML",
+        "IA",
+        "ML + IA (Hibrido)",
+        "Chatbolt"
+      ],
+      "default": "ML + IA (Hibrido)"
+    },
+    {
+      "id": "projectGoal",
+      "type": "promptString",
+      "description": "Objetivo do projeto"
+    },
+    {
+      "id": "businessProblem",
+      "type": "promptString",
+      "description": "Problema de negocio que o projeto precisa resolver"
+    },
+    {
+      "id": "dataFile",
+      "type": "promptString",
+      "description": "Arquivo para tratar (ex.: data/raw/clientes.csv)"
+    },
+    {
+      "id": "attachmentPath",
+      "type": "promptString",
+      "description": "Foto ou arquivo para anexar ao projeto (caminho completo ou relativo)"
+    },
+    {
+      "id": "contextFile",
+      "type": "promptString",
+      "description": "Arquivo grande para filtrar antes de enviar ao LLM/Ruflo"
+    },
+    {
+      "id": "ollamaModel",
+      "type": "pickString",
+      "description": "Modelo local instalado no Ollama",
+      "options": [
+        "qwen2.5-coder:3b",
+        "qwen2.5-coder:14b",
+        "deepseek-coder-v2:lite",
+        "qwen2.5-coder:32b"
+      ],
+      "default": "qwen2.5-coder:3b"
+    }
+  ],
+  "tasks": [
+    {
+      "label": "Vick: Abrir assistente web automaticamente",
+      "detail": "Sobe a Vick web em http://127.0.0.1:3000 e abre o navegador quando o projeto Synapse e carregado no VS Code.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "Start-Sleep -Seconds 3; Start-Process \"http://127.0.0.1:3000\""
+      ],
+      "dependsOn": [
+        "Vick: Serviço local de voz",
+        "Dev: Backend FastAPI no VS Code",
+        "Dev: Frontend Next.js no VS Code"
+      ],
+      "dependsOrder": "parallel",
+      "isBackground": false,
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "clear": false,
+        "focus": false
+      }
+    },
+    {
+      "label": "Vick: Serviço local de voz",
+      "detail": "Captura e transcreve voz localmente com Faster Whisper e entrega comandos governados ao AdoneX.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}\\scripts\\vick_voice_service.py",
+        "--port",
+        "8765",
+        "--model",
+        "tiny",
+        "--window-seconds",
+        "2.0",
+        "--command-idle-seconds",
+        "1.8"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vick-local-voice",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Vick voice local",
+          "endsPattern": "Vick voice local em"
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "group": "vick-voice",
+        "clear": false,
+        "focus": false
+      }
+    },
+    {
+      "label": "Synapse: Testar LLM local Ollama",
+      "detail": "Valida o Ollama e executa uma solicitacao real do Synapse no VS Code, sem navegador e sem custo por token de API.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "python ${workspaceFolder}\\scripts\\test_local_llm.py --model \"${input:ollamaModel}\""
+      ],
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Synapse: Market Radar + Context Filter",
+      "detail": "Busca sinais em HN Show/Product Hunt, classifica oportunidades para o Synapse e gera relatorio com contexto filtrado.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "python ${workspaceFolder}\\scripts\\market_radar.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Synapse: Filtrar contexto para LLM/Ruflo",
+      "detail": "Remove ruido, duplicacao e excesso de contexto para reduzir tokens antes de acionar OpenAI, Anthropic ou Ruflo.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "python ${workspaceFolder}\\scripts\\context_filter.py --input \"${input:contextFile}\" --output ${workspaceFolder}\\output\\context_filter\\filtered_context.txt --max-chars 12000"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados",
+      "detail": "Cria projeto com contexto economico para Codex, ativa Ruflo real com poucos agentes ativos, mantem pool escalavel ate 60 sob demanda e inclui tratamento de dados.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\create_ai_project.ps1",
+        "-NomeProjeto",
+        "${input:projectName}",
+        "-TipoProjeto",
+        "${input:projectType}",
+        "-ProjectGoal",
+        "${input:projectGoal}",
+        "-BusinessProblem",
+        "${input:businessProblem}",
+        "-ActiveAgentLimit",
+        "3",
+        "-ActivateRuflo"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "AI Factory: Anexar foto ou arquivo ao projeto",
+      "detail": "Copia uma foto ou arquivo para o projeto criado e registra manifesto para Codex, Ruflo e o pool de agentes.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\import_project_file.ps1",
+        "-ProjectName",
+        "${input:projectName}",
+        "-InputPath",
+        "${input:attachmentPath}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Synapse: Diagnosticar projeto criado",
+      "detail": "Audita um projeto criado pelo Synapse e valida universo, Ruflo 60 agents, tratamento de dados, anexos e frameworks IA quando aplicavel.",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\diagnose_project.ps1",
+        "-ProjectName",
+        "${input:projectName}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "AI Factory: Menu interativo",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\ai_factory_menu.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Enterprise: Validar stack",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\validate_enterprise_stack.ps1"
+      ],
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Enterprise: Bootstrap sem servidores",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\bootstrap_enterprise_stack.ps1",
+        "-SkipRuflo"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Enterprise: Start Ruflo Swarm",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\start_ruflo_swarm.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Codex: Tratar dados com Ruflo economico",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\codex_data_treatment_dialog.ps1",
+        "-InputPath",
+        "${input:dataFile}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Dados: Tratar dataset estatistico",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "python ${workspaceFolder}\\scripts\\treat_dataset.py --input \"${input:dataFile}\""
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Evals: Rodar testes ML",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\run_ml_evals.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Evals: Rodar testes IA",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\run_ai_evals.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Enterprise: Preparar memoria local sem Ruflo CLI",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\start_ruflo_swarm.ps1",
+        "-SkipRufloCli"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Dev: MLflow Tracking no VS Code",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "New-Item -ItemType Directory -Force -Path artifacts\\mlflow\\artifacts | Out-Null; python -m mlflow server --backend-store-uri sqlite:///artifacts/mlflow/mlflow.db --default-artifact-root ./artifacts/mlflow/artifacts --host 127.0.0.1 --port 5000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "python",
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "mlflow server",
+          "endsPattern": "Listening at"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev-mlflow",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Dev: Backend FastAPI no VS Code",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--reload",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}\\backend",
+        "env": {
+          "PYTHONPATH": "."
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "python",
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Started server process|Will watch for changes",
+          "endsPattern": "Uvicorn running on"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev-backend",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Dev: Frontend Next.js no VS Code",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "npm install --prefer-offline --no-audit --no-fund; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; npm run dev -- --hostname 127.0.0.1 --port 3000"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}\\frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "next dev",
+          "endsPattern": "Ready in"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev-frontend",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "Synapse: Iniciar modo navegador independente",
+      "dependsOn": [
+        "Dev: Backend FastAPI no VS Code",
+        "Dev: Frontend Next.js no VS Code"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": false
+      }
+    },
+    {
+      "label": "Synapse: Preparar runtime VS Code sem navegador",
+      "dependsOn": [
+        "Enterprise: Validar stack",
+        "Enterprise: Start Ruflo Swarm"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": false
+      }
+    },
+    {
+      "label": "Abrir: Runtime Manifest",
+      "type": "shell",
+      "command": "code",
+      "args": ["${workspaceFolder}\\config\\runtime_manifest.json"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Abrir: Agentes Enterprise",
+      "type": "shell",
+      "command": "code",
+      "args": ["${workspaceFolder}\\agents\\definitions\\enterprise_agents.yaml"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Abrir: Workflows Enterprise",
+      "type": "shell",
+      "command": "code",
+      "args": ["${workspaceFolder}\\config\\workflows\\enterprise_workflows.yaml"],
+      "problemMatcher": []
+    }
+  ]
+}

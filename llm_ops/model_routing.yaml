@@ -1,0 +1,13 @@
+version: 1
+tiers:
+  - name: fast
+    use_when: simple classification, extraction, routing
+  - name: balanced
+    use_when: normal product workflows
+  - name: advanced
+    use_when: architecture, security, complex reasoning
+policy:
+  route_by_eval_quality: true
+  route_by_cost_budget: true
+  record_decision: true
+

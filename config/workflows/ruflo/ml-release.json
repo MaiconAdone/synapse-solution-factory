@@ -1,0 +1,12 @@
+{
+  "name": "ml-release",
+  "description": "Release an ML/LLM change with evaluation and documentation gates.",
+  "steps": [
+    {"name": "define_problem", "agent": "machine-learning"},
+    {"name": "design_eval", "agent": "testing-qa"},
+    {"name": "train_or_tune", "agent": "machine-learning"},
+    {"name": "validate", "agent": "testing-qa"},
+    {"name": "release", "agent": "devops"},
+    {"name": "monitor", "agent": "documentation"}
+  ]
+}

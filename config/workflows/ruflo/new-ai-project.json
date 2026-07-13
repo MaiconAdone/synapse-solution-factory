@@ -1,0 +1,37 @@
+{
+  "name": "new-ai-project",
+  "description": "Create and validate a no-code ML/AI agents project from a user dialog.",
+  "execution": {
+    "mode": "hybrid",
+    "parallelAgentActivation": true,
+    "coordination": "orchestration-manager",
+    "tokenStrategy": "route only domain-specific context to each agent and consolidate through orchestration-manager",
+    "parallelGroups": [
+      ["product-strategy", "data-engineering", "data-science", "machine-learning"],
+      ["llm-engineering", "rag-engineering", "integration-automation", "security-compliance"],
+      ["backend-engineering", "frontend-engineering", "observability-ops", "devops"],
+      ["orchestration-manager", "testing-qa", "documentation"]
+    ]
+  },
+  "steps": [
+    {"name": "dialog_briefing", "agent": "orchestration-manager"},
+    {"name": "apply_book_playbooks", "agent": "orchestration-manager"},
+    {"name": "define_business_outcome", "agent": "product-strategy"},
+    {"name": "prepare_data_folder", "agent": "data-engineering"},
+    {"name": "design_data_contract", "agent": "data-engineering"},
+    {"name": "run_data_analysis_plan", "agent": "data-science"},
+    {"name": "design_ml_baseline", "agent": "machine-learning"},
+    {"name": "design_ai_agents", "agent": "llm-engineering"},
+    {"name": "design_rag_pipeline", "agent": "rag-engineering"},
+    {"name": "plan_integrations", "agent": "integration-automation"},
+    {"name": "define_security_guardrails", "agent": "security-compliance"},
+    {"name": "create_no_code_ui", "agent": "frontend-engineering"},
+    {"name": "wire_backend_runtime", "agent": "backend-engineering"},
+    {"name": "define_observability", "agent": "observability-ops"},
+    {"name": "initialize_memory", "agent": "orchestration-manager"},
+    {"name": "initialize_swarm", "agent": "orchestration-manager"},
+    {"name": "optimize_parallel_execution", "agent": "devops"},
+    {"name": "write_project_docs", "agent": "documentation"},
+    {"name": "validate_stack", "agent": "testing-qa"}
+  ]
+}

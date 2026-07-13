@@ -1,0 +1,18 @@
+version: 1
+trace_fields:
+  - request_id
+  - user_workflow
+  - model
+  - prompt_id
+  - prompt_version
+  - tool_calls
+  - latency_ms
+  - token_usage
+  - estimated_cost
+  - safety_result
+  - eval_result
+redaction:
+  pii: required
+  secrets: required
+  raw_user_input: restricted
+

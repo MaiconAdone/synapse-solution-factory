@@ -1,0 +1,326 @@
+{
+  "version": 1,
+  "name": "synapse-ai-ml-enterprise-spec",
+  "execution_policy": {
+    "codex_dialog_required": true,
+    "specification_driven_development": true,
+    "implementation_requires_clear_spec": true,
+    "ruflo_required_for_project_creation": true,
+    "parallel_agent_count": 15,
+    "max_agent_count": 60,
+    "specialist_agent_count": 45,
+    "activation_policy": "Keep 15 core agents and 45 specialist agents available, activate a cost-aware subset by default, and never broadcast full context to all 60 agents unless an explicit high-complexity workflow justifies it.",
+    "cost_aware_orchestration_required": true,
+    "cost_optimization_policy_path": "config/cost_optimization_policy.json",
+    "default_active_agent_count": 1,
+    "enterprise_active_agent_count": 8,
+    "activate_all_60_requires_explicit_high_complexity": true,
+    "data_treatment_required_for_all_universes": true,
+    "ruflo_15_agents_required_for_all_universes": true,
+    "token_strategy": "Use Ruflo to route only domain-specific context to each specialized agent, reduce OpenAI tokens, then consolidate through orchestration-manager before any model or tool call.",
+    "required_steps_per_request": [
+      "understand_problem",
+      "define_architecture",
+      "identify_agents",
+      "define_rag_strategy",
+      "define_memory_and_context",
+      "define_tools",
+      "write_implementation_plan",
+      "generate_code",
+      "generate_tests",
+      "review_architecture"
+    ]
+  },
+  "inspiration_sources": [
+    "AI Engineering - Chip Huyen",
+    "Prompt Engineering for LLMs - Ziegler and Berryman",
+    "The LLM Engineer's Handbook - Paul Iusztin and Maxime Labonne",
+    "Build a Large Language Model From Scratch - Sebastian Raschka",
+    "Production LLMs - Bouchard and Peters",
+    "Designing Machine Learning Systems - Chip Huyen",
+    "Foundations of Machine Learning - user-provided local lecture notes",
+    "Mathematics for Machine Learning - Deisenroth, Faisal and Ong",
+    "Agentic Coding with Claude Code - Eden Marco"
+  ],
+  "ai_architecture": {
+    "capabilities": [
+      "large_language_models",
+      "retrieval_augmented_generation",
+      "agentic_ai",
+      "multi_agent_systems",
+      "tool_calling",
+      "function_calling",
+      "model_context_protocol",
+      "agent_to_agent"
+    ],
+    "quality_attributes": [
+      "scalability",
+      "modularity",
+      "maintainability",
+      "observability",
+      "security",
+      "performance"
+    ]
+  },
+  "ai_framework_selection": {
+    "enabled_for_universes": [
+      "ia",
+      "hybrid"
+    ],
+    "catalog_path": "config/ai_framework_selection.json",
+    "required_frameworks": [
+      "langgraph",
+      "llamaindex",
+      "haystack",
+      "openai-agents-sdk",
+      "pydantic-ai",
+      "crewai",
+      "autogen",
+      "microsoft-agent-framework-semantic-kernel",
+      "dify",
+      "flowise",
+      "ragflow",
+      "r2r",
+      "mcp-sdks",
+      "swarms"
+    ],
+    "selection_gate": "Codex and Ruflo must classify the scenario before implementing Agents, RAG, LLM, MCP, or no-code AI workflows. Frameworks are selected by fit, not installed blindly."
+  },
+  "technology_layer": {
+    "enabled": true,
+    "catalog_path": "config/ai_framework_selection.json",
+    "catalog_section": "technology_catalog",
+    "purpose": "Receive a business problem and recommend suitable technologies, architecture components, agent patterns, pipelines, and templates before implementation.",
+    "required_technologies": [
+      "crewai",
+      "swarms",
+      "langchain",
+      "langgraph",
+      "langflow",
+      "flowise",
+      "dify",
+      "n8n",
+      "firecrawl",
+      "deep-research",
+      "awesome-lists",
+      "vector-dbs",
+      "rag-frameworks",
+      "kag-knowledge-graph",
+      "mlflow",
+      "fastapi",
+      "ollama",
+      "mcp-servers"
+    ],
+    "selection_outputs": [
+      "technology_layer",
+      "architecture_blueprint",
+      "pipeline_blueprints",
+      "solution_templates",
+      "evaluation_plan",
+      "production_risks"
+    ]
+  },
+  "multi_agent_systems": {
+    "topology": "hierarchical-mesh",
+    "coordination": "distributed",
+    "consensus": "majority",
+    "required_capabilities": [
+      "plan_tasks",
+      "delegate_work",
+      "coordinate_specialists",
+      "orchestrate_complex_flows",
+      "share_context",
+      "resolve_conflicts",
+      "execute_distributed_workflows"
+    ],
+    "agent_definition_required_fields": [
+      "objective",
+      "tools",
+      "memory",
+      "context",
+      "boundaries",
+      "success_criteria"
+    ]
+  },
+  "rag_advanced": {
+    "required_when_knowledge_retrieval_is_needed": true,
+    "strategies": [
+      "multi_query_retrieval",
+      "hybrid_search",
+      "semantic_search",
+      "reranking",
+      "context_compression",
+      "parent_child_retrieval",
+      "graph_rag",
+      "metadata_filtering"
+    ],
+    "targets": [
+      "high_precision",
+      "low_latency",
+      "relevant_context",
+      "hallucination_reduction"
+    ]
+  },
+  "context_engineering": {
+    "memory_tiers": [
+      "short_term",
+      "long_term",
+      "working",
+      "episodic",
+      "semantic"
+    ],
+    "required_behaviors": [
+      "context_compression",
+      "intelligent_knowledge_retrieval",
+      "relevant_history_retention",
+      "token_optimization",
+      "cost_quality_tradeoff_tracking"
+    ]
+  },
+  "cost_aware_orchestration": {
+    "enabled": true,
+    "principle": "Keep the 60-agent Ruflo swarm available, but activate only the minimum useful agent set for the request complexity, universe, risk, and token budget.",
+    "required_behaviors": [
+      "classify_request_complexity_before_agent_activation",
+      "choose_ml_ia_or_hybrid_solution_path_before_implementation",
+      "prefer_local_and_deterministic_processing_before_llm_calls",
+      "use_economy_models_for_routing_summarization_and_schema_checks",
+      "use_strong_models_only_for_architecture_security_conflict_resolution_and_final_decisions",
+      "use_prompt_cache_and_semantic_cache_when_available",
+      "compress_and_deduplicate_context_before_llm_calls",
+      "track_cached_uncached_input_and_output_tokens",
+      "never_activate_all_60_agents_without_explicit_high_complexity_justification"
+    ],
+    "activation_targets": {
+      "simple": 3,
+      "standard": 5,
+      "advanced": 8,
+      "enterprise": 15,
+      "extreme": 60
+    }
+  },
+  "vector_databases": {
+    "compatible_targets": [
+      "pinecone",
+      "chromadb",
+      "faiss",
+      "qdrant",
+      "weaviate",
+      "ruflo_agentdb",
+      "ruvector"
+    ],
+    "required_design_fields": [
+      "chunking_strategy",
+      "chunk_overlap",
+      "metadata_schema",
+      "indexing_strategy",
+      "retrieval_strategy"
+    ],
+    "default_chunking": {
+      "strategy": "semantic_with_overlap",
+      "chunk_size_tokens": 800,
+      "chunk_overlap_tokens": 120,
+      "parent_child_enabled": true
+    }
+  },
+  "sdd": {
+    "required_outputs": [
+      "functional_specification",
+      "technical_architecture",
+      "data_flow",
+      "implementation_plan",
+      "code_structure",
+      "acceptance_criteria",
+      "test_strategy"
+    ],
+    "gate": "Do not implement until the business problem, success metric, architecture, agent plan, RAG plan, memory plan, tool plan, and acceptance criteria are clear."
+  },
+  "code_patterns": [
+    "clean_architecture",
+    "solid",
+    "domain_driven_design",
+    "hexagonal_architecture",
+    "event_driven_architecture",
+    "cqrs_when_needed"
+  ],
+  "python_ai_stack": {
+    "preferred": [
+      "python",
+      "fastapi",
+      "pydantic",
+      "langgraph",
+      "langchain",
+      "openai_sdk",
+      "anthropic_sdk",
+      "crewai",
+      "autogen",
+      "mcp_sdk"
+    ],
+    "current_runtime": [
+      "python",
+      "fastapi",
+      "pydantic",
+      "ruflo_mcp",
+      "mlflow"
+    ]
+  },
+  "ml_systems": {
+    "foundations_policy_path": "config/ml_foundations_policy.json",
+    "foundations_spec_path": "docs/specifications/ml_foundations.md",
+    "required_design_fields": [
+      "business_objective",
+      "learning_problem_mapping",
+      "prediction_target",
+      "data_contract",
+      "hypothesis_space_and_bias",
+      "probabilistic_assumptions",
+      "estimation_objective",
+      "statistical_validation",
+      "regularization_and_optimization",
+      "attribute_selection_transformation",
+      "baseline",
+      "offline_metrics",
+      "online_metrics",
+      "model_card",
+      "experiment_tracking",
+      "drift_monitoring",
+      "rollback_plan"
+    ],
+    "quality_gates": [
+      "data_validation",
+      "leakage_check",
+      "learning_problem_mapped",
+      "hypothesis_bias_review",
+      "probabilistic_assumptions_review",
+      "statistical_validation_complete",
+      "regularization_review",
+      "feature_transformation_review",
+      "baseline_comparison",
+      "metric_thresholds",
+      "bias_risk_review",
+      "model_card_complete",
+      "mlflow_logged"
+    ]
+  },
+  "production_readiness": {
+    "required_validations": [
+      "robustness",
+      "error_handling",
+      "structured_logs",
+      "metrics",
+      "security",
+      "performance",
+      "scalability",
+      "cost_tracking",
+      "latency_tracking",
+      "token_tracking"
+    ],
+    "release_requires": [
+      "tests_pass",
+      "evals_pass",
+      "guardrails_pass",
+      "observability_defined",
+      "rollback_plan_defined"
+    ]
+  }
+}

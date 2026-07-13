@@ -1,0 +1,13 @@
+.vscode/**
+.vscode-test/**
+test/**
+dist/test/**
+dist/src/**
+src/**/*.ts
+!src/webview/media/**
+scripts/**
+tsconfig.json
+.env.example
+**/*.map
+**/.DS_Store
+node_modules/**

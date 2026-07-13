@@ -1,0 +1,132 @@
+{
+  "llm_gateway": {
+    "enabled": true,
+    "entrypoint": "backend/app/services/llm_gateway.py",
+    "public_routes": [
+      "/hybrid-llm/generate",
+      "/hybrid-llm/decision",
+      "/local-llm/generate",
+      "/swarm/governed/execute"
+    ],
+    "all_generation_must_pass_gateway": true,
+    "cache_path_env": "LLM_GATEWAY_CACHE_PATH",
+    "audit_path_env": "LLM_GATEWAY_AUDIT_PATH",
+    "max_input_tokens_env": "LLM_GATEWAY_MAX_INPUT_TOKENS",
+    "daily_cloud_token_budget_env": "LLM_GATEWAY_DAILY_CLOUD_TOKEN_BUDGET",
+    "per_request_cloud_token_budget_env": "LLM_GATEWAY_PER_REQUEST_CLOUD_TOKEN_BUDGET"
+  },
+  "routing_strategy": "local_first",
+  "ruflo_bridge": {
+    "enabled": true,
+    "execution_service": "backend/app/services/governed_swarm_execution.py",
+    "mcp_tool": "execute_governed_swarm",
+    "shared_memory_namespace": "synapse-governed-execution",
+    "all_60_agents_have_governed_router_access": true,
+    "single_consolidated_call_by_default": true
+  },
+  "continual_learning": {
+    "mode": "project_scoped_retrieval_augmented_learning",
+    "capture_from": "execute_governed_swarm",
+    "direct_ask_ollama_is_not_learned": true,
+    "human_feedback_tool": "approve_learning_example",
+    "automatic_weight_updates": false,
+    "future_specialization": "LoRA_or_adapter_only_after_evals"
+  },
+  "automatic_routing": {
+    "simple_default": "ollama",
+    "complex_default_when_configured": "ollama_balanced",
+    "quality_failure_fallback": "ollama_balanced_then_explicit_cloud",
+    "cloud_requires_request_permission": true,
+    "cloud_default_enabled": false,
+    "cloud_requires_human_approval": true,
+    "sensitive_content_local_only": true,
+    "metrics": [
+      "latency_ms",
+      "prompt_tokens",
+      "completion_tokens",
+      "provider",
+      "fallback_used",
+      "quality_passed"
+    ]
+  },
+  "providers": {
+    "ollama": {
+      "enabled": true,
+      "cost_profile": "local_no_token_fee",
+      "base_url_env": "OLLAMA_BASE_URL",
+      "default_model_env": "OLLAMA_MODEL",
+      "default_model": "qwen2.5-coder:3b",
+      "general_model_env": "OLLAMA_GENERAL_MODEL",
+      "general_model": "qwen3:8b",
+      "balanced_model_env": "OLLAMA_BALANCED_MODEL",
+      "balanced_model": "deepseek-coder-v2:lite",
+      "code_review_model_env": "OLLAMA_CODE_REVIEW_MODEL",
+      "code_review_model": "deepseek-coder-v2:lite",
+      "code_strong_model_env": "OLLAMA_CODE_STRONG_MODEL",
+      "code_strong_model": "qwen2.5-coder:14b",
+      "planning_strong_model_env": "OLLAMA_PLANNING_STRONG_MODEL",
+      "planning_strong_model": "qwen3:14b",
+      "reasoning_strong_model_env": "OLLAMA_REASONING_STRONG_MODEL",
+      "reasoning_strong_model": "deepseek-r1:14b",
+      "code_critical_model_env": "OLLAMA_CODE_CRITICAL_MODEL",
+      "code_critical_model": "qwen2.5-coder:32b",
+      "large_model_env": "OLLAMA_LARGE_MODEL",
+      "large_model": "qwen2.5-coder:32b",
+      "embedding_model_env": "OLLAMA_EMBEDDING_MODEL",
+      "embedding_model": "nomic-embed-text:latest",
+      "selection_policy": {
+        "fast": "simple requests, classification, summarization and agent triage",
+        "general": "general answers, lightweight analysis and documentation",
+        "balanced": "offline debugging, medium code review and agent tasks on the balanced local code model",
+        "code_review": "debugging, code review, repair and security analysis",
+        "code_strong": "larger implementation and script generation when the balanced model is not enough",
+        "planning_strong": "architecture, governance, agentic planning and enterprise design",
+        "reasoning_strong": "root-cause analysis, careful validation and hard reasoning",
+        "code_critical": "critical code review and high-confidence production refactors by explicit request",
+        "large": "compatibility alias for the strongest allowed local model; never selected automatically",
+        "embeddings": "semantic search, RAG indexing and memory similarity; never used for chat generation"
+      },
+      "offline_auto_routing": true,
+      "never_auto_select_large_model": true,
+      "allowed_local_models": [
+        "nomic-embed-text:latest",
+        "qwen2.5-coder:3b",
+        "qwen3:8b",
+        "deepseek-coder-v2:lite",
+        "qwen2.5-coder:14b",
+        "qwen3:14b",
+        "deepseek-r1:14b",
+        "qwen2.5-coder:32b"
+      ],
+      "default_context_window": 4096,
+      "default_max_output_tokens": 512,
+      "deepseek_license_review_required_for_commercial_distribution": true,
+      "use_cases": [
+        "project_planning",
+        "code_generation",
+        "agent_blueprints",
+        "context_summarization",
+        "data_analysis_assistance"
+      ]
+    },
+    "openai": {
+      "enabled_when_configured": true,
+      "fallback_for": [
+        "high_complexity_reasoning",
+        "managed_tool_calling"
+      ]
+    },
+    "anthropic": {
+      "enabled_when_configured": true,
+      "fallback_for": [
+        "high_complexity_reasoning",
+        "long_context_review"
+      ]
+    }
+  },
+  "guardrails": {
+    "do_not_send_secrets_to_external_providers": true,
+    "require_evaluation_before_provider_promotion": true,
+    "activate_multiple_paid_agents_only_when_justified": true
+  }
+}
