@@ -1,23 +1,20 @@
-﻿[mcp_servers.SYNAPSE_ollama]
+﻿# Codex project configuration - recovery profile
+# Governance source of truth: config/llm_solution_factory_policy.json
+# canais autorizados para conteudo solicitado pelo usuario: Codex chat, Claude Code chat/terminal, AdoneX chat participant e VS Code Chat.
+# Se faltar contexto obrigatorio da Solution Factory, pergunte ao usuario antes de implementar.
+# Root keys MUST come before TOML tables.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[mcp_servers.SYNAPSE_ollama]
 command = "python"
-args = ["scripts/SYNAPSE_ollama_mcp.py"]
+args = ["scripts/synapse_ollama_mcp.py"]
 startup_timeout_sec = 20
 tool_timeout_sec = 900
 enabled = true
 required = false
-default_tools_approval_mode = "auto"
 enabled_tools = ["ollama_status", "ask_ollama", "learning_summary"]
 
-# Perfil economico para o dialogo do Codex:
-# - mantenha Ruflo/60 agentes fora do conjunto padrao de ferramentas;
-# - use `ask_ollama` para triagem, resumo e revisao local;
-# - execute o swarm governado somente por comandos/scripts explicitos quando realmente necessario.
-# - para criar ou implementar projeto pelo dialogo, siga `config/llm_solution_factory_policy.json`;
-# - consulte `scripts/analyze_business_solution.py` antes da decisao arquitetural;
-# - grave/consulte `config/business_solution_analysis.json` no projeto criado.
-# - se faltar objetivo, problema de negocio, universo, metrica, dados/fontes ou risco, pergunte ao usuario no chat antes de implementar.
-# - nao dependa do navegador: Codex no VS Code, Claude Code, AdoneX e VS Code Chat devem conduzir o briefing pela caixa de dialogo.
-# - canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, AdoneX, Claude Code e Codex; objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas devem ser coletados ou confirmados por esses chats antes de tasks, scripts, navegador ou ferramentas.
-# - todos os quatro canais devem acessar a mesma Solution Factory: memoria compartilhada, analyzer, catalogo de tecnologia, governanca, testes e evals.
-# - use `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md` para continuidade entre chats.
-# - use `synapse-peers` apenas para mensagens curtas locais entre sessoes ativas.
+
+
+

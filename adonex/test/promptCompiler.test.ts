@@ -63,7 +63,7 @@ test("prompt compiler creates a structured optimized prompt", () => {
   assert.match(compiled.optimizedPrompt, /Ruflo, MCP, Ollama/);
 });
 
-test("prompt compiler marks explicit external LLM coding mode as governed", () => {
+test("prompt compiler blocks external LLM execution even in strong mode", () => {
   const compiled = compilePrompt(
     "usando modelo externo LLM evolua o agente de codificacao",
     "implement",
@@ -74,8 +74,8 @@ test("prompt compiler marks explicit external LLM coding mode as governed", () =
 
   assert.equal(inferIntent(compiled.originalPrompt, "implement"), "implementacao-governada");
   assert.match(compiled.optimizedPrompt, /agentic coding profissional/);
-  assert.match(compiled.optimizedPrompt, /LLM externo foi solicitado\/autorizado/);
-  assert.match(compiled.optimizedPrompt, /escrita governada por aprovacao/);
+  assert.match(compiled.optimizedPrompt, /AdoneX usa somente modelos locais/);
+  assert.match(compiled.optimizedPrompt, /Nao encaminhar prompts para LLMs externos/);
 });
 
 test("prompt compiler can be disabled", () => {

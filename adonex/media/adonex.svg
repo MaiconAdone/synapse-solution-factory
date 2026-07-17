@@ -1,3 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 19 10.5 5h3L20 19m-13.5-5h11M12 2v3m0 14v3"/>
+  <!-- Monograma AX da AdoneX. Monocromatico de proposito: o VS Code tinge o
+       icone da activity bar com o tema (currentColor), entao arte colorida
+       nao funciona aqui. A versao colorida vive em media/adonex-icon.png. -->
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10.2" stroke-width="1.1" opacity="0.85"/>
+    <!-- "A": perna esquerda, apice e perna direita (compartilhada com o X) -->
+    <path d="M5.9 17.4 9.7 7.2l6.6 10.2" stroke-width="1.7"/>
+    <!-- travessa do "A" -->
+    <path d="M7.7 13.9h5.6" stroke-width="1.5"/>
+    <!-- segunda diagonal do "X", cruzando a perna direita do "A" -->
+    <path d="M16.6 7.2 11.9 14.3" stroke-width="1.7"/>
+  </g>
 </svg>

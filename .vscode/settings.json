@@ -1,4 +1,4 @@
-{
+﻿{
   "files.exclude": {
     "**/__pycache__": true,
     "**/.pytest_cache": true,
@@ -14,7 +14,12 @@
   "adonex.voice.wakeWord": "Vick",
   "adonex.voice.engine": "local_service",
   "adonex.voice.localServiceUrl": "http://127.0.0.1:8765",
+  "adonex.patch.applyMode": "prepare",
   "adonex.voice.requireConfirmationForPatch": true,
   "adonex.security.requireApprovalBeforeWrite": true,
-  "adonex.security.requireApprovalBeforeCommand": true
+  "adonex.security.requireApprovalBeforeCommand": true,
+  "adonex.synapse.autonomous": false
 }
+
+
+

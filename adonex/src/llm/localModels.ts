@@ -99,11 +99,11 @@ export const ADONEX_LOCAL_MODEL_PROFILES: Record<
     model: ADONEX_CODE_STRONG_LOCAL_MODEL,
     purpose: "implementacoes maiores, scripts, endpoints e integracoes",
     generation: true,
-    numCtx: 6144,
+    numCtx: 4096,
     temperature: 0,
     topP: 0.9,
     repeatPenalty: 1.08,
-    maxOutputTokens: 1800
+    maxOutputTokens: 1200
   },
   planning_strong: {
     profile: "planning_strong",
@@ -250,6 +250,20 @@ export function localProfileForName(
     return ADONEX_LOCAL_MODEL_PROFILES[profile as AdoneXLocalModelProfile];
   }
   return undefined;
+}
+
+export function outputBudgetForTask(
+  profile: LocalModelCallProfile,
+  action: string,
+  task: string
+): number {
+  const codeAction = ["implement", "fix", "synapse_agent", "synapse_mcp"].includes(action);
+  if (!codeAction) return profile.maxOutputTokens;
+  const text = stripAccents(task.toLowerCase());
+  const broadChange = /\b(multiplos arquivos|varios arquivos|refatoracao grande|migracao|projeto inteiro|cross-file)\b/i.test(text);
+  if (profile.profile === "fast") return broadChange ? 1200 : 768;
+  if (profile.profile === "code_strong") return broadChange ? 1800 : 1200;
+  return Math.min(profile.maxOutputTokens, broadChange ? 1600 : 1000);
 }
 
 function withModel(

@@ -56,3 +56,9 @@ Use este navegador p
 | 2026-07-09 | Codex | done | Restaurar Vick ao estado de 08/07/2026 16h | Estado das 16h confirmado: home Vick na porta 3000, historico completo, `/api/vick/chat` com 40 mensagens, briefing conversacional e criacao local de projeto; TypeScript, HTTP e testes focados do analisador passaram. |
 
 - [2026-07-10 11:44:38 -03:00] Codex: anti-alucina��o AdoneX/Vick implementado e validado com npm --prefix adonex test (117/117).
+
+| 2026-07-17T16:16:12.416Z | vscode-chat | received | pode desfazer as alterções para clude code, codex e adonex editarem código sem necessidade de aprovação humana. volte para o estado sem essas implementações! | route=chat; mode=local |
+
+| 2026-07-17 | Codex | done | Restaurar aprovacao humana para edicao de codigo | Codex voltou a on-request, Claude Code a default e AdoneX a preparar patches e exigir confirmacao/aprovacao antes de escrita e comandos. |
+
+| 2026-07-17 | Codex | done | Corrigir inconsistencias de governanca Codex e AdoneX | Codex referencia a policy e usa o caminho MCP com capitalizacao real; AdoneX autonomia virou opt-in e aprovacoes de escrita/comando prevalecem mesmo quando habilitada. Testes AdoneX 117/117, contrato Codex e enterprise_stack_ok passaram. |

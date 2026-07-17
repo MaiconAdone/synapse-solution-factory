@@ -5,7 +5,7 @@ import type { LlmRequest, LlmResponse } from "./types";
 export class OllamaClientError extends Error {}
 
 export interface OllamaClientEvent {
-  type: "request" | "retry" | "success" | "error";
+  type: "request" | "first_token" | "retry" | "success" | "error";
   attempt: number;
   maxAttempts: number;
   endpoint: string;
@@ -64,7 +64,17 @@ export class OllamaClient {
       try {
         const response = this.options.fetcher
           ? await this.fetchWithConfiguredTransport(endpoint, payload, request.signal)
-          : await this.postJson(endpoint, payload, request.signal);
+          : await this.postJson(endpoint, payload, request.signal, () => {
+              this.emitLog({
+                type: "first_token",
+                attempt,
+                maxAttempts,
+                endpoint,
+                model,
+                apiStyle,
+                durationMs: Date.now() - startedAt
+              });
+            });
         if (!response.ok) {
           throw new OllamaClientError(
             `Ollama rejected the request (${response.status}): ${response.body.slice(0, 500)}`
@@ -230,7 +240,8 @@ export class OllamaClient {
   private async postJson(
     endpoint: string,
     payload: object,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onFirstChunk?: () => void
   ): Promise<{ ok: boolean; status: number; body: string }> {
     const url = new URL(endpoint);
     const body = JSON.stringify(payload);
@@ -249,7 +260,14 @@ export class OllamaClient {
         },
         (response) => {
           const chunks: Buffer[] = [];
-          response.on("data", (chunk: Buffer) => chunks.push(chunk));
+          let receivedFirstChunk = false;
+          response.on("data", (chunk: Buffer) => {
+            if (!receivedFirstChunk) {
+              receivedFirstChunk = true;
+              onFirstChunk?.();
+            }
+            chunks.push(chunk);
+          });
           response.on("end", () => {
             const status = response.statusCode ?? 0;
             resolve({

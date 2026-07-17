@@ -10,7 +10,7 @@ export interface CostEstimate {
 
 export interface UsageEntry {
   timestamp: string;
-  provider: "openai" | "ollama";
+  provider: "openai" | "ollama" | "anthropic";
   model: string;
   inputTokens: number;
   outputTokens: number;

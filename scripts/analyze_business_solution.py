@@ -12,7 +12,7 @@ from app.services.business_solution_analyzer import BusinessSolutionAnalyzer  # 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Analyze the best Synapse architecture for a business problem.")
-    parser.add_argument("--project-root", required=True)
+    parser.add_argument("--project-root", default="")
     parser.add_argument("--project-name", required=True)
     parser.add_argument("--universe", required=True)
     parser.add_argument("--project-goal", default="")
@@ -21,6 +21,11 @@ def main() -> int:
     parser.add_argument("--success-metric", default="")
     parser.add_argument("--available-sources", default="")
     parser.add_argument("--risk-level", default="")
+    parser.add_argument(
+        "--print-recommendation",
+        action="store_true",
+        help="Compute the analysis gate and print the recommendation to stdout without writing project files.",
+    )
     args = parser.parse_args()
 
     analyzer = BusinessSolutionAnalyzer(root=ROOT)
@@ -35,6 +40,26 @@ def main() -> int:
     )
     analysis["project"] = args.project_name
     analysis["source"] = "scripts/analyze_business_solution.py"
+
+    # Gate mode: consult the analyzer before the architectural decision (no side effects).
+    if args.print_recommendation:
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "status": analysis["status"],
+                    "requested_universe": analysis["requested_universe"],
+                    "recommended_universe": analysis["recommended_universe"],
+                    "architecture_decision": analysis["architecture_decision"],
+                    "solution_stack": analysis["solution_stack"],
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0
+
+    if not args.project_root:
+        parser.error("--project-root is required unless --print-recommendation is set")
 
     project_root = Path(args.project_root)
     config_path = project_root / "config" / "business_solution_analysis.json"

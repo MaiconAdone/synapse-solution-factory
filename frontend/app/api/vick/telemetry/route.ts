@@ -1,0 +1,207 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// Telemetria real do Synapse para o cockpit da Vick.
+// - Custo: derivado do ledger real de roteamento LLM (artifacts/llm-routing/events.jsonl),
+//   o mesmo que o backend grava. Chamadas locais (Ollama) não têm custo de API;
+//   chamadas de nuvem são estimadas a partir dos tokens reais registrados.
+// - Atividade: mesclagem das chamadas LLM reais + interações da Vick e gates da
+//   Solution Factory registrados em .adonex/memory/SHARED_DIALOG_MEMORY.md.
+
+type LlmEvent = {
+  timestamp?: string;
+  provider?: string;
+  model?: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  fallback_used?: boolean;
+};
+
+type ActivityItem = {
+  level: "ok" | "info" | "warn";
+  main: string;
+  ts: number;
+};
+
+// Estimativa de preço de nuvem (USD por 1M tokens). Local = 0.
+// Aproximações; usadas apenas quando um provedor de nuvem realmente é acionado.
+const CLOUD_PRICE_USD_PER_MTOK: Record<string, { in: number; out: number }> = {
+  openai: { in: 1.25, out: 10 },
+  anthropic: { in: 3, out: 15 },
+};
+const USD_TO_BRL = 5.4;
+const LOCAL_PROVIDERS = new Set(["ollama", "local", "synapse-local", "vick-web"]);
+
+function workspaceRoot() {
+  // O servidor Next roda em frontend/; o workspace Synapse é o diretório acima.
+  return path.resolve(process.cwd(), "..");
+}
+
+function eventCostBrl(event: LlmEvent): number {
+  const provider = (event.provider ?? "").toLowerCase();
+  if (!provider || LOCAL_PROVIDERS.has(provider)) return 0;
+  const price = CLOUD_PRICE_USD_PER_MTOK[provider];
+  if (!price) return 0;
+  const promptTok = Number(event.prompt_tokens ?? 0);
+  const completionTok = Number(event.completion_tokens ?? Math.max(0, Number(event.total_tokens ?? 0) - promptTok));
+  const usd = (promptTok * price.in + completionTok * price.out) / 1_000_000;
+  return usd * USD_TO_BRL;
+}
+
+function localDayKey(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+async function readLlmEvents(): Promise<LlmEvent[]> {
+  const file = path.join(workspaceRoot(), "artifacts", "llm-routing", "events.jsonl");
+  try {
+    const raw = await fs.readFile(file, "utf8");
+    const lines = raw.split(/\r?\n/).filter(Boolean).slice(-5000);
+    const events: LlmEvent[] = [];
+    for (const line of lines) {
+      try {
+        events.push(JSON.parse(line) as LlmEvent);
+      } catch {
+        // linha corrompida é ignorada
+      }
+    }
+    return events;
+  } catch {
+    return [];
+  }
+}
+
+function buildCost(events: LlmEvent[]) {
+  const now = Date.now();
+  const todayKey = localDayKey(now);
+  const yesterdayKey = localDayKey(now - 86_400_000);
+
+  // Sparkline: tokens por dia nos últimos 7 dias (atividade real).
+  const dayKeys: string[] = [];
+  for (let i = 6; i >= 0; i -= 1) dayKeys.push(localDayKey(now - i * 86_400_000));
+  const tokensByDay = new Map<string, number>(dayKeys.map((k) => [k, 0]));
+
+  let brlToday = 0;
+  let requestsToday = 0;
+  let cloudRequestsToday = 0;
+  let tokensToday = 0;
+  let tokensYesterday = 0;
+
+  for (const event of events) {
+    const ts = event.timestamp ? Date.parse(event.timestamp) : NaN;
+    if (Number.isNaN(ts)) continue;
+    const key = localDayKey(ts);
+    const tokens = Number(event.total_tokens ?? 0);
+    if (tokensByDay.has(key)) tokensByDay.set(key, (tokensByDay.get(key) ?? 0) + tokens);
+    if (key === todayKey) {
+      brlToday += eventCostBrl(event);
+      requestsToday += 1;
+      tokensToday += tokens;
+      const provider = (event.provider ?? "").toLowerCase();
+      if (provider && !LOCAL_PROVIDERS.has(provider)) cloudRequestsToday += 1;
+    } else if (key === yesterdayKey) {
+      tokensYesterday += tokens;
+    }
+  }
+
+  const spark = dayKeys.map((k) => Math.round((tokensByDay.get(k) ?? 0) / 100) / 10); // em milhares
+  const trendPct =
+    tokensYesterday > 0 ? Math.round(((tokensToday - tokensYesterday) / tokensYesterday) * 100) : null;
+
+  return {
+    currency: "BRL",
+    brlToday: Math.round(brlToday * 100) / 100,
+    requestsToday,
+    cloudRequestsToday,
+    tokensToday,
+    trendPct,
+    spark: spark.some((v) => v > 0) ? spark : [0, 0, 0, 0, 0, 0, 0],
+    localOnly: cloudRequestsToday === 0,
+  };
+}
+
+function providerLevel(event: LlmEvent): ActivityItem["level"] {
+  if (event.fallback_used) return "warn";
+  const provider = (event.provider ?? "").toLowerCase();
+  if (provider && !LOCAL_PROVIDERS.has(provider)) return "info";
+  return "ok";
+}
+
+function sentimentLevel(sentiment: string): ActivityItem["level"] {
+  if (sentiment === "frustrado" || sentiment === "ansioso") return "warn";
+  if (sentiment === "satisfeito") return "ok";
+  return "info";
+}
+
+async function readMemoryActivity(): Promise<ActivityItem[]> {
+  const file = path.join(workspaceRoot(), ".adonex", "memory", "SHARED_DIALOG_MEMORY.md");
+  let text: string;
+  try {
+    text = await fs.readFile(file, "utf8");
+  } catch {
+    return [];
+  }
+  const items: ActivityItem[] = [];
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    const stamp = line.match(/\[vick\]\s+(\d{4}-\d{2}-\d{2}T[\d:.]+Z)/);
+    if (!stamp) continue;
+    const ts = Date.parse(stamp[1]);
+    if (Number.isNaN(ts)) continue;
+
+    const gate = line.match(/analyzer-gate\s+projeto=(\S+)\s+status=(\S+)/);
+    if (gate) {
+      items.push({ level: "ok", main: `Solution Factory · projeto ${gate[1]} (${gate[2]})`, ts });
+      continue;
+    }
+    const sentiment = (line.match(/sentimento=(\w+)/) ?? [])[1] ?? "neutro";
+    const prompt = (line.match(/prompt="([^"]*)"/) ?? [])[1] ?? "";
+    const short = prompt.length > 52 ? `${prompt.slice(0, 52)}…` : prompt;
+    items.push({
+      level: sentimentLevel(sentiment),
+      main: short ? `Vick · "${short}"` : `Vick · comando de voz (${sentiment})`,
+      ts,
+    });
+  }
+  return items;
+}
+
+function buildActivity(events: LlmEvent[], memory: ActivityItem[]): ActivityItem[] {
+  const fromEvents: ActivityItem[] = events
+    .filter((event) => event.timestamp)
+    .map((event) => {
+      const ts = Date.parse(event.timestamp as string);
+      const provider = event.provider ?? "desconhecido";
+      const model = event.model ? ` ${event.model}` : "";
+      const tokens = Number(event.total_tokens ?? 0);
+      return {
+        level: providerLevel(event),
+        main: `LLM · ${provider}${model} · ${tokens} tok`,
+        ts,
+      } as ActivityItem;
+    })
+    .filter((item) => !Number.isNaN(item.ts));
+
+  return [...fromEvents, ...memory]
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 8);
+}
+
+export async function GET() {
+  const events = await readLlmEvents();
+  const memory = await readMemoryActivity();
+  return NextResponse.json(
+    {
+      cost: buildCost(events),
+      activity: buildActivity(events, memory),
+      generatedAt: Date.now(),
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}

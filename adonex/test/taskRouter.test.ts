@@ -9,10 +9,10 @@ test("task router keeps simple summaries local", () => {
   );
 });
 
-test("task router selects OpenAI for bounded implementation work unless local is requested", () => {
+test("task router keeps bounded implementation work local", () => {
   assert.equal(
     classifyTaskComplexity("implementar um pequeno modulo isolado com testes"),
-    "adonex-openai"
+    "adonex-local"
   );
   assert.equal(
     classifyTaskComplexity("implementar um pequeno modulo isolado com testes usando Ollama local e baixo custo"),
@@ -30,13 +30,13 @@ test("task router keeps Synapse implementation work on AdoneX local", () => {
   );
 });
 
-test("task router honors explicit external LLM requests in Synapse", () => {
+test("task router ignores explicit external LLM requests in Synapse", () => {
   assert.equal(
     classifyTaskComplexity(
       "usar modelo externo LLM para evoluir o agente de codificacao",
       "Stack: TypeScript\nSynapse workspace: yes\nSynapse confidence: 1"
     ),
-    "adonex-openai"
+    "adonex-local"
   );
 });
 

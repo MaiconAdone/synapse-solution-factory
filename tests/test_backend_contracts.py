@@ -55,6 +55,17 @@ from scripts.context_filter import filter_context, is_ignored_path, load_context
 from scripts.market_radar import collect_signals, write_outputs
 
 
+def _read_factory_sources(root: Path) -> str:
+    """Concatenate the project-factory entry script with its dot-sourced modules.
+
+    create_ai_project.ps1 is an orchestrator that dot-sources the helpers under
+    scripts/project_factory/, so content assertions must look across all of them.
+    """
+    sources = [root / "scripts" / "create_ai_project.ps1"]
+    sources.extend(sorted((root / "scripts" / "project_factory").glob("*.ps1")))
+    return "\n".join(path.read_text(encoding="utf-8-sig") for path in sources)
+
+
 class FailingClient:
     def call_tool(self, tool_name, arguments=None):
         raise OSError("mcp unavailable")
@@ -1310,7 +1321,7 @@ def test_new_project_workflow_declares_parallel_agent_activation():
 
 def test_project_factory_script_creates_solution_projects_without_platform_stack():
     root = Path(__file__).resolve().parents[1]
-    script = (root / "scripts" / "create_ai_project.ps1").read_text(encoding="utf-8-sig")
+    script = _read_factory_sources(root)
     assert "max_agents: 60" in script
     assert "specialist_agent_count: 45" in script
     assert "LocalMemoryOnly" in script
@@ -1433,7 +1444,7 @@ def test_vscode_factory_task_enables_complete_bundle_for_every_universe():
         if task["label"] == "AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados"
     )
     project_type_input = next(item for item in tasks["inputs"] if item["id"] == "projectType")
-    script = (root / "scripts" / "create_ai_project.ps1").read_text(encoding="utf-8-sig")
+    script = _read_factory_sources(root)
 
     assert project_type_input["options"] == ["ML", "IA", "ML + IA (Hibrido)", "Chatbolt"]
     assert factory_task["args"][-1] == "-ActivateRuflo"

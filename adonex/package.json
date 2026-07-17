@@ -1,9 +1,10 @@
-{
+﻿{
   "name": "adonex",
   "displayName": "AdoneX",
-  "description": "Agente de engenharia de IA para VS Code com OpenAI, Ollama, MCP e integracao Synapse.",
-  "version": "0.6.16",
+  "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memÃ³ria compartilhada com Claude Code e Codex, e integraÃ§Ã£o Synapse.",
+  "version": "0.6.17",
   "publisher": "synapse-ai",
+  "icon": "media/adonex-icon.png",
   "license": "UNLICENSED",
   "private": true,
   "engines": {
@@ -33,7 +34,6 @@
     "onCommand:adonex.explainSelection",
     "onCommand:adonex.fixTerminalError",
     "onCommand:adonex.createCommitMessage",
-    "onCommand:adonex.configureApiKey",
     "onCommand:adonex.resetCostUsage",
     "onCommand:adonex.runEvalSuite",
     "onCommand:adonex.memory.init",
@@ -230,10 +230,6 @@
         "title": "AdoneX: Create Commit Message"
       },
       {
-        "command": "adonex.configureApiKey",
-        "title": "AdoneX: Configure API Key"
-      },
-      {
         "command": "adonex.resetCostUsage",
         "title": "AdoneX: Reset Cost Usage"
       },
@@ -329,24 +325,6 @@
     "configuration": {
       "title": "AdoneX",
       "properties": {
-        "adonex.openai.apiKey": {
-          "type": "string",
-          "default": "",
-          "markdownDescription": "Deprecated fallback. Prefer **AdoneX: Configure API Key**, which uses VS Code SecretStorage.",
-          "scope": "window"
-        },
-        "adonex.openai.modelStrong": {
-          "type": "string",
-          "default": "gpt-5.1"
-        },
-        "adonex.openai.modelBalanced": {
-          "type": "string",
-          "default": "gpt-5-mini"
-        },
-        "adonex.openai.modelCheap": {
-          "type": "string",
-          "default": "gpt-5-nano"
-        },
         "adonex.ollama.enabled": {
           "type": "boolean",
           "default": true
@@ -543,14 +521,14 @@
           "default": 2,
           "minimum": 0,
           "maximum": 5,
-          "markdownDescription": "Numero de tentativas extras para falhas transitórias do Ollama antes de reportar erro."
+          "markdownDescription": "Numero de tentativas extras para falhas transitÃ³rias do Ollama antes de reportar erro."
         },
         "adonex.ollama.retryDelayMs": {
           "type": "number",
           "default": 250,
           "minimum": 0,
           "maximum": 5000,
-          "markdownDescription": "Atraso entre retries do cliente local para reduzir pressão sobre o modelo."
+          "markdownDescription": "Atraso entre retries do cliente local para reduzir pressÃ£o sobre o modelo."
         },
         "adonex.cost.dailyBudgetUsd": {
           "type": "number",
@@ -572,7 +550,7 @@
             "synapse"
           ],
           "default": "local",
-          "markdownDescription": "Modo padrao do AdoneX. Use local para priorizar Ollama e reduzir custo por tokens; escolha balanced/strong apenas quando cloud for explicitamente necessaria."
+          "markdownDescription": "Modo local do AdoneX. Balanced e Strong selecionam perfis Ollama locais mais capazes; nenhum modo envia dados para LLMs externos."
         },
         "adonex.security.requireApprovalBeforeWrite": {
           "type": "boolean",
@@ -590,6 +568,23 @@
           ],
           "default": "prepare",
           "markdownDescription": "Controla edicoes propostas pelo AdoneX. Use prepare para preparar patch, resumo falado e aguardar confirmacao; use apply para aplicar automaticamente quando a politica Synapse permitir."
+        },
+        "adonex.bridge.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Habilita a ponte HTTP local que permite a Vick web (navegador) acionar o fluxo governado do AdoneX. Escuta somente em 127.0.0.1 e exige `adonex.bridge.token`. Desligada por padrao porque permite disparar edicoes de codigo."
+        },
+        "adonex.bridge.port": {
+          "type": "number",
+          "default": 8766,
+          "minimum": 1024,
+          "maximum": 65535,
+          "markdownDescription": "Porta local da ponte HTTP do AdoneX (apenas 127.0.0.1)."
+        },
+        "adonex.bridge.token": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Token compartilhado exigido no header `X-Adonex-Token`. Sem token a ponte NAO sobe. Use um valor aleatorio e configure o mesmo em `ADONEX_BRIDGE_TOKEN` no frontend da Vick."
         },
         "adonex.voice.enabled": {
           "type": "boolean",
@@ -642,27 +637,27 @@
         },
         "adonex.synapse.autonomous": {
           "type": "boolean",
-          "default": true,
-          "markdownDescription": "Executa tarefas governadas quando o workspace for detectado como Synapse. Com patch.applyMode=prepare, prepara patches com resumo e aguarda confirmacao antes de aplicar. Comandos perigosos, secrets e caminhos sensiveis continuam bloqueados."
+          "default": false,
+          "markdownDescription": "Executa automaticamente tarefas governadas quando o workspace for detectado como Synapse. E opt-in; aprovacoes de escrita e comando continuam controladas por adonex.security.requireApprovalBeforeWrite e adonex.security.requireApprovalBeforeCommand."
         },
         "adonex.synapse.rufloCouncil.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Ativa o conselho Ruflo local no Synapse Mode. Por padrao, o AdoneX seleciona poucos papeis relevantes e comprime o conselho antes do Ollama; os 60 papeis exigem pedido explicito."
+          "markdownDescription": "Ativa os agentes Ruflo locais no Synapse Mode. O AdoneX executa diretamente no Ollama o papel mais relevante e usa os demais como revisores comprimidos; os 60 papeis ficam disponiveis, mas a revisao completa exige pedido explicito."
         },
         "adonex.synapse.rufloCouncil.maxAgents": {
           "type": "number",
           "default": 8,
           "minimum": 1,
           "maximum": 60,
-          "markdownDescription": "Quantidade maxima de papeis Ruflo ativos por padrao. Use 8 para desempenho; aumente ou peca explicitamente os 60 agentes para auditorias amplas."
+          "markdownDescription": "Quantidade maxima de papeis Ruflo considerados por tarefa. Um lider e executado diretamente e os demais revisam em contexto comprimido. Use 8 para desempenho; peca explicitamente os 60 para auditorias amplas."
         },
         "adonex.synapse.rufloCouncil.llmConcurrency": {
           "type": "number",
           "default": 1,
           "minimum": 1,
           "maximum": 4,
-          "markdownDescription": "Numero maximo de chamadas locais ao Ollama usadas para consolidar o conselho. Use 1 em maquinas com 16 GB RAM."
+          "markdownDescription": "Numero maximo de chamadas locais ao Ollama permitidas para o fluxo Ruflo. Use 1 no caminho rapido e em maquinas com 16 GB RAM."
         },
         "adonex.synapse.rufloCouncil.maxChars": {
           "type": "number",
@@ -699,7 +694,7 @@
         "adonex.promptEngineering.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Compila deterministicamente a pergunta do usuario em um prompt tecnico com papel, objetivo, contexto, contrato de resposta, seguranca e controle de custo antes de chamar Ollama ou OpenAI."
+          "markdownDescription": "Compila deterministicamente a pergunta do usuario em um prompt tecnico antes de chamar o Ollama local."
         },
         "adonex.memory.enabled": {
           "type": "boolean",
@@ -841,9 +836,7 @@
     "check": "npm test && npm run test:extension",
     "package": "npm run compile && vsce package --no-dependencies"
   },
-  "dependencies": {
-    "openai": "^6.15.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/vscode": "^1.96.0",
@@ -853,3 +846,5 @@
     "typescript": "^5.7.2"
   }
 }
+
+

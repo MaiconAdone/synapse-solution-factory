@@ -11,6 +11,7 @@ import {
   peerMessagingDocsPath
 } from "./synapse/peerMessagingConfig";
 import { registerMemoryCommands } from "./memory/memoryCommands";
+import { AdoneXHttpBridge } from "./bridge/httpBridge";
 import { AdoneXPanel } from "./webview/AdoneXPanel";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -22,6 +23,17 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   registerAdoneXChatParticipant(context, panel);
   registerMemoryCommands(context);
+
+  // Ponte HTTP local: deixa a Vick web acionar o fluxo governado do AdoneX.
+  // Desligada por padrao e exige token (ver adonex.bridge.* nas settings).
+  const bridge = new AdoneXHttpBridge(panel);
+  context.subscriptions.push(bridge);
+  void bridge.sync();
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("adonex.bridge")) void bridge.sync();
+    })
+  );
 
   const register = (
     command: string,
@@ -158,20 +170,6 @@ export function activate(context: vscode.ExtensionContext): void {
     await panel.queueTask(
       "Create a commit message for the current workspace changes. Use only available context and ask for missing diff details.",
       "commit"
-    );
-  });
-
-  register("adonex.configureApiKey", async () => {
-    const apiKey = await vscode.window.showInputBox({
-      title: "Configure OpenAI API Key",
-      prompt: "Stored securely in VS Code SecretStorage",
-      password: true,
-      ignoreFocusOut: true
-    });
-    if (!apiKey?.trim()) return;
-    await context.secrets.store("adonex.openai.apiKey", apiKey.trim());
-    void vscode.window.showInformationMessage(
-      "AdoneX OpenAI API key stored in SecretStorage."
     );
   });
 

@@ -424,7 +424,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const receipt = await this.patchEngine.apply(
       this.patch,
       true,
-      !this.isAutonomousSynapse()
+      this.requiresWriteApproval()
     );
     if (this.taskRecord && this.taskStore) {
       this.taskRecord.status = "patch_applied";
@@ -469,7 +469,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   }
 
   private async runTests(
-    requireApproval = !this.isAutonomousSynapse()
+    requireApproval = this.requiresCommandApproval()
   ): Promise<boolean> {
     if (!this.pending || !this.taskRecord || !this.taskStore) {
       throw new Error("No persistent task is ready for validation.");
@@ -628,15 +628,24 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   }
 
   private isAutonomousSynapse(): boolean {
-    if (this.pending && ["balanced", "strong"].includes(this.pending.mode)) {
-      return false;
-    }
     return Boolean(
       this.pending?.snapshot.synapseDetected &&
       vscode.workspace
         .getConfiguration("adonex")
-        .get<boolean>("synapse.autonomous", true)
+        .get<boolean>("synapse.autonomous", false)
     );
+  }
+
+  private requiresWriteApproval(): boolean {
+    return vscode.workspace
+      .getConfiguration("adonex")
+      .get<boolean>("security.requireApprovalBeforeWrite", true);
+  }
+
+  private requiresCommandApproval(): boolean {
+    return vscode.workspace
+      .getConfiguration("adonex")
+      .get<boolean>("security.requireApprovalBeforeCommand", true);
   }
 
   private async runAutonomousSynapse(): Promise<void> {
@@ -646,13 +655,13 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       text: "Modo autonomo Synapse ativo. Bloqueios de secrets, caminhos e comandos perigosos permanecem ativos."
     });
     if (this.pending.action === "test") {
-      await this.runTests(false);
+      await this.runTests();
       return;
     }
 
     await this.executePending();
     if (!this.patch?.changes.length) {
-      if (this.pending.plan.commands.length) await this.runTests(false);
+      if (this.pending.plan.commands.length) await this.runTests();
       return;
     }
     if (this.applyMode === "prepare") {
@@ -664,7 +673,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     }
 
     await this.applyPatch();
-    if (await this.runTests(false)) return;
+    if (await this.runTests()) return;
 
     this.post({
       type: "status",
@@ -672,7 +681,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     });
     await this.fixFromError();
     await this.applyPatch();
-    await this.runTests(false);
+    await this.runTests();
   }
 
   private post(message: Record<string, unknown>): void {
@@ -868,8 +877,8 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
     <div class="brand">AdoneX</div>
     <select id="mode" aria-label="Agent mode">
       <option value="economic"${selected("economic")}>Economic</option>
-      <option value="balanced"${selected("balanced")}>Balanced</option>
-      <option value="strong"${selected("strong")}>Strong</option>
+      <option value="balanced"${selected("balanced")}>Local Balanced</option>
+      <option value="strong"${selected("strong")}>Local Strong</option>
       <option value="local"${selected("local")}>Local / Ollama</option>
       <option value="synapse"${selected("synapse")}>Synapse Mode</option>
     </select>
@@ -956,3 +965,6 @@ function getNonce(): string {
     () => alphabet[Math.floor(Math.random() * alphabet.length)]
   ).join("");
 }
+
+
+

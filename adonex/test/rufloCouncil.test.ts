@@ -3,6 +3,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   buildRufloCouncilContext,
+  profileForAgent,
   readEnterpriseAgents
 } from "../src/synapse/rufloCouncil";
 
@@ -35,9 +36,26 @@ test("Ruflo council activates all 60 roles without requesting 60 Ollama calls", 
   assert.equal(council.activeAgents, 60);
   assert.equal(council.llmCalls, 1);
   assert.match(council.text, /RUFLO 60-AGENT COUNCIL ACTIVE/);
-  assert.match(council.text, /do not create 60 separate Ollama generations/);
+  assert.match(council.text, /do not create 60 separate generations/);
+  assert.equal(council.leadAgent?.id, "llm-engineering");
   assert.match(council.text, /rag-engineering/);
   assert.match(council.text, /mcp-integration-specialist/);
+});
+
+test("every Ruflo role can be routed directly to a local model profile", () => {
+  const agents = readEnterpriseAgents(root);
+  const routed = agents.map((agent) => profileForAgent(agent));
+
+  assert.equal(routed.length, 60);
+  assert.equal(routed.every((profile) => profile.length > 0), true);
+  assert.equal(
+    profileForAgent(agents.find((agent) => agent.id === "backend-engineering")),
+    "code_strong"
+  );
+  assert.equal(
+    profileForAgent(agents.find((agent) => agent.id === "testing-qa")),
+    "code_review"
+  );
 });
 
 test("Ruflo council uses a compressed selective set for AdoneX code work", () => {
@@ -60,6 +78,7 @@ test("Ruflo council uses a compressed selective set for AdoneX code work", () =>
   assert.equal(council.strategy, "code-edit-code_review-8-roles");
   assert.match(council.text, /RUFLO SELECTIVE COUNCIL ACTIVE/);
   assert.match(council.text, /Quality gates for AdoneX code edits/);
+  assert.match(council.text, /Direct local agent:/);
   assert.match(council.text, /backend-engineering/);
   assert.match(council.text, /testing-qa/);
   assert.ok(council.domains.includes("backend"));

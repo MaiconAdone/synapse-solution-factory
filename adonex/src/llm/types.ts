@@ -34,7 +34,7 @@ export interface LlmRequest {
 }
 
 export interface LlmResponse {
-  provider: "openai" | "ollama";
+  provider: "ollama";
   model: string;
   text: string;
   inputTokens: number;
@@ -117,7 +117,7 @@ export interface TaskPlan {
   estimatedOutputTokens: number;
   estimatedCostUsd: number;
   requiresApproval: boolean;
-  recommendedExecution?: "adonex-local" | "adonex-openai" | "codex-recommended";
+  recommendedExecution?: "adonex-local" | "codex-recommended";
 }
 
 export interface ImplementationProposal {

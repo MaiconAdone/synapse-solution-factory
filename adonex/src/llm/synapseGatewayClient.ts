@@ -11,7 +11,6 @@ export interface SynapseGatewayClientOptions {
   projectId?: string;
   agentId?: string;
   toolName?: string;
-  allowCloud?: boolean;
   humanApproved?: boolean;
   localModelProfile?: "auto" | "large" | AdoneXLocalModelProfile;
   temperature?: number;
@@ -37,7 +36,7 @@ export class SynapseGatewayClient {
     const payload = {
       prompt,
       system: request.systemPrompt,
-      allow_cloud: this.options.allowCloud ?? false,
+      allow_cloud: false,
       human_approved: this.options.humanApproved ?? false,
       local_model_profile: this.options.localModelProfile ?? "auto",
       json_mode: request.jsonMode ?? false,
@@ -68,8 +67,13 @@ export class SynapseGatewayClient {
       prompt_tokens?: number;
       completion_tokens?: number;
     };
+    if (result.provider && result.provider !== "ollama") {
+      throw new SynapseGatewayClientError(
+        `AdoneX rejected non-local gateway provider: ${result.provider}`
+      );
+    }
     return {
-      provider: result.provider ?? "ollama",
+      provider: "ollama",
       model: result.model ?? "gateway",
       text: (result.response ?? "").trim(),
       inputTokens: result.prompt_tokens ?? 0,

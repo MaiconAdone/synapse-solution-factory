@@ -96,7 +96,7 @@
         "--port",
         "8765",
         "--model",
-        "tiny",
+        "small",
         "--window-seconds",
         "2.0",
         "--command-idle-seconds",

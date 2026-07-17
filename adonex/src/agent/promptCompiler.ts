@@ -83,9 +83,7 @@ export function compilePrompt(
     "- Padrao GPT/Claude para modelo local: conclusao direta, estrutura limpa, bullets uteis, referencias a arquivos/comandos quando houver evidencia e proximo passo claro.",
     "- Nao revelar chain-of-thought, tags <think>, deliberacoes internas ou texto de bastidor. Entregue apenas a resposta final profissional.",
     "- Evitar frases vagas como 'posso ajudar', 'e importante notar' ou checklists genericos sem relacao com o workspace.",
-    externalMode(mode)
-      ? "- Uso de LLM externo foi solicitado/autorizado para esta tarefa; ainda assim, nao enviar secrets e manter escrita governada por aprovacao."
-      : "- Cloud/LLM externo permanece desativado salvo pedido explicito do usuario e aprovacao humana.",
+    "- AdoneX usa somente modelos locais. Nao encaminhar prompts para LLMs externos ou cloud.",
     "- Quando houver Synapse, considerar Ruflo, MCP, Ollama, FastAPI, React, Postgres, MLflow, Jupyter, memoria e governanca.",
     "- Para criacao ou implementacao de solucoes Synapse, usar a caixa de dialogo como caminho principal, sem depender de navegador.",
     "- Antes de criar projeto ou solucao empresarial, exigir objetivo, problema de negocio, universo, metrica/criterio, dados/fontes e risco.",
@@ -137,10 +135,6 @@ function formatCodeIntelligence(snapshot: WorkspaceSnapshot): string {
     "- Notas:",
     ...intel.notes.map((note) => `  - ${note}`)
   ].join("\n");
-}
-
-function externalMode(mode: AgentMode): boolean {
-  return mode === "balanced" || mode === "strong";
 }
 
 export function inferIntent(prompt: string, action: AgentAction): string {

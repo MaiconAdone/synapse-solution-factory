@@ -226,7 +226,7 @@ function inferNaturalLanguageRoute(prompt: string): ChatRoute {
   if (asksForImplementation) {
     return {
       ...ROUTES.implement,
-      mode: explicitExternalModelRequested(normalized) ? "strong" : ROUTES.implement.mode,
+      mode: ROUTES.implement.mode,
       title: "Governed correction"
     };
   }
@@ -281,15 +281,6 @@ function isSolutionFactoryPrompt(normalized: string, route: ChatRoute): boolean 
       normalized
     );
   return asksToBuild && solutionSignal && (businessSignal || /\bsynapse\b/.test(normalized));
-}
-
-function explicitExternalModelRequested(normalized: string): boolean {
-  return (
-    /\b(modelo externo|llm externo|openai|gpt|cloud|nuvem|externo)\b/.test(
-      normalized
-    ) &&
-    !/\b(sem cloud|sem nuvem|ollama|local-only|somente local)\b/.test(normalized)
-  );
 }
 
 function hasProjectGoal(normalized: string): boolean {

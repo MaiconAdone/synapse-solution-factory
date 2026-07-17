@@ -18,6 +18,8 @@ export interface RufloCouncilContext {
   domains: string[];
   strategy: string;
   selectedAgents: RufloCouncilAgent[];
+  leadAgent?: RufloCouncilAgent;
+  executionProfile: string;
   text: string;
 }
 
@@ -60,6 +62,7 @@ export function buildRufloCouncilContext(
       domains: [],
       strategy: "disabled",
       selectedAgents: [],
+      executionProfile: "disabled",
       text: "Ruflo council disabled."
     };
   }
@@ -67,16 +70,19 @@ export function buildRufloCouncilContext(
   const agents = readEnterpriseAgents(workspaceRoot);
   const maxAgents = Math.max(1, Math.min(options.maxAgents, agents.length || 60));
   const selectedAgents = rankAgentsForTask(agents, task).slice(0, maxAgents);
+  const leadAgent = selectedAgents[0];
   const llmConcurrency = Math.max(1, Math.min(options.llmConcurrency, 4));
   const domains = [...new Set(selectedAgents.map((item) => item.domain))];
   const strategy = councilStrategy(task, options.action, options.localModelProfile, selectedAgents.length);
+  const executionProfile = profileForAgent(leadAgent, options.localModelProfile);
   const lines = [
     selectedAgents.length >= 60
       ? "RUFLO 60-AGENT COUNCIL ACTIVE."
       : "RUFLO SELECTIVE COUNCIL ACTIVE.",
     `Activation strategy: ${strategy}.`,
-    `Execution policy: ${selectedAgents.length}/${agents.length} Ruflo roles are active as compressed deterministic reviewers; do not create ${selectedAgents.length} separate Ollama generations.`,
-    `Ollama policy: consolidate the council into at most ${llmConcurrency} local model call(s), use the selected local model profile (${options.localModelProfile ?? "auto"}), prefer one final answer, concise Portuguese Brazil output.`,
+    `Execution policy: ${selectedAgents.length}/${agents.length} Ruflo roles are available for this task; ${leadAgent?.id ?? "orchestration-manager"} is the directly executed lead and the remaining roles are compressed reviewers.`,
+    `Direct local agent: adopt the mission, domain and cognitive pattern of ${leadAgent?.id ?? "orchestration-manager"} for this Ollama generation.`,
+    `Ollama policy: use profile ${executionProfile}, consolidate into at most ${llmConcurrency} local model call(s), and do not create ${selectedAgents.length} separate generations. Prefer one final answer in concise Portuguese Brazil.`,
     "Consensus policy: orchestration-manager resolves conflicts; security-compliance, cost-optimizer, token-budget-analyst and testing-qa can veto unsafe or expensive actions.",
     "Context policy: use role-specific reasoning, avoid secrets, compress evidence, cite only relevant files, and keep cloud cost at zero unless the user explicitly asks for cloud.",
     `Active domains: ${domains.join(", ") || "none"}.`,
@@ -97,8 +103,23 @@ export function buildRufloCouncilContext(
     domains,
     strategy,
     selectedAgents,
+    leadAgent,
+    executionProfile,
     text
   };
+}
+
+export function profileForAgent(
+  agentItem: RufloCouncilAgent | undefined,
+  requestedProfile?: string
+): string {
+  if (requestedProfile && requestedProfile !== "auto") return requestedProfile;
+  const domain = agentItem?.domain ?? "orchestration";
+  if (["backend", "frontend", "integration", "platform"].includes(domain)) return "code_strong";
+  if (["quality", "security"].includes(domain)) return "code_review";
+  if (["orchestration", "product", "operations", "docs"].includes(domain)) return "fast";
+  if (["ml", "data", "analytics", "llm", "rag"].includes(domain)) return "reasoning_strong";
+  return "fast";
 }
 
 export function readEnterpriseAgents(workspaceRoot: string): RufloCouncilAgent[] {

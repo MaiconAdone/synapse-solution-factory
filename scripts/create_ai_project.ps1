@@ -19,6 +19,9 @@
 )
 
 $Destino = Join-Path $DestinoBase $NomeProjeto
+# Record whether the destination pre-existed so rollback never deletes a project
+# that was not created by this run.
+$DestinoExistedBefore = Test-Path $Destino
 if ([string]::IsNullOrWhiteSpace($Template)) {
     $Template = Split-Path -Parent $PSScriptRoot
 }
@@ -30,110 +33,35 @@ if ([string]::IsNullOrWhiteSpace($ProjectSlug)) {
 $SwarmName = "$ProjectSlug-swarm"
 $CreationDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
-function Resolve-ProjectUniverse {
-    param([string]$Value)
-    $Normalized = ($Value.Trim().ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
-    switch ($Normalized) {
-        "ml" {
-            return [ordered]@{
-                universe = "ml"
-                label = "ML"
-                project_type = "enterprise-ml-system"
-                solution_focus = "ml"
-                ml_enabled = $true
-                ai_enabled = $false
-                rag_enabled = $false
-                data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
-                description = "Projeto focado em Machine Learning, dados, features, treino, avaliacao, MLflow, monitoramento e producao."
-            }
-        }
-        { $_ -in @("ia", "ai") } {
-            return [ordered]@{
-                universe = "ia"
-                label = "IA"
-                project_type = "enterprise-ai-agentic-system"
-                solution_focus = "agents"
-                ml_enabled = $false
-                ai_enabled = $true
-                rag_enabled = $true
-                data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
-                description = "Projeto focado em LLMs, agentes, RAG, tool calling, MCP, memoria, guardrails e observabilidade de IA."
-            }
-        }
-        { $_ -in @("ml-ia-hibrido", "ml-ai-hybrid", "ml-ia", "ml-ai", "hibrido", "hybrid", "b2b2c-ai-ml-agentic-saas") } {
-            return [ordered]@{
-                universe = "hybrid"
-                label = "ML + IA (Hibrido)"
-                project_type = "enterprise-hybrid-ml-ai-system"
-                solution_focus = "ai-ml-agents"
-                ml_enabled = $true
-                ai_enabled = $true
-                rag_enabled = $true
-                data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
-                description = "Projeto hibrido que combina ML, LLMs, agentes, RAG, automacao, observabilidade e producao."
-            }
-        }
-        { $_ -in @("chatbolt", "chat-bolt", "chat-bolt-system") } {
-            return [ordered]@{
-                universe = "chatbolt"
-                label = "Chatbolt"
-                project_type = "enterprise-chatbolt-agentic-system"
-                solution_focus = "chatbots"
-                ml_enabled = $false
-                ai_enabled = $true
-                rag_enabled = $true
-                data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
-                description = "Projeto focado em assistentes conversacionais, chatbots com RAG, MCP, memoria e guardrails."
-            }
-        }
-        default {
-            Write-Host "ERRO: Universo do projeto invalido: $Value" -ForegroundColor Red
-            Write-Host "Use ML, IA, ML + IA (Hibrido) ou Chatbolt." -ForegroundColor Yellow
-            exit 1
-        }
-    }
-}
+# Project-factory helpers are modularized under scripts/project_factory/ so this
+# entry script stays an orchestrator instead of a single oversized file.
+. (Join-Path $PSScriptRoot 'project_factory\ProjectFactory.Common.ps1')
+. (Join-Path $PSScriptRoot 'project_factory\ProjectFactory.Content.ps1')
 
 $ProjectUniverse = Resolve-ProjectUniverse $TipoProjeto
 $TipoProjetoOriginal = $TipoProjeto
 $TipoProjeto = $ProjectUniverse.project_type
 
-function Write-TextFile {
-    param(
-        [string]$Path,
-        [string]$Content
-    )
-    $Parent = Split-Path -Parent $Path
-    if (!(Test-Path $Parent)) {
-        New-Item -ItemType Directory -Path $Parent -Force | Out-Null
+# Compensation/rollback for the creation transaction: if any phase fails after we
+# started scaffolding, remove the partial project directory. Never touches a
+# destination that already existed before this run.
+function Remove-PartialProject {
+    param([string]$Reason)
+    if ($DestinoExistedBefore) {
+        Write-Host "Rollback pulado: o destino ja existia antes desta execucao." -ForegroundColor Yellow
+        return
     }
-    [System.IO.File]::WriteAllText($Path, $Content, [System.Text.UTF8Encoding]::new($false))
-}
-
-function Add-KeepFile {
-    param([string]$Path)
-    if (!(Test-Path $Path)) {
-        New-Item -ItemType Directory -Path $Path -Force | Out-Null
-    }
-    $Keep = Join-Path $Path ".gitkeep"
-    if (!(Test-Path $Keep)) {
-        "" | Set-Content -Path $Keep -Encoding UTF8
+    if (Test-Path $Destino) {
+        try {
+            Get-ChildItem -LiteralPath $Destino -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                try { $_.Attributes = [System.IO.FileAttributes]::Normal } catch {}
+            }
+            Remove-Item -LiteralPath $Destino -Recurse -Force -ErrorAction Stop
+            Write-Host "Rollback: projeto parcial removido apos falha ($Reason)." -ForegroundColor Yellow
+        }
+        catch {
+            Write-Host "Aviso: nao foi possivel remover o projeto parcial em $Destino. $($_.Exception.Message)" -ForegroundColor Red
+        }
     }
 }
 
@@ -162,6 +90,12 @@ function Copy-Template {
         ".pytest_cache",
         "__pycache__",
         "node_modules",
+        ".venv",
+        "venv",
+        ".mypy_cache",
+        ".ruff_cache",
+        "mlruns",
+        "vendor",
         "backend",
         "frontend",
         "supabase",
@@ -239,7 +173,7 @@ function Copy-Template {
     catch {
         Write-Host "ERRO: Falha ao copiar template para $Destino" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
-        exit 1
+        throw "Falha ao copiar template para ${Destino}: $($_.Exception.Message)"
     }
 }
 
@@ -248,7 +182,7 @@ function Copy-AdoneXRuntime {
     $TargetRoot = Join-Path $Destino "adonex"
     if (!(Test-Path $SourceRoot)) {
         Write-Host "ERRO: runtime AdoneX nao encontrado no template: $SourceRoot" -ForegroundColor Red
-        exit 1
+        throw "Runtime AdoneX nao encontrado no template: $SourceRoot"
     }
 
     $SkipNames = @(
@@ -308,13 +242,13 @@ function Copy-AdoneXRuntime {
     catch {
         Write-Host "ERRO: Falha ao copiar runtime AdoneX completo para $TargetRoot" -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
-        exit 1
+        throw "Falha ao copiar runtime AdoneX para ${TargetRoot}: $($_.Exception.Message)"
     }
 
     foreach ($Required in @("package.json", "src\extension.ts", "src\agent\agentOrchestrator.ts", "src\patch\patchEngine.ts", "src\llm\localModels.ts")) {
         if (!(Test-Path (Join-Path $TargetRoot $Required))) {
             Write-Host "ERRO: runtime AdoneX incompleto, ausente: adonex\$Required" -ForegroundColor Red
-            exit 1
+            throw "Runtime AdoneX incompleto, ausente: adonex\$Required"
         }
     }
     Write-Host "Runtime AdoneX completo herdado sem dependencias/build pesados." -ForegroundColor Green
@@ -666,103 +600,6 @@ function Configure-LocalAiRuntime {
     Write-Host "Runtime Ruflo, agentes e politicas de modelo do projeto configurados." -ForegroundColor Green
 }
 
-function Configure-EnterpriseYaml {
-    $EnterpriseYamlPath = Join-Path $Destino "config\enterprise.yaml"
-    if (!(Test-Path $EnterpriseYamlPath)) {
-        return
-    }
-
-    $Content = @"
-project:
-  name: $NomeProjeto
-  type: $TipoProjeto
-  universe: $($ProjectUniverse.universe)
-  universe_label: $($ProjectUniverse.label)
-  solution_focus: $($ProjectUniverse.solution_focus)
-  core: codex-ruflo
-capabilities:
-  ml: $($ProjectUniverse.ml_enabled.ToString().ToLowerInvariant())
-  ai: $($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant())
-  rag: $($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant())
-  data_treatment: true
-  ruflo_15_agents: true
-  ruflo_core_agents: 15
-  ruflo_max_agents: 60
-  ruflo_specialist_agents: 45
-  cost_aware_orchestration: true
-  default_active_agents: 1
-  enterprise_active_agents: 8
-local_llm:
-  enabled: true
-  managed_by: synapse
-  provider: ollama
-  model: qwen2.5-coder:3b
-  general_model: qwen3:8b
-  balanced_model: deepseek-coder-v2:lite
-  code_review_model: deepseek-coder-v2:lite
-  code_strong_model: qwen2.5-coder:14b
-  planning_strong_model: qwen3:14b
-  reasoning_strong_model: deepseek-r1:14b
-  code_critical_model: qwen2.5-coder:32b
-  large_model: qwen2.5-coder:32b
-  embedding_model: nomic-embed-text:latest
-  model_selection: offline_profile_router
-  large_model_requires_explicit_request: true
-  recommended_context_tokens_on_16gb_ram: 4096
-  routing_strategy: local_first
-  ruflo_access: governed_on_demand
-  sensitive_content_local_only: true
-continual_learning:
-  enabled: true
-  mode: memory_retrieval_first
-  automatic_weight_updates: false
-  human_approval_required_for_training: true
-application_runtime:
-  managed_by: synapse
-  backend_in_project: false
-  frontend_in_project: false
-  factory_capable: false
-swarm:
-  name: $SwarmName
-  topology: hierarchical-mesh
-  max_agents: 60
-  core_agent_count: 15
-  specialist_agent_count: 45
-  activation_policy: cost_aware_core_subset_and_route_specialists_on_demand
-  coordination: distributed
-  consensus: majority
-memory:
-  enabled: true
-  namespace: $NomeProjeto
-  persist_on_create: true
-  runtime_file: memory/project_memory.runtime.json
-  backend: hybrid
-  tiers:
-    - working
-    - episodic
-    - semantic
-  embeddings:
-    enabled: true
-    dimension: 384
-  semantic_search:
-    enabled: true
-    index: hnsw-ready
-rag:
-  vector_db_path: vector_db
-  pipeline:
-    - ingest
-    - normalize
-    - chunk
-    - embed
-    - index
-    - retrieve
-    - rerank
-    - cite
-"@
-    Write-TextFile $EnterpriseYamlPath $Content
-    Write-Host "Enterprise YAML configurado." -ForegroundColor Green
-}
-
 function Configure-AgentsYaml {
     $AgentsYamlPath = Join-Path $Destino "agents\definitions\enterprise_agents.yaml"
     if (!(Test-Path $AgentsYamlPath)) {
@@ -773,195 +610,6 @@ function Configure-AgentsYaml {
     $AgentsYaml = $AgentsYaml -replace '(?m)^(\s*name:\s+).*-swarm\s*$', "`${1}$SwarmName"
     $AgentsYaml | Set-Content -Path $AgentsYamlPath -Encoding UTF8
     Write-Host "Agentes enterprise configurados." -ForegroundColor Green
-}
-
-function Configure-WorkflowsYaml {
-    $WorkflowsYamlPath = Join-Path $Destino "config\workflows\enterprise_workflows.yaml"
-    if (!(Test-Path $WorkflowsYamlPath)) {
-        return
-    }
-
-    $Content = @"
-project: $NomeProjeto
-project_type: $TipoProjeto
-version: 1
-workflows:
-  - id: solution-lifecycle
-    strategy: hybrid
-    owner: orchestration-manager
-    parallel_agent_activation: true
-    parallel_groups:
-      - [product-strategy, data-engineering, data-science, machine-learning]
-      - [llm-engineering, rag-engineering, integration-automation, security-compliance]
-      - [integration-automation, security-compliance, observability-ops, devops]
-      - [orchestration-manager, testing-qa, documentation, business-value-analyst]
-    agents:
-      - orchestration-manager
-      - product-strategy
-      - data-engineering
-      - data-science
-      - machine-learning
-      - llm-engineering
-      - rag-engineering
-      - integration-automation
-      - security-compliance
-      - observability-ops
-      - devops
-      - testing-qa
-      - documentation
-    steps:
-      - dialog_briefing
-      - apply_book_playbooks
-      - define_business_outcome
-      - prepare_data_folder
-      - design_data_contract
-      - run_data_analysis_plan
-      - design_ml_baseline
-      - design_ai_agents
-      - design_rag_pipeline
-      - plan_integrations
-      - define_security_guardrails
-      - define_synapse_integration_contract
-      - define_observability
-      - initialize_memory
-      - initialize_swarm
-      - optimize_parallel_execution
-      - write_project_docs
-      - validate_stack
-  - id: rag-build
-    strategy: adaptive
-    owner: rag-engineering
-    agents:
-      - data-engineering
-      - llm-engineering
-      - testing-qa
-    steps:
-      - ingest_sources
-      - validate_documents
-      - chunk_documents
-      - generate_embeddings
-      - build_vector_index
-      - evaluate_retrieval
-  - id: business-transformation
-    strategy: stateful-governed
-    owner: orchestration-manager
-    agents:
-      - orchestration-manager
-      - product-strategy
-      - data-science
-      - integration-automation
-      - security-compliance
-      - testing-qa
-      - business-value-analyst
-      - metrics-instrumentation
-      - policy-guardrails-engineer
-    steps:
-      - intake
-      - diagnosis
-      - process_mapping
-      - data_readiness
-      - opportunity_identification
-      - prioritization
-      - execution_planning
-      - risk_governance
-      - human_approval
-      - simulation
-      - impact_evaluation
-  - id: ml-release
-    strategy: hierarchical
-    owner: machine-learning
-    agents:
-      - data-engineering
-      - testing-qa
-      - devops
-      - documentation
-    steps:
-      - define_problem
-      - design_eval
-      - train_or_tune
-      - validate
-      - release
-      - monitor
-  - id: $ProjectSlug-intelligence-release
-    strategy: hierarchical
-    owner: orchestration-manager
-    agents:
-      - data-engineering
-      - machine-learning
-      - llm-engineering
-      - rag-engineering
-      - testing-qa
-      - documentation
-    steps:
-      - define_business_objective
-      - validate_data_contract
-      - design_prompt_and_model_evals
-      - build_baseline
-      - implement_rag_or_ml_pipeline
-      - evaluate_quality_cost_latency_safety
-      - update_model_card
-      - prepare_release_notes
-"@
-    Write-TextFile $WorkflowsYamlPath $Content
-    Write-Host "Workflows enterprise configurados." -ForegroundColor Green
-}
-
-function Create-EnvironmentFiles {
-    $Content = @"
-OPENAI_API_KEY=
-ENVIRONMENT=local
-MLFLOW_TRACKING_URI=http://localhost:5000
-MLFLOW_REGISTRY_URI=http://localhost:5000
-MLFLOW_EXPERIMENT_NAME=$ProjectSlug
-MLFLOW_ARTIFACT_ROOT=./artifacts/mlflow
-MLFLOW_ENABLED=true
-PROJECT_MANAGED_BY=Synapse
-PROJECT_FACTORY_CAPABLE=false
-PROJECT_CONTAINS_BACKEND=false
-PROJECT_CONTAINS_FRONTEND=false
-SWARM_TOPOLOGY=hierarchical-mesh
-SWARM_NAME=$SwarmName
-MEMORY_BACKEND=hybrid
-VECTOR_DB_PATH=vector_db
-PROJECT_NAME=$NomeProjeto
-PROJECT_TYPE=$TipoProjeto
-PROJECT_UNIVERSE=$($ProjectUniverse.universe)
-PROJECT_SOLUTION_FOCUS=$($ProjectUniverse.solution_focus)
-PROJECT_ML_ENABLED=$($ProjectUniverse.ml_enabled.ToString().ToLowerInvariant())
-PROJECT_AI_ENABLED=$($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant())
-PROJECT_RAG_ENABLED=$($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant())
-PROJECT_DATA_TREATMENT_ENABLED=true
-PROJECT_RUFLO_15_AGENTS_ENABLED=true
-PROJECT_RUFLO_CORE_AGENTS=15
-PROJECT_RUFLO_MAX_AGENTS=60
-PROJECT_RUFLO_SPECIALIST_AGENTS=45
-PROJECT_COST_AWARE_ORCHESTRATION_ENABLED=true
-PROJECT_DEFAULT_ACTIVE_AGENTS=1
-PROJECT_ENTERPRISE_ACTIVE_AGENTS=8
-PROJECT_ACTIVATE_ALL_60_REQUIRES_EXPLICIT_HIGH_COMPLEXITY=true
-LOCAL_LLM_ENABLED=true
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen2.5-coder:3b
-OLLAMA_GENERAL_MODEL=qwen3:8b
-OLLAMA_BALANCED_MODEL=deepseek-coder-v2:lite
-OLLAMA_CODE_REVIEW_MODEL=deepseek-coder-v2:lite
-OLLAMA_CODE_STRONG_MODEL=qwen2.5-coder:14b
-OLLAMA_PLANNING_STRONG_MODEL=qwen3:14b
-OLLAMA_REASONING_STRONG_MODEL=deepseek-r1:14b
-OLLAMA_CODE_CRITICAL_MODEL=qwen2.5-coder:32b
-OLLAMA_LARGE_MODEL=qwen2.5-coder:32b
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text:latest
-OLLAMA_TIMEOUT_SECONDS=600
-OLLAMA_CONTEXT_WINDOW=4096
-OLLAMA_MAX_OUTPUT_TOKENS=512
-OLLAMA_SEED=42
-LLM_ROUTING_METRICS_PATH=./artifacts/llm-routing/events.jsonl
-GOVERNED_SWARM_AUDIT_PATH=./artifacts/governance/swarm-executions.jsonl
-LEARNING_EVENTS_PATH=./memory/synapse_learning_memory.jsonl
-LOCAL_TRAINING_DATASET_PATH=./data/learning/ollama_training.jsonl
-"@
-    Write-TextFile (Join-Path $Destino ".env.example") $Content
-    Write-Host ".env.example criado." -ForegroundColor Green
 }
 
 function Create-AssistantInheritanceArtifacts {
@@ -2469,7 +2117,7 @@ function Create-BusinessSolutionAnalysis {
     $AnalyzerScript = Join-Path $Template "scripts\analyze_business_solution.py"
     if (!(Test-Path $AnalyzerScript)) {
         Write-Host "ERRO: analisador de solucao de negocio nao encontrado: $AnalyzerScript" -ForegroundColor Red
-        exit 1
+        throw "Analisador de solucao de negocio nao encontrado: $AnalyzerScript"
     }
 
     $GoalForAnalysis = if ([string]::IsNullOrWhiteSpace($ProjectGoal)) { "Criar solucao $($ProjectUniverse.label) com Synapse" } else { $ProjectGoal }
@@ -2488,7 +2136,7 @@ function Create-BusinessSolutionAnalysis {
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERRO: falha ao gerar analise de solucao de negocio." -ForegroundColor Red
-        exit $LASTEXITCODE
+        throw "Falha ao gerar analise de solucao de negocio (exit $LASTEXITCODE)."
     }
 
     $RuntimePath = Join-Path $Destino "config\runtime_manifest.json"
@@ -3104,19 +2752,19 @@ function Run-ProjectValidation {
     foreach ($RelativePath in $RequiredPaths) {
         if (!(Test-Path (Join-Path $Destino $RelativePath))) {
             Write-Host "ERRO: artefato obrigatorio ausente: $RelativePath" -ForegroundColor Red
-            exit 1
+            throw "Artefato obrigatorio ausente no projeto gerado: $RelativePath"
         }
     }
     foreach ($ForbiddenPath in @("backend", "frontend", "scripts\create_ai_project.ps1")) {
         if (Test-Path (Join-Path $Destino $ForbiddenPath)) {
             Write-Host "ERRO: componente exclusivo do Synapse copiado: $ForbiddenPath" -ForegroundColor Red
-            exit 1
+            throw "Componente exclusivo do Synapse copiado para o projeto: $ForbiddenPath"
         }
     }
     foreach ($ForbiddenPath in @("adonex\node_modules", "adonex\dist", "adonex\.vscode-test", "adonex\coverage", "adonex\debug.log")) {
         if (Test-Path (Join-Path $Destino $ForbiddenPath)) {
             Write-Host "ERRO: componente pesado do runtime AdoneX copiado: $ForbiddenPath" -ForegroundColor Red
-            exit 1
+            throw "Componente pesado do runtime AdoneX copiado para o projeto: $ForbiddenPath"
         }
     }
 
@@ -3125,7 +2773,7 @@ function Run-ProjectValidation {
         $EnvExample = Get-Content $EnvExamplePath -Raw
         if ($EnvExample -notmatch "PROJECT_DEFAULT_ACTIVE_AGENTS=1" -or $EnvExample -notmatch "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8") {
             Write-Host "ERRO: limites de agentes do .env.example divergem da politica de custo." -ForegroundColor Red
-            exit 1
+            throw "Limites de agentes do .env.example divergem da politica de custo."
         }
     }
 
@@ -3135,11 +2783,11 @@ function Run-ProjectValidation {
         $PeerServer = $Mcp.mcpServers.'synapse-peers'
         if (!$PeerServer -or @($PeerServer.args) -notcontains "scripts/synapse_solution_peers_mcp.py") {
             Write-Host "ERRO: synapse-peers deve usar o MCP standalone do projeto." -ForegroundColor Red
-            exit 1
+            throw "synapse-peers deve usar o MCP standalone do projeto."
         }
         if (@($PeerServer.args) -contains "scripts/synapse_peers_mcp.py") {
             Write-Host "ERRO: synapse-peers nao pode depender do backend da plataforma." -ForegroundColor Red
-            exit 1
+            throw "synapse-peers nao pode depender do backend da plataforma."
         }
     }
     Write-Host "Projeto de solucao validado com sucesso." -ForegroundColor Green
@@ -3322,30 +2970,39 @@ function Normalize-GeneratedProjectFilesystem {
     }
 }
 
-Copy-Template
-Copy-AdoneXRuntime
-Configure-RuntimeManifest
-Configure-EnterpriseSpec
-Configure-CostOptimizationPolicy
-Configure-AgenticMeshGovernance
-Configure-LocalAiRuntime
-Configure-EnterpriseYaml
-Configure-AgentsYaml
-Configure-WorkflowsYaml
-Create-EnvironmentFiles
-Create-ProjectStructure
-Create-ProjectArtifacts
-Create-BusinessSolutionAnalysis
-Create-ProjectTests
-Create-AssistantInheritanceArtifacts
-Create-Runbooks
-Personalize-Readme
-Create-CreationReport
-Finalize-SynapseSolutionProject
-Configure-SolutionVsCodeTasks
-Run-ProjectValidation
-Activate-GeneratedProject
-Normalize-GeneratedProjectFilesystem
+# Creation runs as a single transaction: any failing phase triggers rollback of
+# the partial project directory so no half-built project is left behind.
+try {
+    Copy-Template
+    Copy-AdoneXRuntime
+    Configure-RuntimeManifest
+    Configure-EnterpriseSpec
+    Configure-CostOptimizationPolicy
+    Configure-AgenticMeshGovernance
+    Configure-LocalAiRuntime
+    Configure-EnterpriseYaml
+    Configure-AgentsYaml
+    Configure-WorkflowsYaml
+    Create-EnvironmentFiles
+    Create-ProjectStructure
+    Create-ProjectArtifacts
+    Create-BusinessSolutionAnalysis
+    Create-ProjectTests
+    Create-AssistantInheritanceArtifacts
+    Create-Runbooks
+    Personalize-Readme
+    Create-CreationReport
+    Finalize-SynapseSolutionProject
+    Configure-SolutionVsCodeTasks
+    Run-ProjectValidation
+    Activate-GeneratedProject
+    Normalize-GeneratedProjectFilesystem
+}
+catch {
+    Write-Host "ERRO: criacao do projeto falhou: $($_.Exception.Message)" -ForegroundColor Red
+    Remove-PartialProject -Reason $_.Exception.Message
+    exit 1
+}
 
 Write-Host "Projeto criado: $Destino" -ForegroundColor Green
 Write-Host "Tipo: $TipoProjeto" -ForegroundColor Green

@@ -100,13 +100,13 @@ test("natural language coding requests open governed AdoneX implementation", () 
   assert.equal(route.governed, true);
 });
 
-test("natural language external LLM coding requests use governed strong mode", () => {
+test("external LLM wording cannot move AdoneX away from local execution", () => {
   const route = routeChatCommand(
     undefined,
     "usando modelo externo LLM quero evoluir o adonex como ferramenta de agentic coding, ajuste"
   );
   assert.equal(route.action, "implement");
-  assert.equal(route.mode, "strong");
+  assert.equal(route.mode, "local");
   assert.equal(route.governed, true);
 });
 

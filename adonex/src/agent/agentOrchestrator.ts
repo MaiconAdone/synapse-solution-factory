@@ -3,11 +3,10 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { WorkspaceContext } from "../context/workspaceContext";
-import { CostGuard, estimateCost, estimateTokenCost } from "../cost/costGuard";
+import { estimateCost, estimateTokenCost } from "../cost/costGuard";
 import { synapseSystemContext } from "../synapse/synapseProfile";
 import { buildRufloCouncilContext } from "../synapse/rufloCouncil";
 import { OllamaClient, OllamaClientError } from "../llm/ollamaClient";
-import { OpenAiClient } from "../llm/openaiClient";
 import { SynapseGatewayClient, SynapseGatewayClientError } from "../llm/synapseGatewayClient";
 import { normalizeOllamaBaseUrl } from "../llm/ollamaEndpoint";
 import {
@@ -23,6 +22,7 @@ import {
   type LocalModelCallProfile,
   localProfileForName,
   normalizeLocalModel,
+  outputBudgetForTask,
   selectLocalModelProfileForTask
 } from "../llm/localModels";
 import type {
@@ -60,7 +60,7 @@ export class AgentOrchestrator {
     mode: AgentMode
   ): Promise<{ plan: TaskPlan; snapshot: WorkspaceSnapshot }> {
     const objective = extractPrimaryTask(task);
-    const localFirst = mode === "local" || mode === "economic" || mode === "synapse";
+    const localFirst = true;
     const snapshot = await this.workspaceContext.collect(
       objective,
       localFirst ? this.collectBudgetForAction(action) : 42_000
@@ -101,7 +101,7 @@ export class AgentOrchestrator {
         : 900;
     const estimate = estimateCost(
       `${task}\n${formattedContext}`,
-      mode,
+      "local",
       outputTokens
     );
     const filesToRead = snapshot.relevantFiles.map((file) => file.path);
@@ -126,9 +126,7 @@ export class AgentOrchestrator {
           ...(snapshot.codeIntelligence?.notes ?? []),
           "Generated changes require human review.",
           "Workspace context is intentionally truncated to control cost.",
-          mode === "local" || mode === "synapse"
-            ? "Local model quality may be lower for complex cross-file changes."
-            : "Cloud context must not contain unapproved sensitive data.",
+          "Local model quality may be lower for complex cross-file changes.",
           recommendation === "codex-recommended"
             ? "Codex is recommended because this task crosses complex architecture or multiple systems."
             : `Recommended execution route: ${recommendation}.`,
@@ -159,9 +157,7 @@ export class AgentOrchestrator {
     const fullRufloLocalQuestion = this.isSynapseSystemQuestion(task, action);
     const workspaceText = formatWorkspaceSnapshot(
       snapshot,
-      mode === "local" || mode === "economic" || mode === "synapse"
-        ? this.workspaceBudgetForAction(action)
-        : 48_000
+      this.workspaceBudgetForAction(action)
     );
     const rufloLocalProfile = this.selectOllamaProfile(action, task, configuration);
     const rufloCouncil = buildRufloCouncilContext(snapshot.root, task, {
@@ -191,7 +187,6 @@ export class AgentOrchestrator {
       enabled: configuration.get<boolean>("promptEngineering.enabled", true)
     });
     if (
-      (mode === "local" || mode === "economic" || mode === "synapse") &&
       this.isFastLocalChatAction(action)
     ) {
       const response = await this.generateFastLocalChat(
@@ -232,7 +227,7 @@ export class AgentOrchestrator {
       signal: options.signal
     };
     let response: LlmResponse;
-    if (mode === "local" || mode === "economic" || mode === "synapse") {
+    {
       const gatewayResponse = await this.tryGenerateWithSynapseGateway(
         request,
         action,
@@ -245,7 +240,7 @@ export class AgentOrchestrator {
       } else {
       if (!configuration.get<boolean>("ollama.enabled", true)) {
         throw new Error(
-          "Ollama is disabled in AdoneX settings. Enable it or choose a cloud mode."
+          "Ollama is disabled in AdoneX settings. Enable it to use AdoneX."
         );
       }
       const baseModel = configuration.get<string>(
@@ -276,7 +271,7 @@ export class AgentOrchestrator {
       try {
         response = await new OllamaClient(clientOptions).generate({
           ...request,
-          maxOutputTokens: Math.max(request.maxOutputTokens, selectedProfile.maxOutputTokens)
+          maxOutputTokens: outputBudgetForTask(selectedProfile, action, task)
         });
       } catch (error) {
         if (
@@ -293,8 +288,6 @@ export class AgentOrchestrator {
         }
       }
       }
-    } else {
-      response = await this.generateWithOpenAi(mode, request, plan, snapshot.root);
     }
 
     return {
@@ -307,7 +300,7 @@ export class AgentOrchestrator {
       actualEstimatedCostUsd: estimateTokenCost(
         response.inputTokens || plan.estimatedInputTokens,
         response.outputTokens || plan.estimatedOutputTokens,
-        mode
+        "local"
       ).estimatedCostUsd
     };
   }
@@ -327,7 +320,7 @@ export class AgentOrchestrator {
     ].join("\n\n");
     const estimate = estimateCost(
       `${fixPrompt}\n${this.workspaceContext.format(snapshot)}`,
-      mode,
+      "local",
       Math.max(plan.estimatedOutputTokens, 1600)
     );
     return this.executeApproved(
@@ -349,56 +342,6 @@ export class AgentOrchestrator {
 
   public async refreshSnapshot(task: string): Promise<WorkspaceSnapshot> {
     return this.workspaceContext.collect(task);
-  }
-
-  private async generateWithOpenAi(
-    mode: AgentMode,
-    request: {
-      systemPrompt: string;
-      userPrompt: string;
-      workspaceContext: string;
-      maxOutputTokens: number;
-    },
-    plan: TaskPlan,
-    workspaceRoot: string
-  ): Promise<LlmResponse> {
-    const configuration = vscode.workspace.getConfiguration("adonex");
-    const model =
-      mode === "strong"
-        ? configuration.get<string>("openai.modelStrong", "gpt-5.1")
-        : configuration.get<string>("openai.modelBalanced", "gpt-5-mini");
-    const guard = new CostGuard(
-      workspaceRoot,
-      configuration.get<number>("cost.dailyBudgetUsd", 2),
-      configuration.get<number>("cost.monthlyBudgetUsd", 20)
-    );
-    const status = await guard.check({
-      inputTokens: plan.estimatedInputTokens,
-      outputTokens: plan.estimatedOutputTokens,
-      estimatedCostUsd: plan.estimatedCostUsd
-    });
-    if (!status.allowed) {
-      throw new Error(status.reason ?? "AdoneX cost budget blocked this request.");
-    }
-    const client = new OpenAiClient({
-      secretStorage: this.extensionContext.secrets,
-      configuredApiKey: configuration.get<string>("openai.apiKey", "")
-    });
-    const response = await client.generate({ ...request, model });
-    const actualCost = estimateTokenCost(
-      response.inputTokens || plan.estimatedInputTokens,
-      response.outputTokens || plan.estimatedOutputTokens,
-      mode
-    );
-    await guard.record({
-      timestamp: new Date().toISOString(),
-      provider: "openai",
-      model: response.model,
-      inputTokens: response.inputTokens || plan.estimatedInputTokens,
-      outputTokens: response.outputTokens || plan.estimatedOutputTokens,
-      estimatedCostUsd: actualCost.estimatedCostUsd
-    });
-    return response;
   }
 
   private async tryGenerateWithSynapseGateway(
@@ -427,7 +370,6 @@ export class AgentOrchestrator {
       projectId: configuration.get<string>("synapse.llmGateway.projectId", "adonex"),
       agentId: "adonex",
       toolName: `adonex.${action}`,
-      allowCloud: false,
       humanApproved: false,
       localModelProfile: selectedProfile.profile,
       temperature: selectedProfile.temperature,

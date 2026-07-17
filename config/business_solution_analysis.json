@@ -2,40 +2,25 @@
   "schema": "synapse-business-solution-analysis.v1",
   "status": "analyzed",
   "requested_universe": "ia",
-  "recommended_universe": "hybrid",
+  "recommended_universe": "ia",
   "dialog_context": {
-    "project_goal": "Substituir a Vick existente por assistente virtual local integrado ao AdoneX, sem criar projeto separado",
-    "business_problem": "Operar integralmente o AdoneX por voz, incluindo edicao, testes e comandos",
-    "success_metric_or_acceptance_criteria": "Manter o layout atual na porta 3000, ativacao por Vick, transcricao local e execucao governada funcionando",
-    "available_data_or_knowledge_sources": "microfone, workspace, memoria compartilhada, Ollama e ferramentas MCP",
+    "project_goal": "Disponibilizar os 60 agentes Ruflo no AdoneX para uso governado por modelos Ollama locais, melhorando edicao de codigo e agilidade",
+    "business_problem": "O AdoneX precisa tornar os 60 papeis especialistas executaveis sob solicitacao, com selecao dinamica e sem degradar latencia",
+    "success_metric_or_acceptance_criteria": "Reduzir a latencia mediana das respostas de codigo em 30% e obter pelo menos 90% de sucesso nos testes de edicao",
+    "available_data_or_knowledge_sources": "Catalogo Ruflo do repositorio, configuracoes Synapse e modelos Ollama locais instalados",
     "risk_level": "high"
   },
   "domain": {
     "id": "developer_productivity",
-    "score": 2
+    "score": 3
   },
   "ml_archetype": {
-    "id": "speech_recognition",
-    "label": "Speech recognition and voice interaction",
-    "score": 3,
-    "matched_keywords": [
-      "voz",
-      "transcricao",
-      "microfone"
-    ],
-    "techniques": [
-      "wake_word_detection",
-      "automatic_speech_recognition",
-      "voice_activity_detection",
-      "domain_lexicon",
-      "human_review"
-    ],
-    "metrics": [
-      "wake_activation_p95_ms",
-      "word_accuracy",
-      "command_completion_rate",
-      "false_activation_rate"
-    ]
+    "id": "unknown",
+    "label": "Unknown",
+    "score": 0,
+    "matched_keywords": [],
+    "techniques": [],
+    "metrics": []
   },
   "ai_archetype": {
     "id": "voice_coding_agent",
@@ -43,7 +28,7 @@
     "score": 2,
     "matched_keywords": [
       "adonex",
-      "vick"
+      "edicao de codigo"
     ],
     "techniques": [],
     "metrics": [
@@ -59,12 +44,6 @@
     "tests",
     "evals",
     "governance",
-    "mlops",
-    "wake_word_detection",
-    "automatic_speech_recognition",
-    "voice_activity_detection",
-    "domain_lexicon",
-    "human_review",
     "rag",
     "agents",
     "guardrails",
@@ -74,14 +53,86 @@
   "technology_layer": {
     "schema": "synapse-technology-layer.v1",
     "active": true,
-    "universe": "hybrid",
+    "universe": "ia",
     "recommended_technology_ids": [
-      "ollama",
-      "mcp-servers",
+      "crewai",
+      "swarms",
+      "langgraph",
       "mlflow",
-      "fastapi"
+      "ollama",
+      "fastapi",
+      "mcp-servers"
     ],
     "recommended_technologies": [
+      {
+        "id": "crewai",
+        "name": "CrewAI",
+        "category": "agentic_coding_and_business_agents",
+        "capabilities": [
+          "agents",
+          "role_based_workflows",
+          "tools"
+        ],
+        "best_for": [
+          "role_based_crews",
+          "business_process_automation"
+        ],
+        "select_when": [
+          "clear_roles_exist",
+          "business_process_has_steps",
+          "crew"
+        ],
+        "templates": [
+          "templates/agents/crewai_project.yaml"
+        ]
+      },
+      {
+        "id": "swarms",
+        "name": "Swarms",
+        "category": "agentic_coding_and_business_agents",
+        "capabilities": [
+          "agents",
+          "multi_agent",
+          "parallelism"
+        ],
+        "best_for": [
+          "large_agent_teams",
+          "parallel_exploration"
+        ],
+        "select_when": [
+          "many_specialists_are_needed",
+          "parallel",
+          "swarm"
+        ],
+        "templates": [
+          "templates/agents/swarms_council.yaml"
+        ]
+      },
+      {
+        "id": "langgraph",
+        "name": "LangGraph",
+        "category": "agent_orchestration",
+        "capabilities": [
+          "agents",
+          "workflow_graphs",
+          "state",
+          "human_in_the_loop"
+        ],
+        "best_for": [
+          "stateful_agents",
+          "graph_workflows",
+          "approval_flows"
+        ],
+        "select_when": [
+          "workflow_has_state",
+          "handoff",
+          "approval",
+          "graph"
+        ],
+        "templates": [
+          "templates/agents/langgraph_state_machine.py"
+        ]
+      },
       {
         "id": "mlflow",
         "name": "MLflow",
@@ -189,12 +240,22 @@
       }
     ],
     "categories": [
+      "agentic_coding_and_business_agents",
+      "agent_orchestration",
       "mlops",
       "api_backend",
       "local_llm_runtime",
       "tool_context_protocol"
     ],
     "capabilities": [
+      "agents",
+      "role_based_workflows",
+      "tools",
+      "multi_agent",
+      "parallelism",
+      "workflow_graphs",
+      "state",
+      "human_in_the_loop",
       "experiments",
       "model_registry",
       "metrics",
@@ -208,12 +269,14 @@
       "offline_inference",
       "model_routing",
       "mcp",
-      "tools",
       "resources",
       "prompts",
       "integration"
     ],
     "template_paths": [
+      "templates/agents/crewai_project.yaml",
+      "templates/agents/swarms_council.yaml",
+      "templates/agents/langgraph_state_machine.py",
       "templates/mlops/mlflow_experiment.py",
       "templates/backend/fastapi_service.py",
       "templates/llm/ollama_router.py",
@@ -222,86 +285,16 @@
     "selection_reason": "Selected by business-problem signals, universe requirements, and local-first Synapse defaults."
   },
   "ml_foundations": {
-    "active": true,
+    "active": false,
     "policy_path": "config/ml_foundations_policy.json",
     "spec_path": "docs/specifications/ml_foundations.md",
-    "reason": "Use foundational ML gates before model selection, training, evaluation, or release.",
-    "required_reasoning_gates": [
-      {
-        "id": "learning_problem_mapping",
-        "description": "Map experience, task, and performance measure before choosing a model.",
-        "required_outputs": [
-          "experience_data",
-          "prediction_task",
-          "performance_measure"
-        ]
-      },
-      {
-        "id": "hypothesis_space_and_bias",
-        "description": "Name the hypothesis family, its assumptions, and expected bias/variance tradeoff.",
-        "required_outputs": [
-          "hypothesis_family",
-          "bias_assumptions",
-          "variance_risk"
-        ]
-      },
-      {
-        "id": "probabilistic_assumptions",
-        "description": "State whether the solution needs probabilistic outputs, calibration, independence assumptions, or distributional checks.",
-        "required_outputs": [
-          "probability_model",
-          "calibration_need",
-          "distribution_checks"
-        ]
-      },
-      {
-        "id": "estimation_objective",
-        "description": "Define the estimation or loss objective used to fit the model.",
-        "required_outputs": [
-          "loss_function",
-          "estimator",
-          "optimization_method"
-        ]
-      },
-      {
-        "id": "statistical_validation",
-        "description": "Use holdout/cross-validation, confidence intervals, or hypothesis checks before claiming improvement.",
-        "required_outputs": [
-          "evaluation_split",
-          "confidence_or_significance_check",
-          "baseline_delta"
-        ]
-      },
-      {
-        "id": "regularization_and_optimization",
-        "description": "Document regularization, convergence, and optimization limits for fitted models.",
-        "required_outputs": [
-          "regularization",
-          "convergence_criteria",
-          "failure_modes"
-        ]
-      },
-      {
-        "id": "attribute_selection_transformation",
-        "description": "Review feature relevance, leakage risk, transformations, and dimensionality before release.",
-        "required_outputs": [
-          "feature_selection_policy",
-          "leakage_check",
-          "transformations"
-        ]
-      }
-    ],
+    "reason": "Not required for non-ML universe.",
+    "required_reasoning_gates": [],
     "algorithm_guidance": {},
-    "required_artifacts": [
-      "docs/specifications/ml_foundations.md",
-      "ml_systems/data_contract.yaml",
-      "ml_systems/model_card.md",
-      "ml_systems/monitoring_plan.yaml",
-      "evals/ml_cases.jsonl"
-    ]
+    "required_artifacts": []
   },
   "architecture_blueprint": {
-    "style": "hybrid_mlops_rag_agent_architecture",
+    "style": "rag_agentic_service_architecture",
     "framework_ids": [
       "langgraph",
       "openai-agents-sdk",
@@ -310,10 +303,13 @@
       "mcp-sdks"
     ],
     "technology_ids": [
-      "ollama",
-      "mcp-servers",
+      "crewai",
+      "swarms",
+      "langgraph",
       "mlflow",
-      "fastapi"
+      "ollama",
+      "fastapi",
+      "mcp-servers"
     ],
     "components": [
       "api_gateway",
@@ -321,9 +317,9 @@
       "tests",
       "evals",
       "observability",
-      "experiment_tracking",
-      "model_registry",
-      "drift_monitoring"
+      "agent_orchestrator",
+      "tool_boundary",
+      "human_approval_gate"
     ],
     "local_first": true,
     "cloud_requires_explicit_approval": true
@@ -339,6 +335,16 @@
       ]
     },
     {
+      "id": "agentic_execution",
+      "stages": [
+        "plan",
+        "select_tools",
+        "execute",
+        "review",
+        "record_memory"
+      ]
+    },
+    {
       "id": "mlops",
       "stages": [
         "baseline",
@@ -350,34 +356,34 @@
     }
   ],
   "solution_templates": [
+    "templates/agents/crewai_project.yaml",
+    "templates/agents/swarms_council.yaml",
+    "templates/agents/langgraph_state_machine.py",
     "templates/mlops/mlflow_experiment.py",
     "templates/backend/fastapi_service.py",
     "templates/llm/ollama_router.py",
     "templates/mcp/server.py"
   ],
-  "architecture_decision": "Create a hybrid project combining MLOps with RAG/agents so predictive intelligence and task execution share data contracts, tests, evals, and governance.",
+  "architecture_decision": "Create an AI project with RAG and/or governed agents, tool boundaries, MCP-ready integration, cost controls, and prompt/RAG/tool evals.",
   "data_strategy": {
     "data_contract_required": true,
-    "baseline_required": true,
+    "baseline_required": false,
     "monitoring_required": true,
     "primary_metrics": [
-      "wake_activation_p95_ms",
-      "word_accuracy",
-      "command_completion_rate",
-      "false_activation_rate"
+      "groundedness",
+      "task_success_rate",
+      "cost_per_task"
     ]
   },
   "test_strategy": [
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
-    "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
   "eval_strategy": [
     "evals/project_cases.jsonl",
     "evals/quality_gates.yaml",
-    "evals/ml_cases.jsonl using wake_activation_p95_ms, word_accuracy, command_completion_rate, false_activation_rate",
     "evals/prompt_cases.jsonl",
     "evals/rag_cases.jsonl"
   ],
@@ -387,10 +393,9 @@
     "max_agents": 60,
     "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
     "recommended_fleets": [
-      "project_factory_fleet",
-      "ml_fleet",
       "rag_fleet",
-      "cost_optimization_fleet"
+      "mcp_fleet",
+      "security_fleet"
     ]
   },
   "book_alignment": [
@@ -398,9 +403,6 @@
     "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
     "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
     "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
-    "Speech and Language Processing: evaluate ASR with word error/accuracy, domain vocabulary, and representative speech cases.",
-    "Designing Voice User Interfaces: separate wake, listening, recognition, handling, confirmation, and recovery states.",
-    "Effective Conversational AI: measure intent success and continuously improve from observed failures instead of relying on generic fallback copy.",
     "Agentic Coding: engineer repository context, tool permissions, reusable workflows, validation hooks, and controlled execution.",
     "Prompt Engineering for LLMs: compile spoken intent into an explicit objective, constraints, evidence, tools, and response contract."
   ],
@@ -408,16 +410,13 @@
     "docs/briefings/business_solution_analysis.md",
     "config/business_solution_analysis.json",
     "config/ai_framework_selection.json",
-    "config/ml_foundations_policy.json",
-    "docs/specifications/ml_foundations.md",
+    "docs/specifications/voice_agentic_coding.md",
     "config/voice_agent_quality_gates.json",
     "evals/voice_agent_cases.jsonl",
-    "docs/specifications/voice_agentic_coding.md",
     "evals/agentic_coding_cases.jsonl",
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
-    "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
   "project": "synapse",

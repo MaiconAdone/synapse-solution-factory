@@ -1,6 +1,5 @@
 export type TaskRoute =
   | "adonex-local"
-  | "adonex-openai"
   | "codex-recommended";
 
 export function classifyTaskComplexity(
@@ -10,11 +9,6 @@ export function classifyTaskComplexity(
 ): TaskRoute {
   const text = prompt.toLowerCase();
   const contextText = `${workspaceContext}\n${memory}`.toLowerCase();
-  const externalPreferred =
-    /\b(modelo externo|llm externo|openai|gpt|cloud|nuvem|externo)\b/.test(
-      text
-    ) &&
-    !/\b(sem cloud|sem nuvem|local|ollama|local-first)\b/.test(text);
   const localPreferred =
     /\b(local|ollama|sem cloud|baixo custo|reduzir custo|economico|econ[oô]mico|rapido|r[áa]pido)\b/.test(
       text
@@ -53,8 +47,7 @@ export function classifyTaskComplexity(
     /codifica|programar|editar|alterar|alteracoes|altera[cç][aã]o/
   ].filter((pattern) => pattern.test(text)).length;
   if (mediumSignals >= 1 || text.length > 4_000) {
-    if (externalPreferred) return "adonex-openai";
-    return localPreferred ? "adonex-local" : "adonex-openai";
+    return "adonex-local";
   }
   return "adonex-local";
 }

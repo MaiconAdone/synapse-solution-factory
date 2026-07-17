@@ -7,6 +7,7 @@ import {
   ADONEX_REASONING_LOCAL_MODEL,
   localProfileForName,
   normalizeLocalModel,
+  outputBudgetForTask,
   selectLocalModelForTask,
   selectLocalModelProfileForTask
 } from "../src/llm/localModels";
@@ -82,5 +83,14 @@ test("local model selector only escalates to slower profiles when explicitly req
     selectLocalModelProfileForTask("review", "revisao final antes de producao usando 32b").model,
     "qwen2.5-coder:32b"
   );
-  assert.equal(localProfileForName("code_strong")?.numCtx, 6144);
+  assert.equal(localProfileForName("code_strong")?.numCtx, 4096);
+});
+
+test("local output budgets prevent truncated code JSON without unbounded generation", () => {
+  assert.equal(outputBudgetForTask(ADONEX_LOCAL_MODEL_PROFILES.fast, "fix", "corrija este bug"), 768);
+  assert.equal(outputBudgetForTask(ADONEX_LOCAL_MODEL_PROFILES.code_strong, "implement", "implemente este endpoint"), 1200);
+  assert.equal(
+    outputBudgetForTask(ADONEX_LOCAL_MODEL_PROFILES.code_strong, "implement", "refatoracao grande em varios arquivos"),
+    1800
+  );
 });

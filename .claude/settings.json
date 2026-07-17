@@ -1,182 +1,81 @@
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" pre-bash) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" pre-bash)\"",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" pre-edit) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" pre-edit)\"",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" post-edit) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" post-edit)\"",
-            "timeout": 10000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" post-bash) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" post-bash)\"",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" route) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" route)\"",
-            "timeout": 10000
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" session-restore) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-restore)\"",
-            "timeout": 15000
-          },
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\auto-memory-hook.mjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\auto-memory-hook.mjs\" import) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\auto-memory-hook.mjs\" import)\"",
-            "timeout": 8000
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" session-end) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-end)\"",
-            "timeout": 10000
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\auto-memory-hook.mjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\auto-memory-hook.mjs\" sync) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\auto-memory-hook.mjs\" sync)\"",
-            "timeout": 10000
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "manual",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" compact-manual) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" compact-manual)\""
-          },
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" session-end) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-end)\"",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" compact-auto) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" compact-auto)\""
-          },
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" session-end) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" session-end)\"",
-            "timeout": 6000
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" status) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" status)\"",
-            "timeout": 3000
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" post-task) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" post-task)\"",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cmd /c \"IF EXIST \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" (node \"%CLAUDE_PROJECT_DIR%\\.claude\\helpers\\hook-handler.cjs\" notify) ELSE (node \"%USERPROFILE%\\.claude\\helpers\\hook-handler.cjs\" notify)\"",
-            "timeout": 3000
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "node -e \"const fs=require('fs'),p=require('path');const d=process.env.CLAUDE_PROJECT_DIR||'.';const f=p.join(d,'.claude/helpers/statusline.cjs');const h=p.join(process.env.USERPROFILE||process.env.HOME||'.', '.claude/helpers/statusline.cjs');require(fs.existsSync(f)?f:h);\""
+﻿{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_FLOW_V3_ENABLED": "true",
+    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
   },
   "permissions": {
     "allow": [
       "Bash(npx @claude-flow*)",
       "Bash(npx claude-flow*)",
       "Bash(node .claude/*)",
-      "mcp__claude-flow__:*"
+      "mcp__claude-flow__:*",
+      "Bash(curl -s -m 10 http://127.0.0.1:11434/api/ps)",
+      "Bash(curl -s -m 30 -o /dev/null -w \"total=%{time_total}s http=%{http_code}\\\\n\" -X POST http://127.0.0.1:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"qwen2.5-coder:3b\",\"prompt\":\"oi\",\"stream\":false,\"options\":{\"num_predict\":8}}')",
+      "Bash(nvidia-smi --query-gpu=name,memory.total --format=csv)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import os; print\\('cores logicos:', os.cpu_count\\(\\)\\)\")",
+      "Bash(wmic cpu *)",
+      "Bash(wmic OS get TotalVisibleMemorySize,FreePhysicalMemory /format:list)",
+      "Bash(env)",
+      "Bash(npx next *)",
+      "Bash(python -c \"import json;d=json.load\\(open\\('package.json'\\)\\);print\\('scripts:',d.get\\('scripts'\\)\\);print\\('next:',d.get\\('dependencies',{}\\).get\\('next'\\)\\)\")",
+      "Bash(curl -s -m 60 -o /dev/null -w \"GET / -> HTTP %{http_code}\\\\n\" http://127.0.0.1:3000/)",
+      "Bash(curl -s -m 30 -D - -o /tmp/det.txt -X POST http://127.0.0.1:3000/api/vick/chat -H \"Content-Type: application/json\" -d '{\"prompt\":\"quais projetos existem\",\"history\":[]}')",
+      "Read(//tmp/**)",
+      "Bash(curl -s -m 60 -D - -o /tmp/stream.txt -X POST http://127.0.0.1:3000/api/vick/chat -H \"Content-Type: application/json\" -d '{\"prompt\":\"resuma em uma frase o que e engenharia de dados\",\"history\":[]}')",
+      "Bash(node -e ' *)",
+      "Bash(node wake2.test.mjs)",
+      "Bash(curl -s -m 15 http://127.0.0.1:3000/api/vick/telemetry)",
+      "Bash(npx playwright *)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Microsoft/Edge/Application/**)",
+      "Bash(node browser.test.mjs)",
+      "Bash(node turns.test.mjs)",
+      "Bash(curl -sN -m 120 -X POST http://127.0.0.1:3000/api/vick/chat -H \"Content-Type: application/json\" -d '{\"prompt\":\"me explique o que e um data warehouse\",\"history\":[]}')",
+      "Bash(explorer.exe \"C:/Users/malves/Documents/Projetos\")",
+      "Bash(echo \"exit code = $?\")",
+      "Bash(curl -s -m 3 http://127.0.0.1:8000/health -o /dev/null -w \"backend 8000: %{http_code}\\\\n\")",
+      "Bash(curl -s -m 3 http://127.0.0.1:8766/health -o /dev/null -w \"adonex bridge 8766: %{http_code}\\\\n\")",
+      "Bash(curl -s -m 5 http://127.0.0.1:8000/projects)",
+      "Bash(curl -s -m 8 \"http://127.0.0.1:8000/projects/chamado-replicar\")",
+      "Bash(curl -s -m 5 http://127.0.0.1:8766/health)",
+      "Bash(curl -s -m 30 -X POST http://127.0.0.1:3000/api/vick/chat -H \"Content-Type: application/json\" -d '{\"prompt\":\"abra o projeto chamado-replicar\",\"history\":[]}')",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('provider:',d['provider']\\);print\\('resposta:',d['response']\\)\")",
+      "Bash(grep -iE \"requirements|package.json|pyproject|setup.py|Dockerfile|\\\\.py$|\\\\.txt$\")",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(d['response'][:200]\\)\")",
+      "Bash(curl -s -m 30 -X POST http://127.0.0.1:3000/api/vick/chat -H \"Content-Type: application/json\" -d '{\"prompt\":\"abra a pasta do projeto chamado-replicar\",\"history\":[]}')",
+      "Bash(curl -s -m 180 -X POST http://127.0.0.1:3000/api/vick/chat -H \"Content-Type: application/json\" -d '{\"prompt\":\"proponha melhorias para o projeto chamado-replicar\",\"history\":[]}')",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('provider:',d['provider']\\);print\\('awaitingApproval:',d.get\\('context',{}\\).get\\('awaitingApproval'\\)\\);print\\('resposta:',d['response'][:400]\\)\")",
+      "Bash(curl -s -m 180 -X POST http://127.0.0.1:8000/swarm/governed/plan -H \"Content-Type: application/json\" -d '{\"prompt\":\"proponha melhorias para o projeto chamado-replicar\",\"universe\":\"hybrid\",\"allow_cloud\":false,\"activate_all_60\":false,\"human_approved\":false}')",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\(d['response']\\)\")",
+      "Bash(curl -s -m 60 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(python -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('provider:',d['provider']\\);print\\('via:',d.get\\('context',{}\\).get\\('via'\\)\\);print\\('resposta:',d['response'][:300]\\)\")",
+      "Bash(curl -s -m 200 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/conf.json -D C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/hdr.txt -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/body.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(curl -s -m 20 -X POST http://127.0.0.1:8766/command -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/cmd.json -w '\\\\nHTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(node vem.test.mjs)",
+      "Bash(curl -s -m 20 -X POST http://127.0.0.1:8766/command -H 'Content-Type: application/json' -H 'X-Adonex-Token: $ADONEX_BRIDGE_TOKEN' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/hc.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/hcout.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(git check-ignore *)",
+      "Bash(break)",
+      "Bash(curl -s -m 8 -o /dev/null -w \"GET / HTTP %{http_code}\\\\n\" http://127.0.0.1:3000/)",
+      "Bash(curl -s -m 40 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/conf2.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/conf2out.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(python -c \"import json;d=json.load\\(open\\('.vscode/settings.json',encoding='utf-8'\\)\\);print\\({k:v for k,v in d.items\\(\\) if 'adonex' in k.lower\\(\\)}\\)\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('.claude/settings.json',encoding='utf-8'\\)\\); print\\('JSON valido. defaultMode =', d['permissions'].get\\('defaultMode'\\)\\); print\\('deny preservado:', d['permissions'].get\\('deny'\\)\\)\")",
+      "Bash(curl -s -m 40 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/impout.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(curl -s -m 30 -X POST http://127.0.0.1:8766/command -H 'Content-Type: application/json' -H 'X-Adonex-Token: $ADONEX_BRIDGE_TOKEN' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/edit.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/editout.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(curl -s -m 40 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp2.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp2out.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)"
-    ]
+    ],
+    "defaultMode": "default"
   },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_FLOW_V3_ENABLED": "true",
-    "CLAUDE_FLOW_HOOKS_ENABLED": "true"
+  "statusLine": {
+    "type": "command",
+    "command": "node -e \"const fs=require('fs'),p=require('path');const d=process.env.CLAUDE_PROJECT_DIR||'.';const f=p.join(d,'.claude/helpers/statusline.cjs');const h=p.join(process.env.USERPROFILE||process.env.HOME||'.', '.claude/helpers/statusline.cjs');require(fs.existsSync(f)?f:h);\""
   },
   "claudeFlow": {
     "version": "3.0.0",
@@ -283,3 +182,5 @@
     }
   }
 }
+
+
