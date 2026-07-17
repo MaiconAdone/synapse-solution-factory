@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import test from "node:test";
 import {
   checkSolutionFactoryDialog,
@@ -161,4 +161,11 @@ test("solution factory chat proceeds when briefing is complete", () => {
   const check = checkSolutionFactoryDialog(prompt, route);
   assert.equal(check.applies, true);
   assert.deepEqual(check.missingFields, []);
+});
+
+test("advanced slash commands preserve governance boundaries", () => {
+  assert.equal(routeChatCommand("search").action, "review");
+  assert.equal(routeChatCommand("search").governed, false);
+  assert.equal(routeChatCommand("improve").action, "implement");
+  assert.equal(routeChatCommand("improve").governed, true);
 });

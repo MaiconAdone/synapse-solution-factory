@@ -62,3 +62,9 @@ Use este navegador p
 | 2026-07-17 | Codex | done | Restaurar aprovacao humana para edicao de codigo | Codex voltou a on-request, Claude Code a default e AdoneX a preparar patches e exigir confirmacao/aprovacao antes de escrita e comandos. |
 
 | 2026-07-17 | Codex | done | Corrigir inconsistencias de governanca Codex e AdoneX | Codex referencia a policy e usa o caminho MCP com capitalizacao real; AdoneX autonomia virou opt-in e aprovacoes de escrita/comando prevalecem mesmo quando habilitada. Testes AdoneX 117/117, contrato Codex e enterprise_stack_ok passaram. |
+
+| 2026-07-17 | Codex/OpenAI | briefing | Evoluir AdoneX com capacidades inspiradas no Claude Code | Pedido explicito para usar Codex/OpenAI; escopo inclui busca em bases grandes, fluxo agentico governado, terminal, editor, subagentes, slash commands e MCP. Aguardando metrica, fontes, risco e decisao sobre integracao Anthropic. |
+
+| 2026-07-17 | Codex/OpenAI | done | Evoluir AdoneX com capacidades de agentic coding e Anthropic opcional | Anthropic Messages API opt-in com chave por ambiente e aprovacao por chamada; /search, /improve, contexto do editor, Ruflo/MCP preservados; 122 testes AdoneX, 105 backend, enterprise_stack_ok e frontend build passaram. |
+
+| 2026-07-17 | Codex/OpenAI | done | Separar provedores definitivamente | Codex/OpenAI e Claude/Anthropic editam diretamente sem Ollama; AdoneX ficou Ollama-only; gates humanos e rollback preservados. A integracao Anthropic anterior do AdoneX foi substituida. |

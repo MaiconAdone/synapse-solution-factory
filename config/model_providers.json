@@ -15,7 +15,7 @@
     "daily_cloud_token_budget_env": "LLM_GATEWAY_DAILY_CLOUD_TOKEN_BUDGET",
     "per_request_cloud_token_budget_env": "LLM_GATEWAY_PER_REQUEST_CLOUD_TOKEN_BUDGET"
   },
-  "routing_strategy": "local_first",
+  "routing_strategy": "assistant_boundaries",
   "ruflo_bridge": {
     "enabled": true,
     "execution_service": "backend/app/services/governed_swarm_execution.py",
@@ -119,8 +119,7 @@
     "anthropic": {
       "enabled_when_configured": true,
       "fallback_for": [
-        "high_complexity_reasoning",
-        "long_context_review"
+        "claude_code_direct"
       ]
     }
   },
@@ -128,5 +127,22 @@
     "do_not_send_secrets_to_external_providers": true,
     "require_evaluation_before_provider_promotion": true,
     "activate_multiple_paid_agents_only_when_justified": true
+  },
+  "assistant_provider_boundaries": {
+    "codex": {
+      "provider": "openai",
+      "direct_generation": true,
+      "ollama_allowed": false
+    },
+    "claude_code": {
+      "provider": "anthropic",
+      "direct_generation": true,
+      "ollama_allowed": false
+    },
+    "adonex": {
+      "provider": "ollama",
+      "exclusive": true,
+      "cloud_allowed": false
+    }
   }
 }

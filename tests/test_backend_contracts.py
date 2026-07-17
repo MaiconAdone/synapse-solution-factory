@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import subprocess
 import json
 import zipfile
@@ -3168,3 +3168,22 @@ def test_foundations_notebook_is_executable_json_contract():
     assert notebook["nbformat"] == 4
     assert any("tokenize" in "".join(cell.get("source", [])) for cell in notebook["cells"])
     assert any("retrieval_eval" in "".join(cell.get("source", [])) for cell in notebook["cells"])
+
+
+def test_assistant_provider_boundaries_are_fixed():
+    root = Path(__file__).resolve().parents[1]
+    policy = json.loads((root / 'config' / 'llm_solution_factory_policy.json').read_text(encoding='utf-8'))
+    providers = json.loads((root / 'config' / 'model_providers.json').read_text(encoding='utf-8'))
+    runtime = json.loads((root / 'config' / 'runtime_manifest.json').read_text(encoding='utf-8'))
+    expected = {
+        'codex': {'provider': 'openai', 'direct_generation': True, 'ollama_allowed': False},
+        'claude_code': {'provider': 'anthropic', 'direct_generation': True, 'ollama_allowed': False},
+        'adonex': {'provider': 'ollama', 'exclusive': True, 'cloud_allowed': False},
+    }
+    assert policy['assistant_provider_boundaries'] == expected
+    assert providers['assistant_provider_boundaries'] == expected
+    assert runtime['assistant_provider_boundaries'] == expected
+    assert 'codex_mcp_server' not in runtime['local_llm']
+    assert 'SYNAPSE_ollama' not in (root / '.codex' / 'config.toml').read_text(encoding='utf-8')
+    package = json.loads((root / 'adonex' / 'package.json').read_text(encoding='utf-8-sig'))
+    assert all(not key.startswith('adonex.anthropic') for key in package['contributes']['configuration']['properties'])

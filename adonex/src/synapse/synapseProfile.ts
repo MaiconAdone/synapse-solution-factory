@@ -1,4 +1,4 @@
-﻿export const SYNAPSE_PROFILE = {
+export const SYNAPSE_PROFILE = {
   name: "synapse",
   focus: [
     "AI engineering",
@@ -21,7 +21,7 @@
     "Specification before implementation",
     "Local-first routing when quality permits",
     "Use the Ruflo 60-agent council as deterministic role synthesis while keeping Ollama calls consolidated",
-    "Use OpenAI only when explicitly selected and within budget",
+    "Use Ollama as the exclusive AdoneX generation provider",
     "Least-privilege workspace context",
     "Autonomous execution in detected Synapse workspaces with backups and hard safety policies",
     "Typed MCP tools with permission and failure boundaries",
@@ -53,7 +53,7 @@ export function synapseSystemContext(
       "design Ruflo multi-agent fleets with explicit objective, tools, memory, context, limits, conflict resolution, and success criteria;",
       "design MCP tools with typed schemas, least privilege, safety boundaries, observability, and graceful fallback;",
       "use Ollama for triage, summaries, routing, and bounded implementation tasks to minimize cost;",
-      "recommend OpenAI only for complexity that justifies paid quality and never bypass the configured budget or hard safety policies."
+      "recommend a handoff to Codex or Claude Code when local quality is insufficient; never call their cloud providers from AdoneX."
     ].join(" ")
   ].join("\n");
 }

@@ -4,10 +4,10 @@
   "requested_universe": "ia",
   "recommended_universe": "ia",
   "dialog_context": {
-    "project_goal": "Disponibilizar os 60 agentes Ruflo no AdoneX para uso governado por modelos Ollama locais, melhorando edicao de codigo e agilidade",
-    "business_problem": "O AdoneX precisa tornar os 60 papeis especialistas executaveis sob solicitacao, com selecao dinamica e sem degradar latencia",
-    "success_metric_or_acceptance_criteria": "Reduzir a latencia mediana das respostas de codigo em 30% e obter pelo menos 90% de sucesso nos testes de edicao",
-    "available_data_or_knowledge_sources": "Catalogo Ruflo do repositorio, configuracoes Synapse e modelos Ollama locais instalados",
+    "project_goal": "Aprimorar o AdoneX com pesquisa escalavel de codigo, fluxos agenticos governados, contexto do editor, subagentes, slash commands e MCP, usando Ollama exclusivamente",
+    "business_problem": "Elevar a qualidade e reduzir o tempo de edicoes em bases grandes sem quebrar codigo nem remover aprovacao humana",
+    "success_metric_or_acceptance_criteria": "qualidade das edicoes de codigo medida por testes aprovados, ausencia de regressao, taxa de patches aceitos e rollback validado",
+    "available_data_or_knowledge_sources": "workspace e Git locais, GitHub, APIs e bancos via conectores MCP governados",
     "risk_level": "high"
   },
   "domain": {
@@ -28,7 +28,7 @@
     "score": 2,
     "matched_keywords": [
       "adonex",
-      "edicao de codigo"
+      "rollback"
     ],
     "techniques": [],
     "metrics": [
@@ -55,110 +55,11 @@
     "active": true,
     "universe": "ia",
     "recommended_technology_ids": [
-      "crewai",
-      "swarms",
-      "langgraph",
-      "mlflow",
-      "ollama",
       "fastapi",
+      "ollama",
       "mcp-servers"
     ],
     "recommended_technologies": [
-      {
-        "id": "crewai",
-        "name": "CrewAI",
-        "category": "agentic_coding_and_business_agents",
-        "capabilities": [
-          "agents",
-          "role_based_workflows",
-          "tools"
-        ],
-        "best_for": [
-          "role_based_crews",
-          "business_process_automation"
-        ],
-        "select_when": [
-          "clear_roles_exist",
-          "business_process_has_steps",
-          "crew"
-        ],
-        "templates": [
-          "templates/agents/crewai_project.yaml"
-        ]
-      },
-      {
-        "id": "swarms",
-        "name": "Swarms",
-        "category": "agentic_coding_and_business_agents",
-        "capabilities": [
-          "agents",
-          "multi_agent",
-          "parallelism"
-        ],
-        "best_for": [
-          "large_agent_teams",
-          "parallel_exploration"
-        ],
-        "select_when": [
-          "many_specialists_are_needed",
-          "parallel",
-          "swarm"
-        ],
-        "templates": [
-          "templates/agents/swarms_council.yaml"
-        ]
-      },
-      {
-        "id": "langgraph",
-        "name": "LangGraph",
-        "category": "agent_orchestration",
-        "capabilities": [
-          "agents",
-          "workflow_graphs",
-          "state",
-          "human_in_the_loop"
-        ],
-        "best_for": [
-          "stateful_agents",
-          "graph_workflows",
-          "approval_flows"
-        ],
-        "select_when": [
-          "workflow_has_state",
-          "handoff",
-          "approval",
-          "graph"
-        ],
-        "templates": [
-          "templates/agents/langgraph_state_machine.py"
-        ]
-      },
-      {
-        "id": "mlflow",
-        "name": "MLflow",
-        "category": "mlops",
-        "capabilities": [
-          "experiments",
-          "model_registry",
-          "metrics",
-          "artifacts"
-        ],
-        "best_for": [
-          "model_tracking",
-          "baseline_comparison",
-          "model_registry"
-        ],
-        "select_when": [
-          "ml",
-          "model",
-          "experiment",
-          "training",
-          "metrics"
-        ],
-        "templates": [
-          "templates/mlops/mlflow_experiment.py"
-        ]
-      },
       {
         "id": "fastapi",
         "name": "FastAPI",
@@ -240,26 +141,11 @@
       }
     ],
     "categories": [
-      "agentic_coding_and_business_agents",
-      "agent_orchestration",
-      "mlops",
       "api_backend",
       "local_llm_runtime",
       "tool_context_protocol"
     ],
     "capabilities": [
-      "agents",
-      "role_based_workflows",
-      "tools",
-      "multi_agent",
-      "parallelism",
-      "workflow_graphs",
-      "state",
-      "human_in_the_loop",
-      "experiments",
-      "model_registry",
-      "metrics",
-      "artifacts",
       "api",
       "backend",
       "typed_contracts",
@@ -269,15 +155,12 @@
       "offline_inference",
       "model_routing",
       "mcp",
+      "tools",
       "resources",
       "prompts",
       "integration"
     ],
     "template_paths": [
-      "templates/agents/crewai_project.yaml",
-      "templates/agents/swarms_council.yaml",
-      "templates/agents/langgraph_state_machine.py",
-      "templates/mlops/mlflow_experiment.py",
       "templates/backend/fastapi_service.py",
       "templates/llm/ollama_router.py",
       "templates/mcp/server.py"
@@ -299,16 +182,11 @@
       "langgraph",
       "openai-agents-sdk",
       "pydantic-ai",
-      "llamaindex",
       "mcp-sdks"
     ],
     "technology_ids": [
-      "crewai",
-      "swarms",
-      "langgraph",
-      "mlflow",
-      "ollama",
       "fastapi",
+      "ollama",
       "mcp-servers"
     ],
     "components": [
@@ -316,10 +194,7 @@
       "governance",
       "tests",
       "evals",
-      "observability",
-      "agent_orchestrator",
-      "tool_boundary",
-      "human_approval_gate"
+      "observability"
     ],
     "local_first": true,
     "cloud_requires_explicit_approval": true
@@ -333,33 +208,9 @@
         "technology_selection",
         "sdd_gate"
       ]
-    },
-    {
-      "id": "agentic_execution",
-      "stages": [
-        "plan",
-        "select_tools",
-        "execute",
-        "review",
-        "record_memory"
-      ]
-    },
-    {
-      "id": "mlops",
-      "stages": [
-        "baseline",
-        "train",
-        "track",
-        "register",
-        "monitor"
-      ]
     }
   ],
   "solution_templates": [
-    "templates/agents/crewai_project.yaml",
-    "templates/agents/swarms_council.yaml",
-    "templates/agents/langgraph_state_machine.py",
-    "templates/mlops/mlflow_experiment.py",
     "templates/backend/fastapi_service.py",
     "templates/llm/ollama_router.py",
     "templates/mcp/server.py"
@@ -419,6 +270,6 @@
     "tests/test_data_contract.py",
     "tests/test_ai_contract.py"
   ],
-  "project": "synapse",
+  "project": "synapse-ai",
   "source": "scripts/analyze_business_solution.py"
 }

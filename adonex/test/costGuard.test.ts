@@ -18,7 +18,7 @@ test("cost guard records and resets usage", async () => {
   const guard = new CostGuard(root, 10, 100);
   await guard.record({
     timestamp: new Date().toISOString(),
-    provider: "openai",
+    provider: "ollama",
     model: "test",
     inputTokens: 10,
     outputTokens: 5,

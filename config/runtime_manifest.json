@@ -1,4 +1,4 @@
-{
+﻿{
   "project": {
     "name": "synapse-ai",
     "type": "enterprise-ai-ml-saas",
@@ -135,8 +135,6 @@
     "recommended_context_tokens_on_16gb_ram": 4096,
     "provider_config_file": "config/model_providers.json",
     "vscode_test_script": "scripts/test_local_llm.py",
-    "codex_mcp_server": "scripts/synapse_ollama_mcp.py",
-    "codex_project_config": ".codex/config.toml",
     "hybrid_router": "backend/app/services/hybrid_llm_router.py",
     "routing_endpoint": "/llm/generate",
     "metrics_endpoint": "/llm/metrics",
@@ -406,5 +404,22 @@
       "backend/app/services/continual_learning_service.py",
       ".codex/config.toml"
     ]
+  },
+  "assistant_provider_boundaries": {
+    "codex": {
+      "provider": "openai",
+      "direct_generation": true,
+      "ollama_allowed": false
+    },
+    "claude_code": {
+      "provider": "anthropic",
+      "direct_generation": true,
+      "ollama_allowed": false
+    },
+    "adonex": {
+      "provider": "ollama",
+      "exclusive": true,
+      "cloud_allowed": false
+    }
   }
 }

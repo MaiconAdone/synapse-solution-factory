@@ -1,4 +1,4 @@
-﻿import { randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
@@ -649,7 +649,7 @@ export class AgentOrchestrator {
       "- reasoning_strong deepseek-r1:14b: causa raiz e decisao tecnica dificil somente sob demanda.",
       "- code_critical qwen2.5-coder:32b: codigo critico/revisao final por pedido explicito; ctx 8192; temp 0.",
       "- embeddings nomic-embed-text:latest: memoria/RAG/busca semantica; nao usar para chat.",
-      "- Regra cloud: LLM externo/OpenAI so com pedido explicito do usuario e aprovacao humana; perguntas simples sobre Synapse usam Ruflo + Ollama local."
+      "- Limite de provedor: AdoneX usa somente Ollama; tarefas destinadas ao Codex ou Claude Code devem gerar handoff, nunca chamada cloud direta."
     ].join("\n");
   }
 

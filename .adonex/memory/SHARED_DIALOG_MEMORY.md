@@ -262,3 +262,17 @@ Result: Codex usa approval_policy on-request; Claude Code usa permissions.defaul
 ## 2026-07-17 [codex] completed
 Objective: corrigir inconsistencias encontradas na auditoria de configuracao.
 Result: policy e canais de dialogo declarados no Codex; caminho MCP normalizado; autonomia AdoneX desativada por padrao; gates de escrita e comando independentes da autonomia. Validacao: AdoneX 117/117, contrato Codex aprovado e enterprise_stack_ok.
+
+## 2026-07-17 [codex-openai] briefing
+Objective: aprimorar o AdoneX com pesquisa escalavel de codigo, fluxos em comando unico, autonomia com permissao, UI/editor context-aware, sugestoes de alteracao, subagentes, slash commands e MCP.
+Authorization: usuario pediu explicitamente Codex/OpenAI para esta implementacao; local-first e aprovacao humana permanecem padrao.
+Missing: success metric, data/source scope, risk level, and whether Anthropic is a real optional provider or only a capability reference.
+
+## 2026-07-17 [codex-openai] completed
+Objective: aprimorar AdoneX com busca escalavel, editor context-aware, comandos avancados, subagentes/MCP e Anthropic opcional real.
+Result: Ollama segue default; Anthropic usa Messages API, ANTHROPIC_API_KEY, modelo configuravel fixado por default, aprovacao cloud por chamada, custo e evals. Novos /search, /improve e Improve Selected Code. Gates: patch prepare, aprovacao de escrita/comando, testes e rollback.
+Validation: AdoneX 122/122; backend 105/105; enterprise_stack_ok; frontend lint/build; diff check limpo.
+
+## 2026-07-17 [codex-openai] completed
+Objective: separar definitivamente os provedores dos assistentes.
+Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem Ollama; AdoneX usa exclusivamente Ollama. Aprovacao humana, testes, backup e rollback permanecem. A integracao Anthropic anterior no AdoneX foi removida.

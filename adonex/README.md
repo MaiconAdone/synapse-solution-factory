@@ -18,6 +18,10 @@ de memória e handoff. Eles não são servidores nem provedores de LLM do AdoneX
 - Prompts, contexto selecionado e memória permanecem no ambiente local.
 - O custo estimado de nuvem para execuções do AdoneX é zero.
 
+## Provedor exclusivo
+
+O AdoneX usa exclusivamente o Ollama. OpenAI/Codex e Anthropic/Claude Code sao canais parceiros para memoria e handoff, mas nao sao provedores do AdoneX.
+
 ## Capacidades
 
 - Participante nativo do VS Code Chat disponível como `@adonex`.
@@ -100,3 +104,10 @@ npm run package
 
 O pacote de produção inclui o runtime compilado da extensão e não inclui clientes
 ou SDKs da OpenAI e Anthropic.
+
+## Recursos avancados locais
+
+- `@adonex /search` pesquisa o workspace com indice local e contexto comprimido.
+- `@adonex /improve` prepara melhorias governadas usando Ollama.
+- `AdoneX: Improve Selected Code` reconhece o arquivo e a selecao ativos.
+- Patches preservam previa, aprovacao humana, backup, validacao e rollback.

@@ -1,4 +1,4 @@
-﻿import type { TaskPlan, WorkspaceSnapshot } from "../llm/types";
+import type { TaskPlan, WorkspaceSnapshot } from "../llm/types";
 
 export function createLocalFallbackResponse(
   prompt: string,
@@ -83,7 +83,7 @@ function createSynapseExplanation(
     "- Seleciona poucos arquivos relevantes para evitar contexto caro e ruido.",
     "- Usa Ollama local para responder, planejar e revisar quando a tarefa couber no modelo local.",
     "- Usa Ruflo 60-agent council como revisao especializada compactada, sem disparar 60 chamadas simultaneas ao LLM.",
-    "- Escala para Codex/OpenAI apenas quando a tarefa for multi-arquivo, arriscada, complexa ou exigir qualidade acima do modelo local.",
+    "- Gera handoff para Codex quando a tarefa for multi-arquivo, arriscada, complexa ou exigir qualidade acima do modelo local; o AdoneX nao chama OpenAI.",
     "- Registra memoria, decisoes, tarefas e handoffs para manter continuidade entre AdoneX, Codex e o restante do projeto.",
     "",
     "### Governanca e seguranca",
@@ -98,7 +98,7 @@ function createSynapseExplanation(
     "",
     "- Respostas simples: Ollama local com contexto curto.",
     "- Revisao e planejamento: Ollama + contexto selecionado + memoria resumida.",
-    "- Tarefas complexas: handoff para Codex ou OpenAI somente quando necessario.",
+    "- Tarefas complexas: handoff para Codex ou Claude Code somente quando necessario, sem chamada cloud pelo AdoneX.",
     "- Ruflo: usado para especializacao e decisao, mas com consolidacao para evitar custo e lentidao.",
     "- Validacao padrao: `npm run check` como gate principal do workspace.",
     "",
@@ -119,7 +119,7 @@ function createSynapseExplanation(
     "",
     "### Leitura executiva",
     "",
-    "O Synapse deve ser visto como um produto de engenharia de IA local-first: ele combina automacao, agentes e governanca para criar projetos melhores com menos custo de tokens. O caminho mais forte e manter o Ollama para baixo custo e velocidade, Ruflo para coordenacao especializada, MCP para ferramentas seguras, e Codex/OpenAI como camada premium apenas para tarefas que realmente exigem raciocinio ou edicao complexa.",
+    "O Synapse deve ser visto como um produto de engenharia de IA local-first: ele combina automacao, agentes e governanca para criar projetos melhores com menos custo de tokens. O caminho mais forte e manter o Ollama para baixo custo e velocidade, Ruflo para coordenacao especializada, MCP para ferramentas seguras, e Codex/OpenAI como canal separado para tarefas que exigem raciocinio ou edicao complexa, acionado fora do AdoneX.",
     "",
     "### Arquivos usados como contexto",
     "",

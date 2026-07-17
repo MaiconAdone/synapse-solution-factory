@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "adonex",
   "displayName": "AdoneX",
   "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memÃ³ria compartilhada com Claude Code e Codex, e integraÃ§Ã£o Synapse.",
@@ -25,6 +25,7 @@
     "onCommand:adonex.voice.vick.toggleMute",
     "onCommand:adonex.voice.vick.simulateCommand",
     "onCommand:adonex.ollama.testConnection",
+    "onCommand:adonex.improveSelection",
     "onCommand:adonex.analyzeWorkspace",
     "onCommand:adonex.planTask",
     "onCommand:adonex.implementTask",
@@ -110,6 +111,14 @@
             "description": "Starts the required Synapse ML/AI project briefing in chat."
           },
           {
+            "name": "search",
+            "description": "Pesquisa e relaciona codigo no workspace usando indice local e contexto comprimido."
+          },
+          {
+            "name": "improve",
+            "description": "Prepara melhoria governada para o arquivo ou selecao atual."
+          },
+          {
             "name": "roadmap",
             "description": "Gera um roadmap tecnico Synapse local-first."
           },
@@ -192,6 +201,10 @@
       {
         "command": "adonex.ollama.testConnection",
         "title": "AdoneX: Test Ollama Connection"
+      },
+      {
+        "command": "adonex.improveSelection",
+        "title": "AdoneX: Improve Selected Code"
       },
       {
         "command": "adonex.analyzeWorkspace",
@@ -846,5 +859,3 @@
     "typescript": "^5.7.2"
   }
 }
-
-

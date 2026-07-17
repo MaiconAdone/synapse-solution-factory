@@ -1,4 +1,4 @@
-﻿# Synapse - Claude Code Configuration
+# Synapse - Claude Code Configuration
 
 Este arquivo orienta o uso do Synapse quando a execucao passa por Claude Code,
 Anthropic API, Claude Agent SDK ou fluxos assistidos por Ruflo.
@@ -155,8 +155,9 @@ Perfis:
 | enterprise | ate 8 | producao, seguranca, LGPD, arquitetura critica |
 | extreme | ate 15 | auditoria; 60 somente com aprovacao explicita |
 
-Cloud e sempre opt-in. Use Ollama por padrao; OpenAI ou Anthropic exigem
-solicitacao explicita e aprovacao humana no fluxo governado.
+Claude Code usa Anthropic diretamente para analisar, editar e revisar o Synapse e
+nunca delega geracao ao Ollama. Ollama e exclusivo do AdoneX. Edicoes e comandos
+continuam sujeitos aos gates de aprovacao humana e seguranca.
 
 Regra de arquitetura:
 

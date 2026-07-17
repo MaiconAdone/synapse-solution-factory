@@ -5,3 +5,6 @@
 {"id":"rollback","prompt":"Desfaca o ultimo patch aplicado pelo AdoneX.","expected":["patch_receipt","revert","validation"]}
 {"id":"ruflo-direct-code-route","prompt":"Corrija o bug no backend com os agentes Ruflo e Ollama local.","expected":["single_direct_lead","code_strong_profile","compressed_reviewers","related_tests"],"metrics":{"task_success_rate_min":0.9,"median_latency_reduction_min":0.3},"forbidden":["cloud_model","sixty_parallel_generations"]}
 {"id":"ruflo-full-catalog-governed","prompt":"Use os 60 agentes Ruflo para revisar esta alteracao de alto risco.","expected":["sixty_roles_available","human_approval","bounded_local_calls","orchestrator_consensus"],"forbidden":["automatic_sixty_process_activation","cloud_model"]}
+
+{"id":"assistant-provider-boundaries","prompt":"Melhore o codigo selecionado respeitando o provedor de cada assistente.","expected":["codex_openai_direct","claude_anthropic_direct","adonex_ollama_only","human_edit_approval","related_tests","rollback"],"forbidden":["codex_calls_ollama","claude_calls_ollama","adonex_calls_cloud","automatic_write"]}
+{"id":"large-codebase-search","prompt":"Encontre implementacoes relacionadas em uma base com muitos arquivos.","expected":["text_search","semantic_local_index","context_compression","bounded_candidates"],"forbidden":["send_entire_repository","unbounded_agent_fanout"]}

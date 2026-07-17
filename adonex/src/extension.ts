@@ -1,4 +1,4 @@
-﻿import * as vscode from "vscode";
+import * as vscode from "vscode";
 import { registerAdoneXChatParticipant } from "./chat/adonexChatParticipant";
 import { WorkspaceContext } from "./context/workspaceContext";
 import { CostGuard } from "./cost/costGuard";
@@ -154,6 +154,29 @@ export function activate(context: vscode.ExtensionContext): void {
         editor.document.uri
       )}:\n\n${selection}`,
       "explain"
+    );
+  });
+
+  register("adonex.improveSelection", async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      void vscode.window.showInformationMessage("Open a code file before asking AdoneX to improve it.");
+      return;
+    }
+    const relativePath = vscode.workspace.asRelativePath(editor.document.uri);
+    const selection = editor.document.getText(editor.selection).trim();
+    const target = selection
+      ? `Selected code:\n\n${selection}`
+      : "No text is selected. Analyze the active file using workspace context.";
+    await panel.queueTask(
+      [
+        `Improve code quality in ${relativePath} without changing intended behavior.`,
+        target,
+        "Preserve public contracts, add or update relevant tests, and return a governed patch proposal."
+      ].join("\n\n"),
+      "implement",
+      undefined,
+      { applyMode: "prepare" }
     );
   });
 

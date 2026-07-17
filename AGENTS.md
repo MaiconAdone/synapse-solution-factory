@@ -1,7 +1,9 @@
-﻿# Synapse Local-First
+# Synapse - Limites de Provedores
 
-- Use Ollama para triagem, resumo, classificacao, planejamento inicial e revisao de codigo.
-- Use `ask_ollama` para uma tarefa local direta.
+- Codex usa o modelo OpenAI configurado diretamente para analisar, editar e revisar codigo.
+- Codex nunca chama Ollama, `ask_ollama` ou o MCP `SYNAPSE_ollama`.
+- Claude Code usa Anthropic diretamente e nunca chama Ollama.
+- Ollama e o provedor exclusivo do AdoneX.
 - Use `execute_governed_swarm` com `allow_cloud=false` para fluxos Ruflo.
 - Cloud exige pedido explicito do usuario e aprovacao humana.
 - Comece com um agente; escale somente quando o problema exigir outros dominios.
@@ -54,5 +56,5 @@
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso,
   dados/fontes disponiveis ou nivel de risco, pergunte ao usuario pela conversa
   antes de implementar. Nao invente essas informacoes.
-- Preferir Ollama/local-first para triagem, classificacao, planejamento e
-  revisao. Cloud exige pedido explicito do usuario e aprovacao humana.
+- Respeitar os provedores fixos: Codex/OpenAI, Claude Code/Anthropic e AdoneX/Ollama.
+- Edicoes e comandos continuam sujeitos a aprovacao humana conforme o risco.

@@ -1,4 +1,4 @@
-﻿import type { AgentAction, AgentMode } from "../llm/types";
+import type { AgentAction, AgentMode } from "../llm/types";
 
 export const ADONEX_CHAT_PARTICIPANT_ID = "synapse-ai.adonex";
 
@@ -74,6 +74,18 @@ const ROUTES: Record<string, ChatRoute> = {
     action: "synapse_agent",
     mode: "synapse",
     title: "Synapse solution project",
+    governed: true
+  },
+  search: {
+    action: "review",
+    mode: "local",
+    title: "Workspace code search",
+    governed: false
+  },
+  improve: {
+    action: "implement",
+    mode: "local",
+    title: "Governed code improvement",
     governed: true
   },
   roadmap: {

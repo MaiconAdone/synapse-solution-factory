@@ -1,4 +1,4 @@
-﻿import { promises as fs } from "node:fs";
+import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { AgentMode } from "../llm/types";
 
@@ -10,7 +10,7 @@ export interface CostEstimate {
 
 export interface UsageEntry {
   timestamp: string;
-  provider: "openai" | "ollama" | "anthropic";
+  provider: "ollama";
   model: string;
   inputTokens: number;
   outputTokens: number;
@@ -103,9 +103,9 @@ export class CostGuard {
       projectedDailyUsd,
       projectedMonthlyUsd,
       reason: dailyExceeded
-        ? "Daily OpenAI budget would be exceeded."
+        ? "Daily local execution budget would be exceeded."
         : monthlyExceeded
-          ? "Monthly OpenAI budget would be exceeded."
+          ? "Monthly local execution budget would be exceeded."
           : undefined
     };
   }

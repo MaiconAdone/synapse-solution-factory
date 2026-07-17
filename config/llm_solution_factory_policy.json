@@ -1,7 +1,7 @@
 {
   "schema": "synapse-llm-solution-factory-policy.v1",
   "owner": "synapse",
-  "purpose": "Make every LLM assistant follow the same business-solution analysis, architecture, governance, tests, evals, and local-first model routing when creating or implementing projects.",
+  "purpose": "Make every assistant follow the same solution governance while enforcing fixed provider boundaries: Codex/OpenAI, Claude Code/Anthropic, and AdoneX/Ollama.",
   "applies_to": [
     "Codex",
     "Claude Code",
@@ -125,21 +125,23 @@
       "Use scripts/analyze_business_solution.py or BusinessSolutionAnalyzer for architecture selection.",
       "Collect or confirm all user-requested business content through Codex chat before relying on tasks, scripts, browser UI, or tools.",
       "Use the same Synapse project artifacts as VS Code Chat, AdoneX, and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
-      "Implement the smallest safe change that satisfies the analysis and tests."
+      "Implement the smallest safe change that satisfies the analysis and tests.",
+      "Use OpenAI/Codex directly for analysis and code editing; never call Ollama or ask_ollama."
     ],
     "claude_code": [
       "Read CLAUDE.md and this policy before planning.",
       "Use the analysis as the architecture decision record for coding, review, and agent coordination.",
       "Collect or confirm all user-requested business content through Claude Code chat/terminal before relying on tasks, scripts, browser UI, or tools.",
       "Use the same Synapse project artifacts as VS Code Chat, AdoneX, and Codex: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
-      "Respect prompt caching and do not resend large catalogs unless required."
+      "Respect prompt caching and do not resend large catalogs unless required.",
+      "Use Anthropic/Claude directly for analysis and code editing; never call Ollama."
     ],
     "adonex": [
       "In VS Code chat, route Synapse project-creation and implementation questions through the analyzer policy.",
       "Use /projeto or natural language in the native VS Code chat to collect missing business context.",
       "Collect or confirm all user-requested business content through the AdoneX chat participant before relying on tasks, scripts, browser UI, or tools.",
       "Use the same Synapse project artifacts as VS Code Chat, Codex, and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
-      "Use Ollama local by default and produce Codex handoff only for complex multi-file work."
+      "Use Ollama as the exclusive generation provider; never call OpenAI or Anthropic APIs."
     ],
     "vscode_chat": [
       "The user can request project creation or implementation directly in chat.",
@@ -171,5 +173,22 @@
       "tests/test_evals_contract.py",
       "tests/test_data_contract.py"
     ]
+  },
+  "assistant_provider_boundaries": {
+    "codex": {
+      "provider": "openai",
+      "direct_generation": true,
+      "ollama_allowed": false
+    },
+    "claude_code": {
+      "provider": "anthropic",
+      "direct_generation": true,
+      "ollama_allowed": false
+    },
+    "adonex": {
+      "provider": "ollama",
+      "exclusive": true,
+      "cloud_allowed": false
+    }
   }
 }

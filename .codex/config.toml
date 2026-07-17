@@ -1,20 +1,10 @@
-﻿# Codex project configuration - recovery profile
+# Codex project configuration - recovery profile
 # Governance source of truth: config/llm_solution_factory_policy.json
 # canais autorizados para conteudo solicitado pelo usuario: Codex chat, Claude Code chat/terminal, AdoneX chat participant e VS Code Chat.
 # Se faltar contexto obrigatorio da Solution Factory, pergunte ao usuario antes de implementar.
+# Codex usa OpenAI diretamente e nao registra ferramentas Ollama.
+# Ollama e reservado ao AdoneX.
 # Root keys MUST come before TOML tables.
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
-
-[mcp_servers.SYNAPSE_ollama]
-command = "python"
-args = ["scripts/synapse_ollama_mcp.py"]
-startup_timeout_sec = 20
-tool_timeout_sec = 900
-enabled = true
-required = false
-enabled_tools = ["ollama_status", "ask_ollama", "learning_summary"]
-
-
-
 
