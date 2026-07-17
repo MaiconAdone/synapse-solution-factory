@@ -319,8 +319,21 @@ type TelemetryActivity = {
   ts: number;
 };
 
+type TelemetryProviderCost = {
+  brlToday: number;
+  requestsToday: number;
+  inputTokensToday: number;
+  outputTokensToday: number;
+  tokensToday: number;
+  spark: number[];
+};
+
 type Telemetry = {
   cost: TelemetryCost;
+  providerCosts: {
+    codex: TelemetryProviderCost;
+    claudeCode: TelemetryProviderCost;
+  };
   activity: TelemetryActivity[];
   generatedAt: number;
 };
@@ -1477,11 +1490,19 @@ export default function VickDigitalPage() {
           </div>
 
           <section className="vick-kpis" aria-label="Métricas executivas">
-            <div className="vick-kpi" title="Prompt caching Anthropic — cache read ÷ input tokens no gateway LLM">
-              <div className="k-label">Cache hit</div>
-              <div className="k-val vick-tabular">74<small>%</small></div>
-              <div className="k-foot"><span className="k-trend up">▲ 6 pp</span></div>
-              <Sparkline points={[52, 58, 55, 61, 64, 66, 70, 72, 74]} color={VICK_OK} />
+            <div className="vick-kpi" title="Custo estimado hoje dos eventos Anthropic registrados no ledger do Synapse">
+              <div className="k-label">Gasto Claude Code</div>
+              <div className="k-val vick-tabular">
+                {telemetry ? brlFormatter.format(telemetry.providerCosts.claudeCode.brlToday) : "—"}
+              </div>
+              <div className="k-foot">
+                <span className="k-trend flat">
+                  {telemetry?.providerCosts.claudeCode.requestsToday
+                    ? `↓ ${formatTokens(telemetry.providerCosts.claudeCode.inputTokensToday)} · ↑ ${formatTokens(telemetry.providerCosts.claudeCode.outputTokensToday)} · ${telemetry.providerCosts.claudeCode.requestsToday} req`
+                    : "sem uso registrado"}
+                </span>
+              </div>
+              <Sparkline points={telemetry?.providerCosts.claudeCode.spark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_OK} />
             </div>
             <div className="vick-kpi" title="pytest -q — suíte enterprise do Synapse">
               <div className="k-label">Testes verdes</div>
@@ -1497,31 +1518,20 @@ export default function VickDigitalPage() {
             </div>
             <div
               className="vick-kpi"
-              title="Custo real de hoje a partir do ledger de roteamento LLM (artifacts/llm-routing). Chamadas locais (Ollama) não têm custo de API; nuvem é estimada pelos tokens reais."
+              title="Custo estimado hoje dos eventos OpenAI registrados no ledger do Synapse"
             >
-              <div className="k-label">Custo hoje</div>
+              <div className="k-label">Gasto Codex</div>
               <div className="k-val vick-tabular">
-                {telemetry ? brlFormatter.format(telemetry.cost.brlToday) : "—"}
+                {telemetry ? brlFormatter.format(telemetry.providerCosts.codex.brlToday) : "—"}
               </div>
               <div className="k-foot">
-                {telemetry ? (
-                  <>
-                    {telemetry.cost.trendPct !== null ? (
-                      <span className={`k-trend ${telemetry.cost.trendPct <= 0 ? "down" : "up"}`}>
-                        {telemetry.cost.trendPct <= 0 ? "▼" : "▲"} {Math.abs(telemetry.cost.trendPct)}%
-                      </span>
-                    ) : (
-                      <span className="k-trend flat">{telemetry.cost.localOnly ? "local" : "hoje"}</span>
-                    )}
-                    <span className="faint">
-                      {formatTokens(telemetry.cost.tokensToday)} · {telemetry.cost.requestsToday} req
-                    </span>
-                  </>
-                ) : (
-                  <span className="k-trend flat">carregando…</span>
-                )}
+                <span className="k-trend flat">
+                  {telemetry?.providerCosts.codex.requestsToday
+                    ? `↓ ${formatTokens(telemetry.providerCosts.codex.inputTokensToday)} · ↑ ${formatTokens(telemetry.providerCosts.codex.outputTokensToday)} · ${telemetry.providerCosts.codex.requestsToday} req`
+                    : "sem uso registrado"}
+                </span>
               </div>
-              <Sparkline points={telemetry?.cost.spark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_OK} />
+              <Sparkline points={telemetry?.providerCosts.codex.spark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_PRIMARY} />
             </div>
           </section>
 

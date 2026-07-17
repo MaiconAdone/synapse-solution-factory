@@ -126,6 +126,45 @@ function buildCost(events: LlmEvent[]) {
   };
 }
 
+function buildProviderCost(events: LlmEvent[], provider: "openai" | "anthropic") {
+  const now = Date.now();
+  const todayKey = localDayKey(now);
+  const dayKeys: string[] = [];
+  for (let i = 6; i >= 0; i -= 1) dayKeys.push(localDayKey(now - i * 86_400_000));
+  const costByDay = new Map<string, number>(dayKeys.map((key) => [key, 0]));
+  let brlToday = 0;
+  let requestsToday = 0;
+  let inputTokensToday = 0;
+  let outputTokensToday = 0;
+  let tokensToday = 0;
+
+  for (const event of events) {
+    if ((event.provider ?? "").toLowerCase() !== provider) continue;
+    const ts = event.timestamp ? Date.parse(event.timestamp) : NaN;
+    if (Number.isNaN(ts)) continue;
+    const key = localDayKey(ts);
+    const cost = eventCostBrl(event);
+    if (costByDay.has(key)) costByDay.set(key, (costByDay.get(key) ?? 0) + cost);
+    if (key === todayKey) {
+      brlToday += cost;
+      const inputTokens = Number(event.prompt_tokens ?? 0);
+      const outputTokens = Number(event.completion_tokens ?? 0);
+      requestsToday += 1;
+      inputTokensToday += inputTokens;
+      outputTokensToday += outputTokens;
+      tokensToday += Number(event.total_tokens ?? inputTokens + outputTokens);
+    }
+  }
+
+  return {
+    brlToday: Math.round(brlToday * 100) / 100,
+    requestsToday,
+    inputTokensToday,
+    outputTokensToday,
+    tokensToday,
+    spark: dayKeys.map((key) => Math.round((costByDay.get(key) ?? 0) * 100) / 100),
+  };
+}
 function providerLevel(event: LlmEvent): ActivityItem["level"] {
   if (event.fallback_used) return "warn";
   const provider = (event.provider ?? "").toLowerCase();
@@ -199,6 +238,10 @@ export async function GET() {
   return NextResponse.json(
     {
       cost: buildCost(events),
+      providerCosts: {
+        codex: buildProviderCost(events, "openai"),
+        claudeCode: buildProviderCost(events, "anthropic"),
+      },
       activity: buildActivity(events, memory),
       generatedAt: Date.now(),
     },
