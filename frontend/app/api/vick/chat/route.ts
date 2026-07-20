@@ -1,4 +1,4 @@
-﻿import { execFile, spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -765,6 +765,40 @@ export async function POST(request: NextRequest) {
     confidence: sentiment.confidence,
     prompt,
   });
+
+  const mentionsVickAutostart =
+    /\bvick\b/.test(normalizedPrompt) &&
+    /\b(automatic|autostart|inicializacao|iniciar|abertura|abrir)\w*/.test(normalizedPrompt);
+  const wantsDisableVickAutostart =
+    mentionsVickAutostart && /\b(desativ|deslig|remov|nao iniciar|nao abrir)\w*/.test(normalizedPrompt);
+  const wantsEnableVickAutostart =
+    mentionsVickAutostart && /\b(ativ|lig|habilit)\w*/.test(normalizedPrompt);
+
+  if (wantsDisableVickAutostart || wantsEnableVickAutostart) {
+    const action = wantsDisableVickAutostart ? "disable" : "enable";
+    try {
+      await execFileAsync("python", [
+        path.join(workspaceRoot, "scripts", "toggle_vick_autostart.py"),
+        action,
+      ], { cwd: workspaceRoot, timeout: 10_000, windowsHide: true });
+      const enabled = action === "enable";
+      return NextResponse.json({
+        response: enabled
+          ? "A abertura automática da Vick foi ativada. Ela será iniciada automaticamente na próxima vez que o Synapse for aberto no VS Code."
+          : "A abertura automática da Vick foi desativada. A task manual continua disponível no VS Code.",
+        provider: "synapse-local-action",
+        model,
+        context: { projects, vickAutostart: enabled },
+      });
+    } catch (error) {
+      return NextResponse.json({
+        response: `Não consegui ${action === "enable" ? "ativar" : "desativar"} a abertura automática da Vick. Erro: ${error instanceof Error ? error.message : "erro desconhecido"}.`,
+        provider: "synapse-local-action",
+        model,
+        context: { projects, error: error instanceof Error ? error.message : "erro desconhecido" },
+      }, { status: 500 });
+    }
+  }
 
   const asksConnection = /\b(conectad|conexao|online|status)\w*/.test(normalizedPrompt);
   const wantsCreateProject =

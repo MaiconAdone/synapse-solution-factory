@@ -326,6 +326,7 @@ type TelemetryProviderCost = {
   outputTokensToday: number;
   tokensToday: number;
   spark: number[];
+  tokenSpark: number[];
 };
 
 type Telemetry = {
@@ -357,6 +358,7 @@ const brlFormatter = new Intl.NumberFormat("pt-BR", {
 });
 
 function formatTokens(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens >= 10_000_000 ? 0 : 1)}M tok`;
   if (tokens >= 1000) return `${(tokens / 1000).toFixed(tokens >= 10_000 ? 0 : 1)}k tok`;
   return `${tokens} tok`;
 }
@@ -1308,9 +1310,8 @@ export default function VickDigitalPage() {
 
       <header className="vick-top">
         <div className="vick-brand">
-          <div className="vick-brand-mark" aria-hidden="true">V</div>
+          <img className="vick-brand-mark" src="/synapse.png" alt="Logo do Synapse" />
           <div>
-            <div className="vick-brand-name">Vick</div>
             <div className="vick-brand-sub">Synapse · Solution Factory</div>
           </div>
         </div>
@@ -1518,20 +1519,20 @@ export default function VickDigitalPage() {
             </div>
             <div
               className="vick-kpi"
-              title="Custo estimado hoje dos eventos OpenAI registrados no ledger do Synapse"
+              title="Tokens reais registrados hoje nas sessoes locais do Codex"
             >
-              <div className="k-label">Gasto Codex</div>
+              <div className="k-label">Tokens Codex</div>
               <div className="k-val vick-tabular">
-                {telemetry ? brlFormatter.format(telemetry.providerCosts.codex.brlToday) : "—"}
+                {telemetry ? formatTokens(telemetry.providerCosts.codex.tokensToday) : "—"}
               </div>
               <div className="k-foot">
                 <span className="k-trend flat">
                   {telemetry?.providerCosts.codex.requestsToday
-                    ? `↓ ${formatTokens(telemetry.providerCosts.codex.inputTokensToday)} · ↑ ${formatTokens(telemetry.providerCosts.codex.outputTokensToday)} · ${telemetry.providerCosts.codex.requestsToday} req`
+                    ? `↓ ${formatTokens(telemetry.providerCosts.codex.inputTokensToday)} · ↑ ${formatTokens(telemetry.providerCosts.codex.outputTokensToday)} · ${telemetry.providerCosts.codex.requestsToday} chamadas`
                     : "sem uso registrado"}
                 </span>
               </div>
-              <Sparkline points={telemetry?.providerCosts.codex.spark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_PRIMARY} />
+              <Sparkline points={telemetry?.providerCosts.codex.tokenSpark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_PRIMARY} />
             </div>
           </section>
 

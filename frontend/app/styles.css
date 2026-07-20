@@ -991,20 +991,13 @@ h2 {
 }
 .vick-brand { align-items: center; display: flex; gap: 12px; }
 .vick-brand-mark {
-  align-items: center;
-  background: radial-gradient(circle at 30% 25%, var(--v-primary), var(--v-primary-dim));
   border-radius: 10px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10) inset, 0 6px 18px var(--v-glow);
-  color: #041016;
-  display: flex;
   flex: none;
-  font-size: 17px;
-  font-weight: 800;
   height: 34px;
-  justify-content: center;
+  object-fit: contain;
   width: 34px;
 }
-.vick-brand-name { font-size: 18px; font-weight: 750; letter-spacing: -0.01em; }
 .vick-brand-sub { color: var(--v-muted); font-size: 11.5px; letter-spacing: 0.02em; }
 .vick-top-spacer { flex: 1; }
 .vick-env {

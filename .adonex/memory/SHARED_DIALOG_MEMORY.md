@@ -276,3 +276,11 @@ Validation: AdoneX 122/122; backend 105/105; enterprise_stack_ok; frontend lint/
 ## 2026-07-17 [codex-openai] completed
 Objective: separar definitivamente os provedores dos assistentes.
 Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem Ollama; AdoneX usa exclusivamente Ollama. Aprovacao humana, testes, backup e rollback permanecem. A integracao Anthropic anterior no AdoneX foi removida.
+- [vick] 2026-07-20T11:24:16.959Z sentimento=neutro confianca=low prompt="aí"
+- 2026-07-20 | Codex | done | Autostart web da Vick desativado por padrao; adicionados toggle persistente, tasks manuais e intents locais para a propria Vick ativar/desativar a abertura automatica no VS Code.
+- [vick] 2026-07-20T11:28:20.687Z sentimento=neutro confianca=low prompt="ei meu querido bom dia beleza aí"
+
+- 2026-07-20 | Codex | done | Cabecalho web da Vick atualizado: marca textual V substituida por /synapse.png e nome Vick removido; frontend validado com tsc --noEmit.
+- [vick] 2026-07-20T12:06:48.762Z sentimento=neutro confianca=low prompt="Pois é já baixa Valmir né que deixa a gente na mão direto"
+
+- 2026-07-20 | Codex | done | Card Codex da Vick corrigido para ler token_count real das sessoes locais do workspace Synapse, exibir tokens (nao custo estimado), entrada/saida e chamadas; sessoes Codex marcadas como nao faturaveis. API confirmou contagem nao nula e frontend tsc --noEmit passou.

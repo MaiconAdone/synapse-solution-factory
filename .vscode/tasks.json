@@ -75,9 +75,6 @@
       ],
       "dependsOrder": "parallel",
       "isBackground": false,
-      "runOptions": {
-        "runOn": "folderOpen"
-      },
       "problemMatcher": [],
       "presentation": {
         "reveal": "silent",
@@ -87,7 +84,29 @@
       }
     },
     {
-      "label": "Vick: Serviço local de voz",
+      "label": "Vick: Ativar abertura automatica",
+      "detail": "Ativa a abertura automatica da Vick na proxima abertura do Synapse no VS Code.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}\\scripts\\toggle_vick_autostart.py",
+        "enable"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Vick: Desativar abertura automatica",
+      "detail": "Desativa a abertura automatica da Vick e mantem a task manual disponivel.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}\\scripts\\toggle_vick_autostart.py",
+        "disable"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Vick: Servico local de voz",
       "detail": "Captura e transcreve voz localmente com Faster Whisper e entrega comandos governados ao AdoneX.",
       "type": "shell",
       "command": "python",
@@ -592,21 +611,27 @@
       "label": "Abrir: Runtime Manifest",
       "type": "shell",
       "command": "code",
-      "args": ["${workspaceFolder}\\config\\runtime_manifest.json"],
+      "args": [
+        "${workspaceFolder}\\config\\runtime_manifest.json"
+      ],
       "problemMatcher": []
     },
     {
       "label": "Abrir: Agentes Enterprise",
       "type": "shell",
       "command": "code",
-      "args": ["${workspaceFolder}\\agents\\definitions\\enterprise_agents.yaml"],
+      "args": [
+        "${workspaceFolder}\\agents\\definitions\\enterprise_agents.yaml"
+      ],
       "problemMatcher": []
     },
     {
       "label": "Abrir: Workflows Enterprise",
       "type": "shell",
       "command": "code",
-      "args": ["${workspaceFolder}\\config\\workflows\\enterprise_workflows.yaml"],
+      "args": [
+        "${workspaceFolder}\\config\\workflows\\enterprise_workflows.yaml"
+      ],
       "problemMatcher": []
     }
   ]

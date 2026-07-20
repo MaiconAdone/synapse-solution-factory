@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { NextResponse } from "next/server";
 
@@ -20,6 +21,7 @@ type LlmEvent = {
   completion_tokens?: number;
   total_tokens?: number;
   fallback_used?: boolean;
+  billable?: boolean;
 };
 
 type ActivityItem = {
@@ -43,6 +45,7 @@ function workspaceRoot() {
 }
 
 function eventCostBrl(event: LlmEvent): number {
+  if (event.billable === false) return 0;
   const provider = (event.provider ?? "").toLowerCase();
   if (!provider || LOCAL_PROVIDERS.has(provider)) return 0;
   const price = CLOUD_PRICE_USD_PER_MTOK[provider];
@@ -75,6 +78,85 @@ async function readLlmEvents(): Promise<LlmEvent[]> {
   } catch {
     return [];
   }
+}
+
+type CodexTokenEvent = {
+  timestamp?: string;
+  type?: string;
+  payload?: {
+    type?: string;
+    cwd?: string;
+    info?: {
+      last_token_usage?: {
+        input_tokens?: number;
+        output_tokens?: number;
+        total_tokens?: number;
+      };
+    };
+  };
+};
+
+async function readCodexEvents(): Promise<LlmEvent[]> {
+  const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
+  const sessionsRoot = path.join(codexHome, "sessions");
+  const files: string[] = [];
+  const now = Date.now();
+
+  for (let offset = 0; offset < 7; offset += 1) {
+    const date = new Date(now - offset * 86_400_000);
+    const folder = path.join(
+      sessionsRoot,
+      String(date.getFullYear()),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    );
+    try {
+      const names = await fs.readdir(folder);
+      files.push(...names.filter((name) => name.endsWith(".jsonl")).map((name) => path.join(folder, name)));
+    } catch {
+      // Dia sem sessoes do Codex.
+    }
+  }
+
+  const events: LlmEvent[] = [];
+  for (const file of files) {
+    let raw: string;
+    try {
+      raw = await fs.readFile(file, "utf8");
+    } catch {
+      continue;
+    }
+    const lines = raw.split(/\r?\n/);
+    try {
+      const meta = JSON.parse(lines[0]) as CodexTokenEvent;
+      const sessionCwd = meta.payload?.cwd;
+      if (!sessionCwd || path.resolve(sessionCwd).toLowerCase() !== workspaceRoot().toLowerCase()) continue;
+    } catch {
+      continue;
+    }
+    for (const line of lines) {
+      if (!line.includes('"token_count"')) continue;
+      try {
+        const entry = JSON.parse(line) as CodexTokenEvent;
+        const usage = entry.payload?.info?.last_token_usage;
+        if (entry.type !== "event_msg" || entry.payload?.type !== "token_count" || !usage) continue;
+        const input = Number(usage.input_tokens ?? 0);
+        const output = Number(usage.output_tokens ?? 0);
+        events.push({
+          timestamp: entry.timestamp,
+          provider: "openai",
+          model: "codex",
+          prompt_tokens: input,
+          completion_tokens: output,
+          total_tokens: Number(usage.total_tokens ?? input + output),
+          billable: false,
+        });
+      } catch {
+        // Somente eventos JSON validos de token_count sao considerados.
+      }
+    }
+  }
+  return events;
 }
 
 function buildCost(events: LlmEvent[]) {
@@ -132,6 +214,7 @@ function buildProviderCost(events: LlmEvent[], provider: "openai" | "anthropic")
   const dayKeys: string[] = [];
   for (let i = 6; i >= 0; i -= 1) dayKeys.push(localDayKey(now - i * 86_400_000));
   const costByDay = new Map<string, number>(dayKeys.map((key) => [key, 0]));
+  const tokensByDay = new Map<string, number>(dayKeys.map((key) => [key, 0]));
   let brlToday = 0;
   let requestsToday = 0;
   let inputTokensToday = 0;
@@ -145,6 +228,8 @@ function buildProviderCost(events: LlmEvent[], provider: "openai" | "anthropic")
     const key = localDayKey(ts);
     const cost = eventCostBrl(event);
     if (costByDay.has(key)) costByDay.set(key, (costByDay.get(key) ?? 0) + cost);
+    const eventTokens = Number(event.total_tokens ?? 0);
+    if (tokensByDay.has(key)) tokensByDay.set(key, (tokensByDay.get(key) ?? 0) + eventTokens);
     if (key === todayKey) {
       brlToday += cost;
       const inputTokens = Number(event.prompt_tokens ?? 0);
@@ -163,6 +248,7 @@ function buildProviderCost(events: LlmEvent[], provider: "openai" | "anthropic")
     outputTokensToday,
     tokensToday,
     spark: dayKeys.map((key) => Math.round((costByDay.get(key) ?? 0) * 100) / 100),
+    tokenSpark: dayKeys.map((key) => Math.round((tokensByDay.get(key) ?? 0) / 100) / 10),
   };
 }
 function providerLevel(event: LlmEvent): ActivityItem["level"] {
@@ -233,7 +319,8 @@ function buildActivity(events: LlmEvent[], memory: ActivityItem[]): ActivityItem
 }
 
 export async function GET() {
-  const events = await readLlmEvents();
+  const [ledgerEvents, codexEvents] = await Promise.all([readLlmEvents(), readCodexEvents()]);
+  const events = [...ledgerEvents, ...codexEvents];
   const memory = await readMemoryActivity();
   return NextResponse.json(
     {
