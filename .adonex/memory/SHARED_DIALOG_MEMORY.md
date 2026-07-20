@@ -284,3 +284,5 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - [vick] 2026-07-20T12:06:48.762Z sentimento=neutro confianca=low prompt="Pois é já baixa Valmir né que deixa a gente na mão direto"
 
 - 2026-07-20 | Codex | done | Card Codex da Vick corrigido para ler token_count real das sessoes locais do workspace Synapse, exibir tokens (nao custo estimado), entrada/saida e chamadas; sessoes Codex marcadas como nao faturaveis. API confirmou contagem nao nula e frontend tsc --noEmit passou.
+
+- 2026-07-20 | Claude Code/Codex | done | Card de gastos do Claude Code integrado aos transcripts locais do workspace Synapse, com tokens reais, cache Anthropic e custo BRL por modelo. API confirmou valores nao nulos; frontend tsc --noEmit passou.

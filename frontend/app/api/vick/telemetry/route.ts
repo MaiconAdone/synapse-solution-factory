@@ -22,6 +22,9 @@ type LlmEvent = {
   total_tokens?: number;
   fallback_used?: boolean;
   billable?: boolean;
+  // Custo já calculado na origem (BRL). Usado por fontes com preço por cache
+  // (ex.: Claude Code), que o modelo genérico de preço não consegue estimar.
+  cost_brl?: number;
 };
 
 type ActivityItem = {
@@ -46,6 +49,7 @@ function workspaceRoot() {
 
 function eventCostBrl(event: LlmEvent): number {
   if (event.billable === false) return 0;
+  if (typeof event.cost_brl === "number") return event.cost_brl;
   const provider = (event.provider ?? "").toLowerCase();
   if (!provider || LOCAL_PROVIDERS.has(provider)) return 0;
   const price = CLOUD_PRICE_USD_PER_MTOK[provider];
@@ -154,6 +158,134 @@ async function readCodexEvents(): Promise<LlmEvent[]> {
       } catch {
         // Somente eventos JSON validos de token_count sao considerados.
       }
+    }
+  }
+  return events;
+}
+
+// Preço Anthropic (USD por 1M tokens) por família de modelo. Cache read = 0.1x
+// do input; cache write 1h = 2x; cache write 5m = 1.25x (regras oficiais de
+// prompt caching). Claude Code usa Opus por padrão e cache de 1h.
+function anthropicModelPrice(model: string): { input: number; output: number } {
+  const m = (model || "").toLowerCase();
+  if (m.includes("opus")) return { input: 5, output: 25 };
+  if (m.includes("haiku")) return { input: 1, output: 5 };
+  return { input: 3, output: 15 }; // sonnet / padrão
+}
+
+type ClaudeUsage = {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_creation?: {
+    ephemeral_1h_input_tokens?: number;
+    ephemeral_5m_input_tokens?: number;
+  };
+};
+
+type ClaudeTranscriptLine = {
+  type?: string;
+  timestamp?: string;
+  cwd?: string;
+  message?: {
+    model?: string;
+    usage?: ClaudeUsage;
+  };
+};
+
+// Lê as sessões reais do Claude Code CLI para o workspace do Synapse.
+// O CLI grava um transcript JSONL por sessão em
+// ~/.claude/projects/<cwd-codificado>/*.jsonl, e cada mensagem do assistente
+// carrega o usage real (input, output, cache read/write) e o cwd.
+async function readClaudeCodeEvents(): Promise<LlmEvent[]> {
+  const configDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude");
+  const projectsRoot = path.join(configDir, "projects");
+  const root = workspaceRoot();
+  const encoded = root.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
+
+  let projectDirs: string[];
+  try {
+    const entries = await fs.readdir(projectsRoot, { withFileTypes: true });
+    projectDirs = entries
+      .filter((e) => e.isDirectory() && e.name.toLowerCase() === encoded)
+      .map((e) => path.join(projectsRoot, e.name));
+  } catch {
+    return [];
+  }
+  if (projectDirs.length === 0) return [];
+
+  const cutoff = Date.now() - 7 * 86_400_000;
+  const files: string[] = [];
+  for (const dir of projectDirs) {
+    let names: string[];
+    try {
+      names = await fs.readdir(dir);
+    } catch {
+      continue;
+    }
+    for (const name of names) {
+      if (!name.endsWith(".jsonl")) continue;
+      const file = path.join(dir, name);
+      try {
+        const stat = await fs.stat(file);
+        if (stat.mtimeMs >= cutoff) files.push(file);
+      } catch {
+        // arquivo removido durante a leitura
+      }
+    }
+  }
+
+  const events: LlmEvent[] = [];
+  for (const file of files) {
+    let raw: string;
+    try {
+      raw = await fs.readFile(file, "utf8");
+    } catch {
+      continue;
+    }
+    for (const line of raw.split(/\r?\n/)) {
+      if (!line.includes('"usage"')) continue;
+      let entry: ClaudeTranscriptLine;
+      try {
+        entry = JSON.parse(line) as ClaudeTranscriptLine;
+      } catch {
+        continue;
+      }
+      if (entry.type !== "assistant") continue;
+      if (!entry.cwd || path.resolve(entry.cwd).toLowerCase() !== root.toLowerCase()) continue;
+      const usage = entry.message?.usage;
+      const model = entry.message?.model ?? "";
+      if (!usage || model === "<synthetic>") continue;
+
+      const input = Number(usage.input_tokens ?? 0);
+      const output = Number(usage.output_tokens ?? 0);
+      const cacheRead = Number(usage.cache_read_input_tokens ?? 0);
+      const cacheCreate = Number(usage.cache_creation_input_tokens ?? 0);
+      const cache1h = Number(usage.cache_creation?.ephemeral_1h_input_tokens ?? cacheCreate);
+      const cache5m = Number(usage.cache_creation?.ephemeral_5m_input_tokens ?? 0);
+      if (input + output + cacheRead + cacheCreate === 0) continue;
+
+      const price = anthropicModelPrice(model);
+      const usd =
+        (input * price.input +
+          cacheRead * price.input * 0.1 +
+          cache1h * price.input * 2 +
+          cache5m * price.input * 1.25 +
+          output * price.output) /
+        1_000_000;
+
+      const promptTokens = input + cacheRead + cacheCreate;
+      events.push({
+        timestamp: entry.timestamp,
+        provider: "anthropic",
+        model,
+        prompt_tokens: promptTokens,
+        completion_tokens: output,
+        total_tokens: promptTokens + output,
+        billable: true,
+        cost_brl: usd * USD_TO_BRL,
+      });
     }
   }
   return events;
@@ -319,8 +451,12 @@ function buildActivity(events: LlmEvent[], memory: ActivityItem[]): ActivityItem
 }
 
 export async function GET() {
-  const [ledgerEvents, codexEvents] = await Promise.all([readLlmEvents(), readCodexEvents()]);
-  const events = [...ledgerEvents, ...codexEvents];
+  const [ledgerEvents, codexEvents, claudeCodeEvents] = await Promise.all([
+    readLlmEvents(),
+    readCodexEvents(),
+    readClaudeCodeEvents(),
+  ]);
+  const events = [...ledgerEvents, ...codexEvents, ...claudeCodeEvents];
   const memory = await readMemoryActivity();
   return NextResponse.json(
     {
