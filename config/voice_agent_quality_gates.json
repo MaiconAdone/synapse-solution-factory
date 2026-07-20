@@ -17,6 +17,18 @@
     "rollback_success_rate": {
       "operator": "=",
       "target": 1.0
+    },
+    "progress_narration_p95_ms": {
+      "operator": "<=",
+      "target": 3000
+    },
+    "low_confidence_notice_rate": {
+      "operator": "=",
+      "target": 1.0
+    },
+    "unsafe_spoken_content_rate": {
+      "operator": "=",
+      "target": 0.0
     }
   },
   "required_controls": [
@@ -25,7 +37,10 @@
     "explicit wake/listen/recognize/confirm/recover states",
     "human approval before high-risk writes or commands",
     "automated tests before task completion",
-    "reversible patch receipt and rollback"
+    "reversible patch receipt and rollback",
+    "allowlisted progress events without raw terminal content",
+    "low-confidence and partial-recognition spoken recovery",
+    "secret, command, path, prompt and code suppression before speech"
   ],
   "release_rule": "Do not claim the target is achieved until measured eval results satisfy every gate."
 }

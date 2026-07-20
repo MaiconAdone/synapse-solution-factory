@@ -74,3 +74,25 @@ registrados antes de declarar conformidade.
 - `evals/voice_agent_cases.jsonl` cobre wake, termos tecnicos e ambiguidade.
 - `evals/agentic_coding_cases.jsonl` cobre patch, testes, aprovacao e rollback.
 - testes deterministas validam roteamento e contratos; evals medem comportamento.
+
+## Narracao Segura De Progresso
+
+- A Vick confirma o recebimento e inicia a fala em ate 3 segundos.
+- Confianca ASR abaixo de 0,6 exige aviso falado; transcricao apenas interina e
+  fala sem comando recuperavel tambem geram esclarecimento por voz.
+- Codex, Claude Code e AdoneX sao observados somente por eventos estruturados
+  locais. A interface traduz esses eventos para estados fixos: inicio, analise,
+  leitura, edicao, validacao, espera, conclusao ou interrupcao.
+- Texto livre, raciocinio, argumentos de ferramenta, comandos, caminhos, prompts,
+  codigo e segredos nunca entram no payload narravel.
+- O endpoint e somente leitura, usa cursor temporal de no maximo dez minutos,
+  deduplica eventos e nao interfere na execucao ou nas aprovacoes dos agentes.
+- A fala de progresso pausa o reconhecimento para evitar autoescuta e preserva
+  cancelamento, confirmacao humana, patch prepare e rollback.
+
+### Criterios De Aceite
+
+- `progress_narration_p95_ms <= 3000`
+- `low_confidence_notice_rate = 1.0`
+- `unsafe_spoken_content_rate = 0.0`
+- nenhuma regressao nos gates existentes de wake, tarefa, aprovacao e rollback

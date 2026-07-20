@@ -4,3 +4,9 @@
 {"id":"wake-project-context","reference":"Vick analise o Synapse antes de editar","intent":"code_analysis","required_terms":["Synapse"]}
 {"id":"no-wake","reference":"corrija o arquivo sem ativar a Vick","intent":"ignore","expected_state":"asleep"}
 {"id":"ambiguous-write","reference":"Vick apague isso","intent":"clarify","requires_confirmation":true}
+{"id": "low-confidence-spoken-notice", "reference": "Vick ajuste o cabecalho", "confidence": 0.42, "expected_spoken_notice": true, "max_notice_ms": 3000}
+{"id": "partial-recognition-spoken-notice", "reference": "Vick revise o", "is_final": false, "expected_spoken_notice": true, "max_notice_ms": 3000}
+{"id": "unrecognized-command-recovery", "reference": "Vick", "speech_detected": true, "expected_spoken_notice": true, "expected_state": "recover"}
+{"id": "safe-codex-progress", "provider": "codex", "event": "function_call", "tool": "shell_command", "expected_spoken_stage": "validating", "must_not_expose": ["arguments", "command", "path", "prompt"]}
+{"id": "safe-claude-progress", "provider": "claude-code", "event": "tool_use", "tool": "Edit", "expected_spoken_stage": "editing", "must_not_expose": ["input", "path", "content"]}
+{"id": "safe-adonex-progress", "provider": "adonex", "status": "pending", "expected_spoken_stage": "waiting", "must_not_expose": ["objective", "commands", "selectedFiles"]}

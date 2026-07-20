@@ -319,6 +319,14 @@ type TelemetryActivity = {
   ts: number;
 };
 
+type VoiceProgressEvent = {
+  id: string;
+  provider: "codex" | "claude-code" | "adonex";
+  stage: string;
+  message: string;
+  timestamp: number;
+};
+
 type TelemetryProviderCost = {
   brlToday: number;
   requestsToday: number;
@@ -444,6 +452,11 @@ export default function VickDigitalPage() {
   const pendingSpeechRef = useRef<string>("");
   // Fala progressiva: enfileira cada frase assim que o modelo a fecha.
   const streamSpeechRef = useRef({ sentences: 0, queued: 0, ended: false });
+  const voiceConfidenceRef = useRef<number | null>(null);
+  const pendingUnderstandingNoticeRef = useRef("");
+  const progressCursorRef = useRef(Date.now());
+  const progressEventIdsRef = useRef(new Set<string>());
+  const progressLastSpokenAtRef = useRef(0);
   // Comando falado enquanto a Vick ainda responde o anterior.
   const queuedPromptRef = useRef("");
   const recognitionRetryRef = useRef(0);
@@ -627,6 +640,22 @@ export default function VickDigitalPage() {
     const utterance = configureUtterance(text);
     utterance.onend = () => handleSpeechFinished(false);
     utterance.onerror = () => handleSpeechFinished(true);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function announceProgress(text: string) {
+    if (!text || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    setStatus(text);
+    if (!audioUnlockedRef.current) return;
+    const utterance = configureUtterance(text);
+    const settle = () => {
+      speakingRef.current = false;
+      setSpeaking(false);
+      if (thinkingRef.current) setStatus("Vick processando");
+      else handleSpeechFinished(false);
+    };
+    utterance.onend = settle;
+    utterance.onerror = settle;
     window.speechSynthesis.speak(utterance);
   }
 
@@ -886,6 +915,50 @@ export default function VickDigitalPage() {
   }, [micTest]);
 
   useEffect(() => {
+    let stopped = false;
+    let timer: number | null = null;
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/vick/progress?since=${progressCursorRef.current}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { events?: VoiceProgressEvent[]; cursor?: number };
+        progressCursorRef.current = Number(data.cursor ?? Date.now());
+        const fresh = (data.events ?? []).filter((item) => {
+          if (progressEventIdsRef.current.has(item.id)) return false;
+          progressEventIdsRef.current.add(item.id);
+          return true;
+        });
+        if (fresh.length === 0) return;
+        setMessages((current) => [
+          ...current,
+          ...fresh.map((item) => ({ role: "vick" as const, text: item.message })),
+        ].slice(-60));
+        const now = Date.now();
+        if (now - progressLastSpokenAtRef.current >= 2500) {
+          progressLastSpokenAtRef.current = now;
+          announceProgress(fresh[fresh.length - 1].message);
+        }
+      } catch {
+        // Falha de observabilidade nao interrompe a conversa principal.
+      }
+    };
+
+    const schedule = () => {
+      if (stopped) return;
+      timer = window.setTimeout(async () => {
+        await poll();
+        schedule();
+      }, 1250);
+    };
+    schedule();
+    return () => {
+      stopped = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
+
+  useEffect(() => {
     const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!Recognition) {
       setStatus("Voz indisponível neste navegador");
@@ -901,6 +974,8 @@ export default function VickDigitalPage() {
     recognition.maxAlternatives = 6;
     recognition.onstart = () => {
       recognitionRunningRef.current = true;
+      speechDetectedRef.current = false;
+      voiceConfidenceRef.current = null;
       setListening(true);
       setStatus(idleModeRef.current ? `Ociosa — ${WAKE_HINT}` : wakeActiveRef.current ? "Pode falar" : WAKE_HINT);
     };
@@ -924,6 +999,16 @@ export default function VickDigitalPage() {
           { length: Math.max(1, result.length) },
           (_, alternativeIndex) => cleanReply(result[alternativeIndex]?.transcript ?? ""),
         );
+        const reportedConfidence = Array.from(
+          { length: Math.max(1, result.length) },
+          (_, alternativeIndex) => Number(result[alternativeIndex]?.confidence ?? 0),
+        ).filter((value) => value > 0 && value <= 1);
+        if (reportedConfidence.length > 0) {
+          voiceConfidenceRef.current = Math.max(
+            voiceConfidenceRef.current ?? 0,
+            ...reportedConfidence,
+          );
+        }
         if (
           result.isFinal &&
           alternatives.some((alternative) => CANCEL_COMMAND_RE.test(alternative))
@@ -981,6 +1066,13 @@ export default function VickDigitalPage() {
           expectDirectReplyRef.current = false;
           wakeActiveRef.current = false;
           commandBufferRef.current = "";
+          const confidence = voiceConfidenceRef.current;
+          pendingUnderstandingNoticeRef.current =
+            confidence !== null && confidence < 0.6
+              ? `Não tenho certeza se entendi tudo. Vou processar o que ouvi: ${command}.`
+              : interimTranscript
+                ? `Entendi parte da solicitação. Vou verificar o que ouvi: ${command}.`
+                : "";
           recognition.stop();
           handlePromptRef.current(command);
         }, silenceDelay);
@@ -1000,6 +1092,20 @@ export default function VickDigitalPage() {
       setListening(false);
       const errorKind = recognitionErrorKindRef.current;
       recognitionErrorKindRef.current = "";
+
+      if (
+        autoListenRef.current &&
+        wakeActiveRef.current &&
+        speechDetectedRef.current &&
+        !transcriptSubmittedRef.current &&
+        !recognitionErrorRef.current &&
+        !speakingRef.current
+      ) {
+        wakeActiveRef.current = false;
+        speechDetectedRef.current = false;
+        speak("Não entendi a solicitação. Pode repetir com outras palavras?");
+        return;
+      }
 
       if (!autoListenRef.current || micTestRef.current || speakingRef.current) {
         if (!transcriptSubmittedRef.current && !recognitionErrorRef.current) {
@@ -1159,6 +1265,7 @@ export default function VickDigitalPage() {
       queuedPromptRef.current = prompt;
       setInput("");
       setStatus("Anotei. Respondo assim que terminar esta.");
+      announceProgress("Anotei a nova solicitação. Vou terminar a etapa atual antes de continuar.");
       return;
     }
 
@@ -1167,6 +1274,9 @@ export default function VickDigitalPage() {
     thinkingRef.current = true;
     setThinking(true);
     setStatus("Vick processando");
+    const understandingNotice = pendingUnderstandingNoticeRef.current;
+    pendingUnderstandingNoticeRef.current = "";
+    announceProgress(understandingNotice || "Entendi sua solicitação. Vou analisar e aviso cada etapa relevante.");
     const nextMessages = [...messages, { role: "user" as const, text: prompt }];
     setMessages(nextMessages);
     const controller = new AbortController();

@@ -289,3 +289,13 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 
 - 2026-07-20 | Codex | done | Interface web da Vick simplificada: painel renomeado de Ruflo - agentes locais para Agentes locais, mantendo os 60 disponiveis, e bloco Configuracao removido. Frontend tsc --noEmit e verificacao HTTP passaram.
 - [vick] 2026-07-20T12:48:04.762Z sentimento=com_pressa confianca=medium prompt="Rick vamos agora fazer um teste na criação de um projeto chamando ele de gasto"
+- [vick] 2026-07-20T12:52:17.076Z sentimento=neutro confianca=low prompt="Vick, verifique o status da conex�o com o modelo local"
+- [vick] 2026-07-20T12:52:40.520Z sentimento=neutro confianca=low prompt="Responda em uma frase curta confirmando que o modelo local est� conectado � Vick."
+- [vick] 2026-07-20T12:52:57.211Z sentimento=neutro confianca=low prompt="Responda somente: conex�o confirmada."
+
+- 2026-07-20 | Codex | diagnostic | Conexao Vick-Ollama validada: portas 3000/8000/11434/8765/8766 ativas, modelo qwen2.5-coder:3b instalado, status interno web/backend/ollama=ok e teste ponta a ponta retornou provider=ollama com resposta valida.
+
+- 2026-07-20 | Codex | briefing | Evoluir voz da Vick para avisar quando nao entendeu/entendeu parcialmente e narrar etapas seguras do processamento de Codex, AdoneX e Claude Code. Universo inferido: IA/agentes conversacionais. Fontes: eventos e saidas locais desses assistentes. Aguardando metrica de sucesso e nivel de risco antes da analise/implementacao obrigatoria.
+- [vick] 2026-07-20T13:31:25.312Z sentimento=neutro confianca=low prompt="não tira a vantagem dele eu tenho 60 gente só que ele ele não usa de vez eu uso ele aqui ó por exemplo é eu precisei explicar por exemplo só que todos esses aqui um exemplo quando eu vou criar uma solução de eu já tenho "
+
+- 2026-07-20 | Codex | done | Vick ganhou recuperacao falada para comando nao entendido, parcial e ASR com confianca abaixo de 0,6; confirmacao imediata e narracao segura de etapas allowlisted de Codex, Claude Code e AdoneX via /api/vick/progress. Meta observada da rota + polling: 1,677 s; payload sem argumentos/comandos/prompts/conteudo. Build Next passou; teste focado 3/3; contratos amplos 116 passaram e 1 falhou por BOM preexistente em config/runtime_manifest.json.

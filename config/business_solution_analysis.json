@@ -2,12 +2,12 @@
   "schema": "synapse-business-solution-analysis.v1",
   "status": "analyzed",
   "requested_universe": "ia",
-  "recommended_universe": "ia",
+  "recommended_universe": "hybrid",
   "dialog_context": {
-    "project_goal": "Aprimorar o AdoneX com pesquisa escalavel de codigo, fluxos agenticos governados, contexto do editor, subagentes, slash commands e MCP, usando Ollama exclusivamente",
-    "business_problem": "Elevar a qualidade e reduzir o tempo de edicoes em bases grandes sem quebrar codigo nem remover aprovacao humana",
-    "success_metric_or_acceptance_criteria": "qualidade das edicoes de codigo medida por testes aprovados, ausencia de regressao, taxa de patches aceitos e rollback validado",
-    "available_data_or_knowledge_sources": "workspace e Git locais, GitHub, APIs e bancos via conectores MCP governados",
+    "project_goal": "Melhorar a interação por voz da Vick com aviso de entendimento parcial e narração segura do progresso de Codex, AdoneX e Claude Code",
+    "business_problem": "O usuário fica sem retorno durante solicitações longas e não sabe se a Vick entendeu o comando nem em qual etapa os assistentes estão",
+    "success_metric_or_acceptance_criteria": "Iniciar narração em até 3 segundos, atualizar cada etapa relevante e sempre avisar quando a confiança do reconhecimento estiver baixa",
+    "available_data_or_knowledge_sources": "Eventos locais e saídas de progresso de Codex, AdoneX e Claude Code; reconhecimento Web Speech; memória e tasks locais do Synapse",
     "risk_level": "high"
   },
   "domain": {
@@ -15,12 +15,26 @@
     "score": 3
   },
   "ml_archetype": {
-    "id": "unknown",
-    "label": "Unknown",
-    "score": 0,
-    "matched_keywords": [],
-    "techniques": [],
-    "metrics": []
+    "id": "speech_recognition",
+    "label": "Speech recognition and voice interaction",
+    "score": 2,
+    "matched_keywords": [
+      "voz",
+      "speech"
+    ],
+    "techniques": [
+      "wake_word_detection",
+      "automatic_speech_recognition",
+      "voice_activity_detection",
+      "domain_lexicon",
+      "human_review"
+    ],
+    "metrics": [
+      "wake_activation_p95_ms",
+      "word_accuracy",
+      "command_completion_rate",
+      "false_activation_rate"
+    ]
   },
   "ai_archetype": {
     "id": "voice_coding_agent",
@@ -28,7 +42,7 @@
     "score": 2,
     "matched_keywords": [
       "adonex",
-      "rollback"
+      "vick"
     ],
     "techniques": [],
     "metrics": [
@@ -44,6 +58,12 @@
     "tests",
     "evals",
     "governance",
+    "mlops",
+    "wake_word_detection",
+    "automatic_speech_recognition",
+    "voice_activity_detection",
+    "domain_lexicon",
+    "human_review",
     "rag",
     "agents",
     "guardrails",
@@ -53,13 +73,99 @@
   "technology_layer": {
     "schema": "synapse-technology-layer.v1",
     "active": true,
-    "universe": "ia",
+    "universe": "hybrid",
     "recommended_technology_ids": [
+      "firecrawl",
+      "rag-frameworks",
+      "mlflow",
       "fastapi",
       "ollama",
       "mcp-servers"
     ],
     "recommended_technologies": [
+      {
+        "id": "firecrawl",
+        "name": "Firecrawl",
+        "category": "web_ingestion",
+        "capabilities": [
+          "crawl",
+          "scrape",
+          "web_ingestion",
+          "rag"
+        ],
+        "best_for": [
+          "web_to_rag",
+          "market_research",
+          "site_ingestion"
+        ],
+        "select_when": [
+          "crawl",
+          "scrape",
+          "web",
+          "site",
+          "firecrawl"
+        ],
+        "templates": [
+          "templates/ingestion/firecrawl_job.yaml"
+        ]
+      },
+      {
+        "id": "rag-frameworks",
+        "name": "RAG Frameworks",
+        "category": "rag_architecture",
+        "capabilities": [
+          "rag",
+          "retrieval",
+          "reranking",
+          "citations",
+          "evals"
+        ],
+        "best_for": [
+          "grounded_answers",
+          "knowledge_bases",
+          "enterprise_search"
+        ],
+        "select_when": [
+          "rag",
+          "knowledge base",
+          "documents",
+          "documentos",
+          "conhecimento",
+          "busca",
+          "citations",
+          "citacoes",
+          "fontes"
+        ],
+        "templates": [
+          "templates/rag/rag_pipeline.py"
+        ]
+      },
+      {
+        "id": "mlflow",
+        "name": "MLflow",
+        "category": "mlops",
+        "capabilities": [
+          "experiments",
+          "model_registry",
+          "metrics",
+          "artifacts"
+        ],
+        "best_for": [
+          "model_tracking",
+          "baseline_comparison",
+          "model_registry"
+        ],
+        "select_when": [
+          "ml",
+          "model",
+          "experiment",
+          "training",
+          "metrics"
+        ],
+        "templates": [
+          "templates/mlops/mlflow_experiment.py"
+        ]
+      },
       {
         "id": "fastapi",
         "name": "FastAPI",
@@ -141,11 +247,26 @@
       }
     ],
     "categories": [
+      "web_ingestion",
+      "rag_architecture",
+      "mlops",
       "api_backend",
       "local_llm_runtime",
       "tool_context_protocol"
     ],
     "capabilities": [
+      "crawl",
+      "scrape",
+      "web_ingestion",
+      "rag",
+      "retrieval",
+      "reranking",
+      "citations",
+      "evals",
+      "experiments",
+      "model_registry",
+      "metrics",
+      "artifacts",
       "api",
       "backend",
       "typed_contracts",
@@ -161,6 +282,9 @@
       "integration"
     ],
     "template_paths": [
+      "templates/ingestion/firecrawl_job.yaml",
+      "templates/rag/rag_pipeline.py",
+      "templates/mlops/mlflow_experiment.py",
       "templates/backend/fastapi_service.py",
       "templates/llm/ollama_router.py",
       "templates/mcp/server.py"
@@ -168,23 +292,97 @@
     "selection_reason": "Selected by business-problem signals, universe requirements, and local-first Synapse defaults."
   },
   "ml_foundations": {
-    "active": false,
+    "active": true,
     "policy_path": "config/ml_foundations_policy.json",
     "spec_path": "docs/specifications/ml_foundations.md",
-    "reason": "Not required for non-ML universe.",
-    "required_reasoning_gates": [],
+    "reason": "Use foundational ML gates before model selection, training, evaluation, or release.",
+    "required_reasoning_gates": [
+      {
+        "id": "learning_problem_mapping",
+        "description": "Map experience, task, and performance measure before choosing a model.",
+        "required_outputs": [
+          "experience_data",
+          "prediction_task",
+          "performance_measure"
+        ]
+      },
+      {
+        "id": "hypothesis_space_and_bias",
+        "description": "Name the hypothesis family, its assumptions, and expected bias/variance tradeoff.",
+        "required_outputs": [
+          "hypothesis_family",
+          "bias_assumptions",
+          "variance_risk"
+        ]
+      },
+      {
+        "id": "probabilistic_assumptions",
+        "description": "State whether the solution needs probabilistic outputs, calibration, independence assumptions, or distributional checks.",
+        "required_outputs": [
+          "probability_model",
+          "calibration_need",
+          "distribution_checks"
+        ]
+      },
+      {
+        "id": "estimation_objective",
+        "description": "Define the estimation or loss objective used to fit the model.",
+        "required_outputs": [
+          "loss_function",
+          "estimator",
+          "optimization_method"
+        ]
+      },
+      {
+        "id": "statistical_validation",
+        "description": "Use holdout/cross-validation, confidence intervals, or hypothesis checks before claiming improvement.",
+        "required_outputs": [
+          "evaluation_split",
+          "confidence_or_significance_check",
+          "baseline_delta"
+        ]
+      },
+      {
+        "id": "regularization_and_optimization",
+        "description": "Document regularization, convergence, and optimization limits for fitted models.",
+        "required_outputs": [
+          "regularization",
+          "convergence_criteria",
+          "failure_modes"
+        ]
+      },
+      {
+        "id": "attribute_selection_transformation",
+        "description": "Review feature relevance, leakage risk, transformations, and dimensionality before release.",
+        "required_outputs": [
+          "feature_selection_policy",
+          "leakage_check",
+          "transformations"
+        ]
+      }
+    ],
     "algorithm_guidance": {},
-    "required_artifacts": []
+    "required_artifacts": [
+      "docs/specifications/ml_foundations.md",
+      "ml_systems/data_contract.yaml",
+      "ml_systems/model_card.md",
+      "ml_systems/monitoring_plan.yaml",
+      "evals/ml_cases.jsonl"
+    ]
   },
   "architecture_blueprint": {
-    "style": "rag_agentic_service_architecture",
+    "style": "hybrid_mlops_rag_agent_architecture",
     "framework_ids": [
+      "crewai",
+      "autogen",
       "langgraph",
       "openai-agents-sdk",
-      "pydantic-ai",
       "mcp-sdks"
     ],
     "technology_ids": [
+      "firecrawl",
+      "rag-frameworks",
+      "mlflow",
       "fastapi",
       "ollama",
       "mcp-servers"
@@ -194,7 +392,13 @@
       "governance",
       "tests",
       "evals",
-      "observability"
+      "observability",
+      "ingestion_pipeline",
+      "retrieval_service",
+      "citation_evals",
+      "experiment_tracking",
+      "model_registry",
+      "drift_monitoring"
     ],
     "local_first": true,
     "cloud_requires_explicit_approval": true
@@ -208,33 +412,70 @@
         "technology_selection",
         "sdd_gate"
       ]
+    },
+    {
+      "id": "web_ingestion",
+      "stages": [
+        "crawl",
+        "clean",
+        "chunk",
+        "index",
+        "quality_check"
+      ]
+    },
+    {
+      "id": "rag",
+      "stages": [
+        "ingest",
+        "embed",
+        "retrieve",
+        "rerank",
+        "answer",
+        "evaluate"
+      ]
+    },
+    {
+      "id": "mlops",
+      "stages": [
+        "baseline",
+        "train",
+        "track",
+        "register",
+        "monitor"
+      ]
     }
   ],
   "solution_templates": [
+    "templates/ingestion/firecrawl_job.yaml",
+    "templates/rag/rag_pipeline.py",
+    "templates/mlops/mlflow_experiment.py",
     "templates/backend/fastapi_service.py",
     "templates/llm/ollama_router.py",
     "templates/mcp/server.py"
   ],
-  "architecture_decision": "Create an AI project with RAG and/or governed agents, tool boundaries, MCP-ready integration, cost controls, and prompt/RAG/tool evals.",
+  "architecture_decision": "Create a hybrid project combining MLOps with RAG/agents so predictive intelligence and task execution share data contracts, tests, evals, and governance.",
   "data_strategy": {
     "data_contract_required": true,
-    "baseline_required": false,
+    "baseline_required": true,
     "monitoring_required": true,
     "primary_metrics": [
-      "groundedness",
-      "task_success_rate",
-      "cost_per_task"
+      "wake_activation_p95_ms",
+      "word_accuracy",
+      "command_completion_rate",
+      "false_activation_rate"
     ]
   },
   "test_strategy": [
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
+    "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
   "eval_strategy": [
     "evals/project_cases.jsonl",
     "evals/quality_gates.yaml",
+    "evals/ml_cases.jsonl using wake_activation_p95_ms, word_accuracy, command_completion_rate, false_activation_rate",
     "evals/prompt_cases.jsonl",
     "evals/rag_cases.jsonl"
   ],
@@ -244,9 +485,10 @@
     "max_agents": 60,
     "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
     "recommended_fleets": [
+      "project_factory_fleet",
+      "ml_fleet",
       "rag_fleet",
-      "mcp_fleet",
-      "security_fleet"
+      "cost_optimization_fleet"
     ]
   },
   "book_alignment": [
@@ -254,6 +496,9 @@
     "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
     "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
     "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
+    "Speech and Language Processing: evaluate ASR with word error/accuracy, domain vocabulary, and representative speech cases.",
+    "Designing Voice User Interfaces: separate wake, listening, recognition, handling, confirmation, and recovery states.",
+    "Effective Conversational AI: measure intent success and continuously improve from observed failures instead of relying on generic fallback copy.",
     "Agentic Coding: engineer repository context, tool permissions, reusable workflows, validation hooks, and controlled execution.",
     "Prompt Engineering for LLMs: compile spoken intent into an explicit objective, constraints, evidence, tools, and response contract."
   ],
@@ -261,15 +506,18 @@
     "docs/briefings/business_solution_analysis.md",
     "config/business_solution_analysis.json",
     "config/ai_framework_selection.json",
-    "docs/specifications/voice_agentic_coding.md",
+    "config/ml_foundations_policy.json",
+    "docs/specifications/ml_foundations.md",
     "config/voice_agent_quality_gates.json",
     "evals/voice_agent_cases.jsonl",
+    "docs/specifications/voice_agentic_coding.md",
     "evals/agentic_coding_cases.jsonl",
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
+    "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
-  "project": "synapse-ai",
+  "project": "synapse",
   "source": "scripts/analyze_business_solution.py"
 }
