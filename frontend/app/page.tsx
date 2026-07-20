@@ -1456,19 +1456,6 @@ export default function VickDigitalPage() {
                 <b>navegador</b>
               </div>
             </div>
-            <div className="vick-section-label">Configuração</div>
-            <div className="vick-vmeta">
-              <div className="vick-vrow"><span>Ativação</span><b className="mono">Viqui · Vique · Vic · 2 palmas</b></div>
-              <div className="vick-vrow">
-                <span>Transcrição</span>
-                <b>Web Speech (navegador)</b>
-              </div>
-              <div className="vick-vrow">
-                <span>Voz</span>
-                <b>{voiceReady ? voiceProfiles[voiceProfile].label : "—"}</b>
-              </div>
-              <div className="vick-vrow"><span>Idioma</span><b>pt-BR</b></div>
-            </div>
           </div>
         </section>
 
@@ -1565,7 +1552,7 @@ export default function VickDigitalPage() {
 
           <section className="vick-panel" aria-label="Mesh de agentes">
             <div className="vick-panel-head">
-              <h2>Ruflo · agentes locais</h2>
+              <h2>Agentes locais</h2>
               <span className="v-tag">{rufloCatalog ? `${rufloCatalog.total} disponíveis` : "carregando…"}</span>
             </div>
             <div className="vick-mesh">
@@ -1576,7 +1563,7 @@ export default function VickDigitalPage() {
                     {agent.tier === "core" ? "core" : "especialista"}
                   </span>
                 </div>
-              )) ?? <div className="vick-mesh-empty">Carregando catálogo Ruflo local…</div>}
+              )) ?? <div className="vick-mesh-empty">Carregando catálogo local…</div>}
             </div>
           </section>
         </div>

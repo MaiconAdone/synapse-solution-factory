@@ -286,3 +286,6 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - 2026-07-20 | Codex | done | Card Codex da Vick corrigido para ler token_count real das sessoes locais do workspace Synapse, exibir tokens (nao custo estimado), entrada/saida e chamadas; sessoes Codex marcadas como nao faturaveis. API confirmou contagem nao nula e frontend tsc --noEmit passou.
 
 - 2026-07-20 | Claude Code/Codex | done | Card de gastos do Claude Code integrado aos transcripts locais do workspace Synapse, com tokens reais, cache Anthropic e custo BRL por modelo. API confirmou valores nao nulos; frontend tsc --noEmit passou.
+
+- 2026-07-20 | Codex | done | Interface web da Vick simplificada: painel renomeado de Ruflo - agentes locais para Agentes locais, mantendo os 60 disponiveis, e bloco Configuracao removido. Frontend tsc --noEmit e verificacao HTTP passaram.
+- [vick] 2026-07-20T12:48:04.762Z sentimento=com_pressa confianca=medium prompt="Rick vamos agora fazer um teste na criação de um projeto chamando ele de gasto"
