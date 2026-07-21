@@ -4,53 +4,51 @@
   "requested_universe": "ia",
   "recommended_universe": "hybrid",
   "dialog_context": {
-    "project_goal": "Melhorar a interação por voz da Vick com aviso de entendimento parcial e narração segura do progresso de Codex, AdoneX e Claude Code",
-    "business_problem": "O usuário fica sem retorno durante solicitações longas e não sabe se a Vick entendeu o comando nem em qual etapa os assistentes estão",
-    "success_metric_or_acceptance_criteria": "Iniciar narração em até 3 segundos, atualizar cada etapa relevante e sempre avisar quando a confiança do reconhecimento estiver baixa",
-    "available_data_or_knowledge_sources": "Eventos locais e saídas de progresso de Codex, AdoneX e Claude Code; reconhecimento Web Speech; memória e tasks locais do Synapse",
-    "risk_level": "high"
+    "project_goal": "Fixar uma caixa de dialogo exclusiva do AdoneX ao lado das abas Claude Code, Chat e Codex no VS Code",
+    "business_problem": "Dar acesso direto e permanente ao chat local do AdoneX no mesmo conjunto visual dos demais assistentes",
+    "success_metric_or_acceptance_criteria": "A aba ADONEX fica visivel e fixa ao lado de Claude Code, Chat e Codex, abre o chat exclusivo e preserva o historico",
+    "available_data_or_knowledge_sources": "Extensao AdoneX existente e imagem de referencia fornecida pelo usuario",
+    "risk_level": "baixo"
   },
   "domain": {
     "id": "developer_productivity",
-    "score": 3
+    "score": 1
   },
   "ml_archetype": {
-    "id": "speech_recognition",
-    "label": "Speech recognition and voice interaction",
-    "score": 2,
+    "id": "document_intelligence",
+    "label": "Document, NLP and computer vision intelligence",
+    "score": 1,
     "matched_keywords": [
-      "voz",
-      "speech"
+      "imagem"
     ],
     "techniques": [
-      "wake_word_detection",
-      "automatic_speech_recognition",
-      "voice_activity_detection",
-      "domain_lexicon",
+      "nlp",
+      "computer_vision",
+      "ocr",
+      "deep_learning",
       "human_review"
     ],
     "metrics": [
-      "wake_activation_p95_ms",
-      "word_accuracy",
-      "command_completion_rate",
-      "false_activation_rate"
+      "accuracy",
+      "entity_f1",
+      "ocr_error_rate",
+      "human_review_rate"
     ]
   },
   "ai_archetype": {
-    "id": "voice_coding_agent",
-    "label": "Voice-driven agentic coding assistant",
+    "id": "chatbot",
+    "label": "Conversational chatbot",
     "score": 2,
     "matched_keywords": [
-      "adonex",
-      "vick"
+      "chatbot",
+      "chat"
     ],
     "techniques": [],
     "metrics": [
-      "task_success_rate",
-      "patch_test_pass_rate",
-      "human_approval_rate",
-      "rollback_success_rate",
-      "p95_task_latency_ms"
+      "containment_rate",
+      "handoff_quality",
+      "csat",
+      "safety_refusal_quality"
     ]
   },
   "solution_stack": [
@@ -59,11 +57,12 @@
     "evals",
     "governance",
     "mlops",
-    "wake_word_detection",
-    "automatic_speech_recognition",
-    "voice_activity_detection",
-    "domain_lexicon",
+    "nlp",
+    "computer_vision",
+    "ocr",
+    "deep_learning",
     "human_review",
+    "chatbot",
     "rag",
     "agents",
     "guardrails",
@@ -75,69 +74,87 @@
     "active": true,
     "universe": "hybrid",
     "recommended_technology_ids": [
-      "firecrawl",
-      "rag-frameworks",
+      "langflow",
+      "flowise",
+      "dify",
+      "ollama",
       "mlflow",
       "fastapi",
-      "ollama",
       "mcp-servers"
     ],
     "recommended_technologies": [
       {
-        "id": "firecrawl",
-        "name": "Firecrawl",
-        "category": "web_ingestion",
+        "id": "langflow",
+        "name": "LangFlow",
+        "category": "visual_llm_builder",
         "capabilities": [
-          "crawl",
-          "scrape",
-          "web_ingestion",
-          "rag"
+          "visual_flows",
+          "llm",
+          "rag",
+          "prototyping"
         ],
         "best_for": [
-          "web_to_rag",
-          "market_research",
-          "site_ingestion"
+          "visual_prototyping",
+          "operator_editable_flows"
         ],
         "select_when": [
-          "crawl",
-          "scrape",
-          "web",
-          "site",
-          "firecrawl"
+          "visual",
+          "builder",
+          "prototype",
+          "langflow"
         ],
         "templates": [
-          "templates/ingestion/firecrawl_job.yaml"
+          "templates/no_code/langflow_export.json"
         ]
       },
       {
-        "id": "rag-frameworks",
-        "name": "RAG Frameworks",
-        "category": "rag_architecture",
+        "id": "flowise",
+        "name": "Flowise",
+        "category": "visual_llm_builder",
         "capabilities": [
+          "visual_flows",
+          "llm",
           "rag",
-          "retrieval",
-          "reranking",
-          "citations",
-          "evals"
+          "tools"
         ],
         "best_for": [
-          "grounded_answers",
-          "knowledge_bases",
-          "enterprise_search"
+          "rapid_prototyping",
+          "operator_editable_pipelines"
         ],
         "select_when": [
-          "rag",
-          "knowledge base",
-          "documents",
-          "documentos",
-          "conhecimento",
-          "busca",
-          "citations",
-          "citacoes",
-          "fontes"
+          "visual",
+          "flowise",
+          "chain builder",
+          "operator"
         ],
         "templates": [
-          "templates/rag/rag_pipeline.py"
+          "templates/no_code/flowise_chatflow.json"
+        ]
+      },
+      {
+        "id": "dify",
+        "name": "Dify",
+        "category": "llm_app_platform",
+        "capabilities": [
+          "llm_apps",
+          "chatbots",
+          "workflows",
+          "rag",
+          "observability"
+        ],
+        "best_for": [
+          "no_code_llm_apps",
+          "ops_ui",
+          "chatbot_workflows"
+        ],
+        "select_when": [
+          "no-code",
+          "chatbot",
+          "ops ui",
+          "dify"
+        ],
+        "templates": [
+          "templates/no_code/dify_app.yaml"
         ]
       },
       {
@@ -247,22 +264,23 @@
       }
     ],
     "categories": [
-      "web_ingestion",
-      "rag_architecture",
+      "visual_llm_builder",
+      "llm_app_platform",
       "mlops",
       "api_backend",
       "local_llm_runtime",
       "tool_context_protocol"
     ],
     "capabilities": [
-      "crawl",
-      "scrape",
-      "web_ingestion",
+      "visual_flows",
+      "llm",
       "rag",
-      "retrieval",
-      "reranking",
-      "citations",
-      "evals",
+      "prototyping",
+      "tools",
+      "llm_apps",
+      "chatbots",
+      "workflows",
+      "observability",
       "experiments",
       "model_registry",
       "metrics",
@@ -276,14 +294,14 @@
       "offline_inference",
       "model_routing",
       "mcp",
-      "tools",
       "resources",
       "prompts",
       "integration"
     ],
     "template_paths": [
-      "templates/ingestion/firecrawl_job.yaml",
-      "templates/rag/rag_pipeline.py",
+      "templates/no_code/langflow_export.json",
+      "templates/no_code/flowise_chatflow.json",
+      "templates/no_code/dify_app.yaml",
       "templates/mlops/mlflow_experiment.py",
       "templates/backend/fastapi_service.py",
       "templates/llm/ollama_router.py",
@@ -361,7 +379,28 @@
         ]
       }
     ],
-    "algorithm_guidance": {},
+    "algorithm_guidance": {
+      "foundation_topics": [
+        "naive_bayes",
+        "maximum_entropy",
+        "multiclass_classification",
+        "feature_transformation"
+      ],
+      "synapse_candidates": [
+        "nlp",
+        "computer_vision",
+        "deep_learning"
+      ],
+      "missing_candidates_to_consider": [
+        "text_naive_bayes_baseline",
+        "linear_text_classifier_baseline"
+      ],
+      "metrics": [
+        "accuracy",
+        "entity_f1",
+        "human_review_rate"
+      ]
+    },
     "required_artifacts": [
       "docs/specifications/ml_foundations.md",
       "ml_systems/data_contract.yaml",
@@ -373,18 +412,17 @@
   "architecture_blueprint": {
     "style": "hybrid_mlops_rag_agent_architecture",
     "framework_ids": [
-      "crewai",
-      "autogen",
-      "langgraph",
-      "openai-agents-sdk",
-      "mcp-sdks"
+      "dify",
+      "flowise",
+      "ragflow"
     ],
     "technology_ids": [
-      "firecrawl",
-      "rag-frameworks",
+      "langflow",
+      "flowise",
+      "dify",
+      "ollama",
       "mlflow",
       "fastapi",
-      "ollama",
       "mcp-servers"
     ],
     "components": [
@@ -414,16 +452,6 @@
       ]
     },
     {
-      "id": "web_ingestion",
-      "stages": [
-        "crawl",
-        "clean",
-        "chunk",
-        "index",
-        "quality_check"
-      ]
-    },
-    {
       "id": "rag",
       "stages": [
         "ingest",
@@ -446,8 +474,9 @@
     }
   ],
   "solution_templates": [
-    "templates/ingestion/firecrawl_job.yaml",
-    "templates/rag/rag_pipeline.py",
+    "templates/no_code/langflow_export.json",
+    "templates/no_code/flowise_chatflow.json",
+    "templates/no_code/dify_app.yaml",
     "templates/mlops/mlflow_experiment.py",
     "templates/backend/fastapi_service.py",
     "templates/llm/ollama_router.py",
@@ -459,10 +488,10 @@
     "baseline_required": true,
     "monitoring_required": true,
     "primary_metrics": [
-      "wake_activation_p95_ms",
-      "word_accuracy",
-      "command_completion_rate",
-      "false_activation_rate"
+      "accuracy",
+      "entity_f1",
+      "ocr_error_rate",
+      "human_review_rate"
     ]
   },
   "test_strategy": [
@@ -475,7 +504,7 @@
   "eval_strategy": [
     "evals/project_cases.jsonl",
     "evals/quality_gates.yaml",
-    "evals/ml_cases.jsonl using wake_activation_p95_ms, word_accuracy, command_completion_rate, false_activation_rate",
+    "evals/ml_cases.jsonl using accuracy, entity_f1, ocr_error_rate, human_review_rate",
     "evals/prompt_cases.jsonl",
     "evals/rag_cases.jsonl"
   ],
@@ -495,12 +524,7 @@
     "AI Engineering: define quality, cost, latency, safety, and evaluation gates before scaling models or agents.",
     "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
     "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
-    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
-    "Speech and Language Processing: evaluate ASR with word error/accuracy, domain vocabulary, and representative speech cases.",
-    "Designing Voice User Interfaces: separate wake, listening, recognition, handling, confirmation, and recovery states.",
-    "Effective Conversational AI: measure intent success and continuously improve from observed failures instead of relying on generic fallback copy.",
-    "Agentic Coding: engineer repository context, tool permissions, reusable workflows, validation hooks, and controlled execution.",
-    "Prompt Engineering for LLMs: compile spoken intent into an explicit objective, constraints, evidence, tools, and response contract."
+    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions."
   ],
   "required_artifacts": [
     "docs/briefings/business_solution_analysis.md",
@@ -508,10 +532,12 @@
     "config/ai_framework_selection.json",
     "config/ml_foundations_policy.json",
     "docs/specifications/ml_foundations.md",
-    "config/voice_agent_quality_gates.json",
-    "evals/voice_agent_cases.jsonl",
-    "docs/specifications/voice_agentic_coding.md",
-    "evals/agentic_coding_cases.jsonl",
+    "ml_systems/data_contract.yaml",
+    "guardrails/policy.yaml",
+    "evals/ml_cases.jsonl",
+    "prompts/chatbot_assistant.md",
+    "evals/chatbot_cases.jsonl",
+    "docs/checklists/chatbot_quality_checklist.md",
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",

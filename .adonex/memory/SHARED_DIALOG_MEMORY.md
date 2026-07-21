@@ -12,6 +12,10 @@ AdoneX neste workspace Synapse.
 
 ## Recent Dialog Context
 
+- 2026-07-21 | Codex | done | Nuvem do chat AdoneX evoluida para continuidade entre assistentes: abre painel interno com historico unificado de `SHARED_DIALOG_MEMORY.md` e `CHAT_TASKS.md`, identifica origem/estado, prioriza pending/received/briefing/blocked e permite selecionar `Continuar com AdoneX local`. Retomada consulta memoria/workspace e entra no fluxo governado, mantendo confirmacao humana para patches/comandos. AdoneX 0.6.19 recompilado, 118/118 testes passaram, VSIX reinstalado.
+
+- 2026-07-20 | Codex | done | Painel direto do AdoneX corrigido: perguntas sobre modelos consultam o inventario real do Ollama via `/api/tags`; chat ganhou historico recente, memoria compartilhada e anexos textuais limitados/redigidos. Interface ganhou icone de clipe para ate 5 arquivos/imagens e icone de nuvem que abre `.adonex/memory/SHARED_DIALOG_MEMORY.md`. AdoneX 0.6.19 compilado, 118/118 testes passaram, VSIX empacotado e instalado no VS Code.
+
 - 2026-07-15 | Codex | done | Vick ganhou modo ocioso apos 3 minutos sem solicitacao valida: exige novamente `Ei Vick`, mas preserva mensagens, briefing, historico e sessao/expectativa de resposta. Timer reinicia por prompt valido, wake word ou botao de microfone, nunca por ruido, e e adiado durante fala/processamento. TypeScript/build passaram e revisao Ollama local aprovou.
 
 - 2026-07-15 | Codex | done | Painel `Atividade ao vivo` da Vick substituido por otimizador de ruido local: detecta suporte e configura noiseSuppression, echoCancellation e autoGainControl, mede RMS ao vivo, calibra piso de ruido por 3s e persiste preferencias em localStorage, sem gravacao/upload. UI informa limite da Web Speech API. TypeScript/build passaram e revisao Ollama local aprovou.
@@ -299,3 +303,11 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - [vick] 2026-07-20T13:31:25.312Z sentimento=neutro confianca=low prompt="não tira a vantagem dele eu tenho 60 gente só que ele ele não usa de vez eu uso ele aqui ó por exemplo é eu precisei explicar por exemplo só que todos esses aqui um exemplo quando eu vou criar uma solução de eu já tenho "
 
 - 2026-07-20 | Codex | done | Vick ganhou recuperacao falada para comando nao entendido, parcial e ASR com confianca abaixo de 0,6; confirmacao imediata e narracao segura de etapas allowlisted de Codex, Claude Code e AdoneX via /api/vick/progress. Meta observada da rota + polling: 1,677 s; payload sem argumentos/comandos/prompts/conteudo. Build Next passou; teste focado 3/3; contratos amplos 116 passaram e 1 falhou por BOM preexistente em config/runtime_manifest.json.
+
+- 2026-07-20 | Codex | done | Chat exclusivo do AdoneX 0.6.19 fixado na Secondary Sidebar ao lado de Claude Code, Chat e Codex; view visivel por padrao e ultimas 100 mensagens persistidas pelo estado do webview. Analise oficial atualizada, 118/118 testes passaram, VSIX empacotado e instalado no VS Code.
+
+## 2026-07-20 - AdoneX VS Code chat local
+- Separado o chat textual do painel AdoneX do fluxo da Vick e do lifecycle agentico.
+- Envio textual agora consulta diretamente o Ollama local e exibe a resposta; Vick permanece exclusiva da interface web.
+- Validacao: compilacao e 118 testes aprovados.
+
