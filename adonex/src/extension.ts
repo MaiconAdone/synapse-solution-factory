@@ -13,6 +13,8 @@ import {
 import { registerMemoryCommands } from "./memory/memoryCommands";
 import { AdoneXHttpBridge } from "./bridge/httpBridge";
 import { AdoneXPanel } from "./webview/AdoneXPanel";
+import { InlineEditService } from "./inline/inlineEditService";
+import { AdoneXInlineCompletionProvider } from "./inline/inlineCompletionProvider";
 
 export function activate(context: vscode.ExtensionContext): void {
   const panel = new AdoneXPanel(context);
@@ -23,6 +25,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   registerAdoneXChatParticipant(context, panel);
   registerMemoryCommands(context);
+  registerInlineFeatures(context);
 
   // Ponte HTTP local: deixa a Vick web acionar o fluxo governado do AdoneX.
   // Desligada por padrao e exige token (ver adonex.bridge.* nas settings).
@@ -43,6 +46,7 @@ export function activate(context: vscode.ExtensionContext): void {
   };
 
   register("adonex.openChat", () => panel.reveal());
+  register("adonex.composer.open", () => panel.openComposer());
   register("adonex.voice.vick.start", () => panel.startVickVoice());
   register("adonex.voice.vick.stop", () => panel.stopVickVoice());
   register("adonex.voice.vick.toggleMute", () => panel.toggleVickMute());
@@ -251,6 +255,34 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {}
+
+function registerInlineFeatures(context: vscode.ExtensionContext): void {
+  const inlineEdit = new InlineEditService();
+  context.subscriptions.push(
+    vscode.commands.registerCommand("adonex.inlineEdit", () => inlineEdit.run())
+  );
+  const provider = new AdoneXInlineCompletionProvider();
+  context.subscriptions.push(
+    vscode.languages.registerInlineCompletionItemProvider(
+      { pattern: "**" },
+      provider
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("adonex.inlineCompletion.toggle", async () => {
+      const configuration = vscode.workspace.getConfiguration("adonex");
+      const enabled = configuration.get<boolean>("inlineCompletion.enabled", true);
+      await configuration.update(
+        "inlineCompletion.enabled",
+        !enabled,
+        vscode.ConfigurationTarget.Global
+      );
+      void vscode.window.showInformationMessage(
+        `AdoneX autocomplete inline ${!enabled ? "ativado" : "desativado"}.`
+      );
+    })
+  );
+}
 
 function startVickOnVsCodeStartup(panel: AdoneXPanel): void {
   const configuration = vscode.workspace.getConfiguration("adonex");

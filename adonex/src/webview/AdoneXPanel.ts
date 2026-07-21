@@ -1,5 +1,6 @@
-﻿import * as vscode from "vscode";
+import * as vscode from "vscode";
 import { AgentOrchestrator } from "../agent/agentOrchestrator";
+import { ComposerSession } from "../composer/composerSession";
 import { CommandRunner } from "../execution/commandRunner";
 import type {
   AgentAction,
@@ -16,6 +17,7 @@ import { summarizePatchForSpeech } from "../patch/patchSummary";
 import { requestApproval } from "../security/approvalGate";
 import { scanAndRedactSecrets } from "../security/secretScanner";
 import { inferUpdateFromText } from "../memory/memorySummarizer";
+import { parseMentions } from "../context/mentionResolver";
 import { MemoryWriter } from "../memory/memoryWriter";
 import type { TaskLog as MemoryTaskLog } from "../memory/types";
 import { diagnoseCommandFailure, finalizeTask } from "../tasks/taskFinalizer";
@@ -31,6 +33,10 @@ import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/h
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
 import { VickLocalServiceClient } from "../voice/vickLocalService";
+import { OllamaClient } from "../llm/ollamaClient";
+import { normalizeOllamaBaseUrl } from "../llm/ollamaEndpoint";
+import { ADONEX_FAST_LOCAL_MODEL, selectLocalModelProfileForTask } from "../llm/localModels";
+import { MEMORY_PATHS } from "../memory/memoryFiles";
 
 interface PendingTask {
   task: string;
@@ -54,9 +60,12 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   private taskRecord?: TaskRecord;
   private taskStore?: TaskStore;
   private abortController?: AbortController;
+  private selectedAttachments: vscode.Uri[] = [];
+  private readonly localChatHistory: Array<{ role: "user" | "assistant"; text: string }> = [];
   private applyMode: "prepare" | "apply" = "prepare";
   private readonly orchestrator: AgentOrchestrator;
   private readonly patchEngine = new PatchEngine();
+  private readonly composer: ComposerSession;
   private readonly commandRunner = new CommandRunner();
   private readonly vick = new VickVoiceSession();
   private readonly vickLocalService = new VickLocalServiceClient(
@@ -66,6 +75,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
 
   public constructor(private readonly context: vscode.ExtensionContext) {
     this.orchestrator = new AgentOrchestrator(context);
+    this.composer = new ComposerSession(this.orchestrator, this.patchEngine);
   }
 
   public resolveWebviewView(view: vscode.WebviewView): void {
@@ -73,13 +83,20 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     view.webview.options = {
       enableScripts: true,
       localResourceRoots: [
-        vscode.Uri.joinPath(this.context.extensionUri, "src", "webview", "media")
+        vscode.Uri.joinPath(this.context.extensionUri, "src", "webview", "media"),
+        vscode.Uri.joinPath(this.context.extensionUri, "media")
       ]
     };
     view.webview.html = this.html(view.webview);
     view.webview.onDidReceiveMessage(
-      (message: { type: string; task?: string; action?: AgentAction; mode?: AgentMode }) =>
-        void this.handleMessage(message),
+      (message: {
+        type: string;
+        task?: string;
+        action?: AgentAction;
+        mode?: AgentMode;
+        path?: string;
+        selected?: boolean;
+      }) => void this.handleMessage(message),
       undefined,
       this.context.subscriptions
     );
@@ -90,9 +107,14 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     }
   }
 
+  // Revela o dialogo do AdoneX. Acionado pelo icone/logo na activity bar e pelo
+  // comando "AdoneX: Open Chat". O <viewId>.focus abre o container onde ele estiver.
   public async reveal(): Promise<void> {
-    await vscode.commands.executeCommand("workbench.view.extension.adonex");
-    this.view?.show?.(true);
+    if (this.view?.show) {
+      this.view.show(true);
+      return;
+    }
+    await vscode.commands.executeCommand(`${AdoneXPanel.viewType}.focus`);
   }
 
   public async queueTask(
@@ -195,10 +217,42 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     task?: string;
     action?: AgentAction;
     mode?: AgentMode;
+    path?: string;
+    selected?: boolean;
   }): Promise<void> {
     try {
-      if (message.type === "plan" && message.task && message.action && message.mode) {
+      if (message.type === "composerGenerate" && message.task) {
+        await this.composerGenerate(message.task, message.mode);
+      } else if (message.type === "composerRefine" && message.task) {
+        await this.composerRefine(message.task, message.mode);
+      } else if (message.type === "composerToggle" && message.path !== undefined) {
+        this.composer.toggleFile(message.path, message.selected ?? true);
+      } else if (message.type === "composerSelectAll") {
+        this.composer.setAllSelected(message.selected ?? true);
+      } else if (message.type === "composerOpenDiff" && message.path) {
+        await this.composer.openDiff(message.path);
+      } else if (message.type === "composerApply") {
+        await this.composerApply();
+      } else if (message.type === "composerUndo") {
+        await this.composerUndo();
+      } else if (message.type === "composerDiscard") {
+        this.composer.reset();
+        this.post({ type: "composerState", state: "idle", text: "Proposta descartada." });
+      } else if (message.type === "plan" && message.task && message.action && message.mode) {
         await this.createPlan(message.task, message.action, message.mode);
+      } else if (message.type === "send" && message.task) {
+        await this.sendLocalChat(message.task);
+      } else if (message.type === "mentionPick") {
+        await this.pickMention();
+      } else if (message.type === "selectAttachments") {
+        await this.selectAttachments();
+      } else if (message.type === "clearAttachments") {
+        this.selectedAttachments = [];
+        this.postAttachmentState();
+      } else if (message.type === "openSharedMemory") {
+        await this.openSharedMemory();
+      } else if (message.type === "resumeSharedTask" && message.task) {
+        await this.resumeSharedTask(message.task);
       } else if (message.type === "approve") {
         await this.executePending();
       } else if (message.type === "reject") {
@@ -245,6 +299,342 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     }
   }
 
+  /** Revela o painel e coloca a UI no modo Composer multi-arquivo. */
+  public async openComposer(): Promise<void> {
+    await this.reveal();
+    this.post({ type: "setView", view: "composer" });
+  }
+
+  private composerMode(requested?: AgentMode): AgentMode {
+    return requested ?? this.defaultMode();
+  }
+
+  private async composerGenerate(task: string, mode?: AgentMode): Promise<void> {
+    this.abortController?.abort();
+    this.abortController = new AbortController();
+    this.post({ type: "composerState", state: "planning", text: "Planejando mudancas multi-arquivo..." });
+    this.postRuntimeState("thinking", "Composer: gerando proposta multi-arquivo...");
+    const result = await this.composer.generate(
+      task,
+      this.composerMode(mode),
+      this.abortController.signal
+    );
+    this.postComposerProposal(result);
+  }
+
+  private async composerRefine(instruction: string, mode?: AgentMode): Promise<void> {
+    this.abortController?.abort();
+    this.abortController = new AbortController();
+    this.post({ type: "composerState", state: "planning", text: "Refinando a proposta..." });
+    const result = await this.composer.refine(
+      instruction,
+      this.composerMode(mode),
+      this.abortController.signal
+    );
+    this.postComposerProposal(result);
+  }
+
+  private postComposerProposal(result: {
+    view: { summary: string; files: unknown[]; commands: string[] };
+    responseText: string;
+    model: string;
+  }): void {
+    this.post({
+      type: "composerProposal",
+      summary: result.view.summary,
+      files: result.view.files,
+      commands: result.view.commands,
+      model: result.model
+    });
+    this.postRuntimeState(
+      "awaiting_confirmation",
+      `Composer preparou ${result.view.files.length} arquivo(s). Revise e aplique os selecionados.`
+    );
+  }
+
+  private async composerApply(): Promise<void> {
+    this.post({ type: "composerState", state: "applying", text: "Aplicando arquivos selecionados..." });
+    this.postRuntimeState("editing", "Composer: aplicando arquivos selecionados...");
+    // O clique em "Aplicar" na revisao ja e a aprovacao humana explicita; os
+    // guards de secrets e de caminho no PatchEngine seguem ativos.
+    const result = await this.composer.apply(false);
+    this.post({
+      type: "composerApplied",
+      appliedPaths: result.appliedPaths,
+      commands: result.commands
+    });
+    this.postRuntimeState(
+      "idle",
+      `Composer aplicou ${result.appliedPaths.length} arquivo(s). Valide com os comandos sugeridos.`
+    );
+  }
+
+  private async composerUndo(): Promise<void> {
+    await this.composer.undo();
+    this.post({ type: "composerState", state: "idle", text: "Ultima aplicacao do Composer revertida." });
+    this.postRuntimeState("idle", "Composer: ultima aplicacao revertida.");
+  }
+
+  private async sendLocalChat(prompt: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration("adonex");
+    if (!config.get<boolean>("ollama.enabled", true)) {
+      throw new Error("O Ollama esta desativado nas configuracoes do AdoneX.");
+    }
+    this.abortController?.abort();
+    this.abortController = new AbortController();
+    const safePrompt = scanAndRedactSecrets(prompt).redacted;
+    const baseUrl = normalizeOllamaBaseUrl(config.get<string>("ollama.baseUrl", "http://127.0.0.1:11434"));
+    const inventory = await this.answerLocalModelInventory(safePrompt, baseUrl);
+    if (inventory) {
+      this.rememberLocalChat(safePrompt, inventory);
+      this.selectedAttachments = [];
+      this.postAttachmentState();
+      this.post({ type: "chatResponse", text: inventory, provider: "ollama", model: "inventario-local" });
+      return;
+    }
+    const profile = selectLocalModelProfileForTask(
+      "chat", safePrompt,
+      config.get<string>("ollama.fastModel", ADONEX_FAST_LOCAL_MODEL),
+      config.get<string>("ollama.reasoningModel", "deepseek-coder-v2:lite")
+    );
+    const attachmentContext = await this.readAttachmentContext();
+    const mentionContext = await this.readMentionContext(safePrompt);
+    const memoryContext = await this.readBoundedWorkspaceFile(MEMORY_PATHS.sharedDialogMemory, 6_000);
+    const recentHistory = this.localChatHistory.slice(-6)
+      .map((item) => `${item.role === "user" ? "Usuario" : "AdoneX"}: ${item.text}`)
+      .join("\n");
+    const model = profile.model;
+    const response = await new OllamaClient({
+      baseUrl,
+      model,
+      apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
+      timeoutMs: config.get<number>("ollama.timeoutSeconds", 120) * 1000,
+      keepAlive: config.get<string>("ollama.keepAlive", "10m"),
+      numCtx: profile.numCtx,
+      temperature: profile.temperature,
+      topP: profile.topP,
+      repeatPenalty: profile.repeatPenalty,
+      maxRetries: config.get<number>("ollama.maxRetries", 2),
+      retryDelayMs: config.get<number>("ollama.retryDelayMs", 250)
+    }).generate({
+      systemPrompt: [
+        "Voce e o AdoneX, assistente local especialista no workspace aberto no VS Code.",
+        "Responda em pt-BR, diretamente, com precisao e profundidade proporcional a pergunta.",
+        "Use somente fatos presentes na pergunta, memoria e anexos. Quando faltar evidencia, diga exatamente o que precisa verificar.",
+        "Nunca invente modelos instalados, menus, arquivos, comandos executados ou capacidades do VS Code.",
+        "Nao se apresente como Vick, nao crie planos e nao afirme ter alterado arquivos ou executado comandos.",
+        memoryContext ? `Memoria compartilhada recente:\n${memoryContext}` : "",
+        recentHistory ? `Conversa recente:\n${recentHistory}` : "",
+        mentionContext,
+        attachmentContext
+      ].filter(Boolean).join("\n\n"),
+      userPrompt: safePrompt,
+      signal: this.abortController.signal
+    });
+    const answer = guardAgainstLocalHallucinations(sanitizeAdoneXResponse(response.text));
+    this.rememberLocalChat(safePrompt, answer);
+    this.selectedAttachments = [];
+    this.postAttachmentState();
+    this.post({ type: "chatResponse", text: answer, provider: response.provider, model: response.model });
+  }
+
+  private async selectAttachments(): Promise<void> {
+    const selected = await vscode.window.showOpenDialog({
+      canSelectFiles: true, canSelectFolders: false, canSelectMany: true,
+      openLabel: "Anexar ao AdoneX",
+      filters: { "Arquivos e imagens": ["txt", "md", "json", "yaml", "yml", "toml", "ts", "tsx", "js", "jsx", "py", "css", "html", "sql", "csv", "png", "jpg", "jpeg", "webp", "gif", "svg"] }
+    });
+    if (!selected?.length) return;
+    this.selectedAttachments = selected.slice(0, 5);
+    this.postAttachmentState();
+  }
+
+  private postAttachmentState(): void {
+    this.post({ type: "attachments", files: this.selectedAttachments.map((uri) => uri.path.split("/").pop() ?? uri.fsPath) });
+  }
+
+  private async openSharedMemory(): Promise<void> {
+    const shared = await this.readBoundedWorkspaceFile(MEMORY_PATHS.sharedDialogMemory, 80_000);
+    const tasks = await this.readBoundedWorkspaceFile(MEMORY_PATHS.chatTasks, 80_000);
+    const entries = this.sharedHistoryEntries(`${shared}\n${tasks}`);
+    this.post({ type: "sharedHistory", entries });
+  }
+
+  private sharedHistoryEntries(content: string): Array<{
+    source: string; status: string; summary: string; task: string;
+  }> {
+    const entries: Array<{ source: string; status: string; summary: string; task: string }> = [];
+    const seen = new Set<string>();
+    for (const rawLine of content.split(/\r?\n/).reverse()) {
+      const line = rawLine.trim();
+      if (!line || !/(Codex|Claude Code|AdoneX)/i.test(line)) continue;
+      const clean = line.replace(/^[-|\s]+|[|\s]+$/g, "");
+      const columns = clean.split("|").map((item) => item.trim()).filter(Boolean);
+      const source = columns.find((item) => /^(Codex(?:\/OpenAI)?|Claude Code|AdoneX)$/i.test(item)) ??
+        (line.match(/Codex(?:\/OpenAI)?|Claude Code|AdoneX/i)?.[0] ?? "Compartilhado");
+      const status = columns.find((item) => /^(pending|received|briefing|done|blocked|guidance|analysis|clarification)$/i.test(item)) ??
+        (line.match(/\b(pending|received|briefing|done|blocked|guidance|analysis|clarification)\b/i)?.[0] ?? "history");
+      const candidates = columns.filter((item) => item !== source && item !== status && !/^\d{4}-\d{2}-\d{2}/.test(item));
+      const summary = (candidates.at(-1) ?? clean).replace(/^[-:]\s*/, "").slice(0, 1_200);
+      const task = candidates.length > 1 ? candidates[candidates.length - 2] : summary;
+      const key = `${source}|${status}|${summary}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entries.push({ source, status: status.toLowerCase(), summary, task });
+      if (entries.length >= 60) break;
+    }
+    return entries.sort((a, b) => Number(this.isPendingHistory(b.status)) - Number(this.isPendingHistory(a.status)));
+  }
+
+  private isPendingHistory(status: string): boolean {
+    return /^(pending|received|briefing|blocked)$/i.test(status);
+  }
+
+  private async resumeSharedTask(task: string): Promise<void> {
+    const safeTask = scanAndRedactSecrets(task).redacted.trim();
+    if (!safeTask) throw new Error("Selecione uma tarefa valida do historico compartilhado.");
+    const continuation = [
+      "Continue localmente com o AdoneX a tarefa compartilhada abaixo.",
+      "Consulte a memoria compartilhada e o estado atual do workspace antes de agir.",
+      "Preserve mudancas existentes e mantenha aprovacoes humanas para patches e comandos.",
+      "",
+      safeTask
+    ].join("\n");
+    const route = routeChatCommand(undefined, continuation);
+    const resolved = resolveChatPrompt(continuation, route);
+    if (!resolved) throw new Error("Nao foi possivel converter o registro em tarefa local.");
+    await this.queueTask(resolved, route.action, route.mode ?? "local", { reveal: false });
+  }
+
+  private async readAttachmentContext(): Promise<string> {
+    if (!this.selectedAttachments.length) return "";
+    const sections: string[] = [];
+    for (const uri of this.selectedAttachments) {
+      const name = uri.path.split("/").pop() ?? uri.fsPath;
+      if (/\.(png|jpe?g|webp|gif)$/i.test(name)) {
+        sections.push(`Imagem anexada: ${name}. Nao descreva seu conteudo sem evidencia visual.`);
+        continue;
+      }
+      try {
+        const bytes = await vscode.workspace.fs.readFile(uri);
+        sections.push(`Arquivo anexado (${name}):\n${scanAndRedactSecrets(Buffer.from(bytes).toString("utf8").slice(0, 20_000)).redacted}`);
+      } catch { sections.push(`Anexo selecionado, mas nao legivel como texto: ${name}`); }
+    }
+    return sections.join("\n\n");
+  }
+
+  /** Resolve mencoes @ do prompt (arquivos, @selection, @editor/@file) em contexto. */
+  private async readMentionContext(prompt: string): Promise<string> {
+    const parsed = parseMentions(prompt);
+    if (!parsed.specials.length && !parsed.paths.length) return "";
+    const sections: string[] = [];
+    const editor = vscode.window.activeTextEditor;
+    if (parsed.specials.includes("selection") && editor) {
+      const selection = editor.document.getText(editor.selection).trim();
+      if (selection) {
+        sections.push(
+          `Selecao ativa (${vscode.workspace.asRelativePath(editor.document.uri)}):\n${scanAndRedactSecrets(selection.slice(0, 8_000)).redacted}`
+        );
+      }
+    }
+    if ((parsed.specials.includes("editor") || parsed.specials.includes("file")) && editor) {
+      sections.push(
+        `Arquivo ativo (${vscode.workspace.asRelativePath(editor.document.uri)}):\n${scanAndRedactSecrets(editor.document.getText().slice(0, 12_000)).redacted}`
+      );
+    }
+    for (const mention of parsed.paths.slice(0, 5)) {
+      const uri = await this.resolveMentionUri(mention);
+      if (!uri) {
+        sections.push(`Mencao @${mention}: arquivo nao encontrado no workspace.`);
+        continue;
+      }
+      try {
+        const bytes = await vscode.workspace.fs.readFile(uri);
+        const relative = vscode.workspace.asRelativePath(uri);
+        sections.push(
+          `Arquivo mencionado (${relative}):\n${scanAndRedactSecrets(Buffer.from(bytes).toString("utf8").slice(0, 12_000)).redacted}`
+        );
+      } catch {
+        sections.push(`Mencao @${mention}: nao foi possivel ler o arquivo.`);
+      }
+    }
+    return sections.length ? `Contexto por mencao:\n\n${sections.join("\n\n")}` : "";
+  }
+
+  private async resolveMentionUri(mention: string): Promise<vscode.Uri | undefined> {
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (root) {
+      const direct = vscode.Uri.joinPath(root, ...mention.split("/"));
+      try {
+        await vscode.workspace.fs.stat(direct);
+        return direct;
+      } catch {
+        // Segue para busca por padrao abaixo.
+      }
+    }
+    const basename = mention.split("/").pop() ?? mention;
+    const found = await vscode.workspace.findFiles(
+      `**/${basename}`,
+      "**/{node_modules,.git,dist,out,.next,.venv,__pycache__}/**",
+      1
+    );
+    return found[0];
+  }
+
+  /** QuickPick para inserir uma mencao @ no chat (arquivo, selecao ou arquivo ativo). */
+  private async pickMention(): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    const items: Array<vscode.QuickPickItem & { token: string }> = [];
+    if (editor && !editor.selection.isEmpty) {
+      items.push({ label: "$(selection) Selecao ativa", description: "@selection", token: "@selection" });
+    }
+    if (editor) {
+      items.push({
+        label: "$(file) Arquivo ativo",
+        description: `@file (${vscode.workspace.asRelativePath(editor.document.uri)})`,
+        token: "@file"
+      });
+    }
+    const files = await vscode.workspace.findFiles(
+      "**/*",
+      "**/{node_modules,.git,dist,out,.next,.venv,__pycache__,.adonex,.vscode-test}/**",
+      300
+    );
+    for (const uri of files) {
+      const relative = vscode.workspace.asRelativePath(uri);
+      items.push({ label: `$(code) ${relative}`, token: `@${relative}` });
+    }
+    const picked = await vscode.window.showQuickPick(items, {
+      title: "AdoneX: adicionar contexto por mencao",
+      placeHolder: "Escolha um arquivo, a selecao ou o arquivo ativo"
+    });
+    if (picked) this.post({ type: "insertMention", token: `${picked.token} ` });
+  }
+
+  private async readBoundedWorkspaceFile(relativePath: string, maxChars: number): Promise<string> {
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (!root) return "";
+    try {
+      const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(root, ...relativePath.split("/")));
+      return Buffer.from(bytes).toString("utf8").slice(0, maxChars);
+    } catch { return ""; }
+  }
+
+  private async answerLocalModelInventory(prompt: string, baseUrl: string): Promise<string | undefined> {
+    const normalized = prompt.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    if (!/(modelos? locais?|modelos? (?:do|no) adonex|modelos? (?:baixados|instalados|disponiveis))/.test(normalized)) return undefined;
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/tags`, { signal: this.abortController?.signal });
+    if (!response.ok) throw new Error(`Nao foi possivel consultar o Ollama local (HTTP ${response.status}).`);
+    const payload = await response.json() as { models?: Array<{ name?: string; size?: number }> };
+    const models = (payload.models ?? []).filter((item) => item.name).map((item) => ({ name: item.name!, size: item.size }));
+    if (!models.length) return "O Ollama esta acessivel, mas nao retornou nenhum modelo local instalado.";
+    return [`O Ollama retornou ${models.length} modelo(s) instalado(s) nesta maquina:`, "", ...models.map((item) => `- ${item.name}${item.size ? ` (${(item.size / 1_073_741_824).toFixed(1)} GB)` : ""}`), "", "Essa lista veio diretamente do Ollama (/api/tags), nao de uma suposicao do modelo."].join("\n");
+  }
+
+  private rememberLocalChat(user: string, assistant: string): void {
+    this.localChatHistory.push({ role: "user", text: user }, { role: "assistant", text: assistant });
+    if (this.localChatHistory.length > 12) this.localChatHistory.splice(0, this.localChatHistory.length - 12);
+  }
   private async createPlan(
     task: string,
     action: AgentAction,
@@ -859,6 +1249,9 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
         "style.css"
       )
     );
+    const logoUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.context.extensionUri, "media", "adonex.svg")
+    );
     const nonce = getNonce();
     const defaultMode = this.defaultMode();
     const selected = (mode: AgentMode): string =>
@@ -868,89 +1261,97 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
   <link rel="stylesheet" href="${styleUri}">
   <title>AdoneX</title>
 </head>
 <body>
   <header>
-    <div class="brand">AdoneX</div>
-    <select id="mode" aria-label="Agent mode">
-      <option value="economic"${selected("economic")}>Economic</option>
-      <option value="balanced"${selected("balanced")}>Local Balanced</option>
-      <option value="strong"${selected("strong")}>Local Strong</option>
-      <option value="local"${selected("local")}>Local / Ollama</option>
-      <option value="synapse"${selected("synapse")}>Synapse Mode</option>
-    </select>
+    <div class="titlebar">
+      <img class="logo" src="${logoUri}" alt="" aria-hidden="true" />
+      <span class="brand">AdoneX</span>
+      <div class="local-badge" title="Execucao 100% local via Ollama, sem chamada de LLM externo. Orquestrado pelos 60 agentes do ruflo.">
+        <span class="local-dot" aria-hidden="true"></span>
+        <span class="local-label">100% local</span>
+        <span id="activeModel" class="local-model">Ollama</span>
+        <span id="costBadge" class="local-cost">US$ 0,00</span>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="view-toggle" role="tablist" aria-label="Modo do painel">
+        <button id="viewChat" class="view-tab active" type="button" role="tab" aria-selected="true">Chat</button>
+        <button id="viewComposer" class="view-tab" type="button" role="tab" aria-selected="false">Composer</button>
+      </div>
+      <select id="mode" aria-label="Agent mode">
+        <option value="economic"${selected("economic")}>Economic</option>
+        <option value="balanced"${selected("balanced")}>Local Balanced</option>
+        <option value="strong"${selected("strong")}>Local Strong</option>
+        <option value="local"${selected("local")}>Local / Ollama</option>
+        <option value="synapse"${selected("synapse")}>Synapse Mode</option>
+      </select>
+    </div>
   </header>
   <main>
-    <section id="synapseStatus" class="synapse-status" hidden></section>
-    <section id="vickCockpit" class="vick-cockpit" aria-live="polite">
-      <div class="vick-meter" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span>
-      </div>
-      <div class="vick-copy">
-        <strong>Vick</strong>
-        <span id="vickState">standby</span>
-      </div>
-      <div class="vick-actions">
-        <button id="vickStart">Start</button>
-        <button id="vickMute">Mute</button>
-        <button id="vickSimulate">Voice Command</button>
-        <button id="vickStop">Stop</button>
+    <section id="history" aria-live="polite">
+      <div class="empty-state">
+        <img class="empty-logo" src="${logoUri}" alt="" aria-hidden="true" />
+        <p>Converse diretamente com o modelo local. As respostas rodam 100% no Ollama.</p>
       </div>
     </section>
-    <section id="history" aria-live="polite"></section>
-    <section id="lifecycle" class="lifecycle" hidden>
-      <h2>Agentic Lifecycle</h2>
-      <div id="lifecycleSteps" class="lifecycle-steps"></div>
-    </section>
-    <section class="composer">
-      <textarea id="prompt" rows="6" placeholder="Describe an engineering task..."></textarea>
-      <div id="estimate">Estimated input: 0 tokens</div>
-      <div class="actions">
-        <button data-action="plan">Plan</button>
-        <button data-action="implement">Implement</button>
-        <button data-action="review">Review</button>
-        <button data-action="test">Test</button>
-        <button data-action="document">Document</button>
+    <section id="composerView" class="composer-view" hidden aria-label="Composer multi-arquivo">
+      <div class="composer-intro">
+        <strong>Composer multi-arquivo</strong>
+        <p>Descreva a solucao ou feature. O AdoneX planeja, gera e deixa voce revisar e aplicar as mudancas arquivo a arquivo, 100% local.</p>
       </div>
-    </section>
-    <section id="plan" hidden>
-      <h2>Plan</h2>
-      <pre id="planText"></pre>
-      <div class="actions">
-        <button id="approve" class="primary">Approve</button>
-        <button id="reject">Reject</button>
-        <button id="cancelPlan">Cancel</button>
+      <textarea id="composerGoal" rows="4" placeholder="Ex.: crie um endpoint FastAPI /health com teste e registre no roteador principal..."></textarea>
+      <div class="composer-actions">
+        <button id="composerGenerate" class="primary" type="button">Gerar proposta</button>
+        <button id="composerCancel" class="ghost" type="button" hidden>Cancelar</button>
       </div>
-    </section>
-    <section id="diff" hidden>
-      <h2>Patch</h2>
-      <div id="diffText" class="diff-view"></div>
-      <div class="actions">
-        <button id="previewPatch">Open Diff</button>
-        <button id="applyPatch" class="primary">Apply Patch</button>
-        <button id="undoPatch">Undo Last Patch</button>
-        <button id="runTests">Run Tests</button>
+      <div id="composerStatus" class="composer-status" hidden></div>
+      <div id="composerResult" class="composer-result" hidden>
+        <div class="composer-summary">
+          <span id="composerSummary"></span>
+          <span id="composerStats" class="composer-stats"></span>
+        </div>
+        <div class="composer-select-row">
+          <label class="composer-selectall"><input id="composerSelectAll" type="checkbox" checked /> Selecionar todos</label>
+          <span id="composerModel" class="composer-model"></span>
+        </div>
+        <div id="composerFiles" class="composer-files"></div>
+        <div id="composerCommands" class="composer-commands" hidden></div>
+        <div class="composer-apply-row">
+          <button id="composerApply" class="primary" type="button">Aplicar selecionados</button>
+          <button id="composerUndo" class="ghost" type="button" hidden>Reverter</button>
+          <button id="composerDiscard" class="ghost" type="button">Descartar</button>
+        </div>
+        <div class="composer-refine">
+          <textarea id="composerRefineInput" rows="2" placeholder="Refinar: ex. adicione testes, renomeie X, trate erros..."></textarea>
+          <button id="composerRefine" class="secondary" type="button">Refinar proposta</button>
+        </div>
       </div>
-    </section>
-    <section id="validation" hidden>
-      <h2>Validation</h2>
-      <pre id="validationText"></pre>
-      <div class="actions">
-        <button id="runTestsStandalone">Run Tests</button>
-        <button id="fixFromError" hidden>Generate Fix</button>
-      </div>
-    </section>
-    <section id="final" hidden>
-      <h2>Technical Summary</h2>
-      <pre id="finalSummary"></pre>
-      <h2>Suggested Commit</h2>
-      <pre id="commitSuggestion"></pre>
-      <pre id="taskCost"></pre>
     </section>
   </main>
+  <section id="memoryPanel" class="memory-panel" hidden aria-label="Historico compartilhado">
+    <div class="memory-panel-header">
+      <div><strong>Continuidade compartilhada</strong><small>Codex · Claude Code · AdoneX</small></div>
+      <button id="closeMemory" class="icon-button" type="button" aria-label="Fechar historico">×</button>
+    </div>
+    <p class="memory-help">Selecione uma tarefa. Pendencias aparecem primeiro e podem continuar nos modelos locais do AdoneX.</p>
+    <div id="memoryHistory" class="memory-history"></div>
+    <button id="resumeTask" class="primary" type="button" disabled>Continuar com AdoneX local</button>
+  </section>
+  <footer class="composer">
+    <div class="composer-input-row">
+      <button id="attach" class="icon-button" type="button" aria-label="Carregar arquivos e imagens" title="Carregar arquivos e imagens"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5 8.9 14.1a3 3 0 0 0 4.2 4.2l7.1-7.1a5 5 0 0 0-7.1-7.1L5.6 11.6a7 7 0 0 0 9.9 9.9l5.3-5.3"/></svg></button>
+      <button id="mention" class="icon-button mention-button" type="button" aria-label="Adicionar contexto por mencao" title="Adicionar contexto: @arquivo, @selection, @file">@</button>
+      <textarea id="prompt" rows="3" placeholder="Digite sua mensagem... use @ para citar arquivos"></textarea>
+      <button id="memory" class="icon-button" type="button" aria-label="Abrir memoria compartilhada" title="Memoria compartilhada: AdoneX, Claude Code e Codex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h11a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 8.5 4.8 4.8 0 0 0 7 18Z"/><path d="M9 13h6M12 10v6"/></svg></button>
+      <button id="send" class="primary" type="button" aria-label="Enviar mensagem">Enviar</button>
+    </div>
+    <div id="attachments" class="attachment-strip" hidden></div>
+    <div id="estimate">Estimated input: 0 tokens</div>
+  </footer>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
@@ -965,6 +1366,3 @@ function getNonce(): string {
     () => alphabet[Math.floor(Math.random() * alphabet.length)]
   ).join("");
 }
-
-
-

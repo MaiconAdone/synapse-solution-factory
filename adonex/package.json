@@ -2,7 +2,7 @@
   "name": "adonex",
   "displayName": "AdoneX",
   "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memÃ³ria compartilhada com Claude Code e Codex, e integraÃ§Ã£o Synapse.",
-  "version": "0.6.17",
+  "version": "0.7.0",
   "publisher": "synapse-ai",
   "icon": "media/adonex-icon.png",
   "license": "UNLICENSED",
@@ -20,6 +20,9 @@
     "onChatParticipant:synapse-ai.adonex",
     "onView:adonex.chatView",
     "onCommand:adonex.openChat",
+    "onCommand:adonex.composer.open",
+    "onCommand:adonex.inlineEdit",
+    "onCommand:adonex.inlineCompletion.toggle",
     "onCommand:adonex.voice.vick.start",
     "onCommand:adonex.voice.vick.stop",
     "onCommand:adonex.voice.vick.toggleMute",
@@ -181,6 +184,18 @@
       {
         "command": "adonex.openChat",
         "title": "AdoneX: Open Chat"
+      },
+      {
+        "command": "adonex.composer.open",
+        "title": "AdoneX: Open Composer (multi-file)"
+      },
+      {
+        "command": "adonex.inlineEdit",
+        "title": "AdoneX: Inline Edit (Cmd+K)"
+      },
+      {
+        "command": "adonex.inlineCompletion.toggle",
+        "title": "AdoneX: Toggle Inline Completion (ghost text)"
       },
       {
         "command": "adonex.voice.vick.start",
@@ -543,6 +558,68 @@
           "maximum": 5000,
           "markdownDescription": "Atraso entre retries do cliente local para reduzir pressÃ£o sobre o modelo."
         },
+        "adonex.inlineCompletion.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Ativa o autocomplete inline (ghost text) 100% local via fill-in-middle no Ollama. Nunca dispara em arquivos sensiveis."
+        },
+        "adonex.inlineCompletion.model": {
+          "type": "string",
+          "default": "qwen2.5-coder:3b",
+          "markdownDescription": "Modelo local de fill-in-middle para o autocomplete inline. Use um modelo rapido (3B) para latencia baixa em CPU."
+        },
+        "adonex.inlineCompletion.debounceMs": {
+          "type": "number",
+          "default": 350,
+          "minimum": 0,
+          "maximum": 2000,
+          "markdownDescription": "Atraso antes de pedir uma sugestao ao Ollama, para nao disparar a cada tecla."
+        },
+        "adonex.inlineCompletion.maxTokens": {
+          "type": "number",
+          "default": 128,
+          "minimum": 16,
+          "maximum": 512,
+          "markdownDescription": "Tamanho maximo (num_predict) de cada sugestao inline."
+        },
+        "adonex.inlineCompletion.maxPrefixChars": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 200,
+          "markdownDescription": "Quantos caracteres antes do cursor sao enviados como prefixo FIM."
+        },
+        "adonex.inlineCompletion.maxSuffixChars": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 0,
+          "markdownDescription": "Quantos caracteres depois do cursor sao enviados como sufixo FIM."
+        },
+        "adonex.inlineCompletion.temperature": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1,
+          "markdownDescription": "Temperatura da sugestao inline. Valores baixos deixam o autocomplete mais determinístico."
+        },
+        "adonex.inlineCompletion.timeoutSeconds": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 30,
+          "markdownDescription": "Timeout curto por sugestao inline. Ao estourar, o AdoneX simplesmente nao sugere nada."
+        },
+        "adonex.inlineEdit.model": {
+          "type": "string",
+          "default": "deepseek-coder-v2:lite",
+          "markdownDescription": "Modelo local usado na edicao inline (Cmd+K / Ctrl+Alt+K). Vazio usa adonex.ollama.modelReasoning."
+        },
+        "adonex.inlineEdit.maxTokens": {
+          "type": "number",
+          "default": 1200,
+          "minimum": 128,
+          "maximum": 4096,
+          "markdownDescription": "Tamanho maximo da reescrita gerada pela edicao inline."
+        },
         "adonex.cost.dailyBudgetUsd": {
           "type": "number",
           "default": 2,
@@ -811,10 +888,10 @@
       }
     },
     "viewsContainers": {
-      "activitybar": [
+      "secondarySidebar": [
         {
           "id": "adonex",
-          "title": "AdoneX",
+          "title": "ADONEX",
           "icon": "media/adonex.svg"
         }
       ]
@@ -824,7 +901,8 @@
         {
           "type": "webview",
           "id": "adonex.chatView",
-          "name": "AdoneX"
+          "name": "AdoneX",
+          "visibility": "visible"
         }
       ]
     },
@@ -834,9 +912,22 @@
           "command": "adonex.explainSelection",
           "when": "editorHasSelection",
           "group": "navigation@90"
+        },
+        {
+          "command": "adonex.inlineEdit",
+          "when": "editorTextFocus",
+          "group": "1_modification@10"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "adonex.inlineEdit",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+k",
+        "when": "editorTextFocus && !editorReadonly"
+      }
+    ]
   },
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
