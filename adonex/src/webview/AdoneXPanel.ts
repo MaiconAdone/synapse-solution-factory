@@ -18,6 +18,7 @@ import { requestApproval } from "../security/approvalGate";
 import { scanAndRedactSecrets } from "../security/secretScanner";
 import { inferUpdateFromText } from "../memory/memorySummarizer";
 import { parseMentions } from "../context/mentionResolver";
+import { SYNAPSE_SPECIALIST_SYSTEM } from "../synapse/synapseKnowledge";
 import { MemoryWriter } from "../memory/memoryWriter";
 import type { TaskLog as MemoryTaskLog } from "../memory/types";
 import { diagnoseCommandFailure, finalizeTask } from "../tasks/taskFinalizer";
@@ -272,6 +273,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
         await this.undoPatch();
       } else if (message.type === "cancel") {
         await this.cancelCurrentTask();
+      } else if (message.type === "stop") {
+        this.stopCurrent();
       } else if (message.type === "vickStart") {
         await this.startVickVoice(false);
       } else if (message.type === "vickStop") {
@@ -286,17 +289,32 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
         await this.fixFromError();
       }
     } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      const aborted =
+        this.abortController?.signal.aborted === true ||
+        (error instanceof Error && error.name === "AbortError") ||
+        /\b(abort|cancel|interromp|exceeded)/i.test(detail);
+      if (aborted) {
+        if (this.taskRecord && this.taskStore) {
+          this.taskRecord.status = "cancelled";
+          await this.taskStore.save(this.taskRecord);
+        }
+        this.post({ type: "stopped", text: "Processo interrompido." });
+        return;
+      }
       if (this.taskRecord && this.taskStore) {
         this.taskRecord.status = "failed";
-        this.taskRecord.error =
-          error instanceof Error ? error.message : String(error);
+        this.taskRecord.error = detail;
         await this.taskStore.save(this.taskRecord);
       }
-      this.post({
-        type: "error",
-        text: error instanceof Error ? error.message : String(error)
-      });
+      this.post({ type: "error", text: detail });
     }
+  }
+
+  /** Aborta o processo em andamento (chat, composer ou tarefa) sem apagar a proposta. */
+  private stopCurrent(): void {
+    this.abortController?.abort();
+    this.postVickStatus(this.vick.setState("asleep", "Vick voltou ao repouso."));
   }
 
   /** Revela o painel e coloca a UI no modo Composer multi-arquivo. */
@@ -399,11 +417,22 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     );
     const attachmentContext = await this.readAttachmentContext();
     const mentionContext = await this.readMentionContext(safePrompt);
-    const memoryContext = await this.readBoundedWorkspaceFile(MEMORY_PATHS.sharedDialogMemory, 6_000);
-    const recentHistory = this.localChatHistory.slice(-6)
+    // Memoria e historico entram como contexto DINAMICO (workspaceContext), nunca
+    // no system prompt, para nao quebrar o prefix cache do Ollama.
+    const memoryContext = (mentionContext || attachmentContext)
+      ? ""
+      : await this.readBoundedWorkspaceFile(MEMORY_PATHS.sharedDialogMemory, 1_500);
+    const recentHistory = this.localChatHistory.slice(-4)
       .map((item) => `${item.role === "user" ? "Usuario" : "AdoneX"}: ${item.text}`)
       .join("\n");
+    const dynamicContext = [
+      recentHistory ? `Conversa recente:\n${recentHistory}` : "",
+      memoryContext ? `Memoria compartilhada (trecho):\n${memoryContext}` : "",
+      mentionContext,
+      attachmentContext
+    ].filter(Boolean).join("\n\n");
     const model = profile.model;
+    this.post({ type: "status", text: `Gerando resposta com ${model}...` });
     const response = await new OllamaClient({
       baseUrl,
       model,
@@ -417,18 +446,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       maxRetries: config.get<number>("ollama.maxRetries", 2),
       retryDelayMs: config.get<number>("ollama.retryDelayMs", 250)
     }).generate({
-      systemPrompt: [
-        "Voce e o AdoneX, assistente local especialista no workspace aberto no VS Code.",
-        "Responda em pt-BR, diretamente, com precisao e profundidade proporcional a pergunta.",
-        "Use somente fatos presentes na pergunta, memoria e anexos. Quando faltar evidencia, diga exatamente o que precisa verificar.",
-        "Nunca invente modelos instalados, menus, arquivos, comandos executados ou capacidades do VS Code.",
-        "Nao se apresente como Vick, nao crie planos e nao afirme ter alterado arquivos ou executado comandos.",
-        memoryContext ? `Memoria compartilhada recente:\n${memoryContext}` : "",
-        recentHistory ? `Conversa recente:\n${recentHistory}` : "",
-        mentionContext,
-        attachmentContext
-      ].filter(Boolean).join("\n\n"),
+      systemPrompt: SYNAPSE_SPECIALIST_SYSTEM,
       userPrompt: safePrompt,
+      workspaceContext: dynamicContext || undefined,
+      maxOutputTokens: config.get<number>("chat.maxTokens", profile.maxOutputTokens),
       signal: this.abortController.signal
     });
     const answer = guardAgainstLocalHallucinations(sanitizeAdoneXResponse(response.text));

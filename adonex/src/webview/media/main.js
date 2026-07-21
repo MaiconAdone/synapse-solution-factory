@@ -174,17 +174,66 @@ function insertAtPrompt(token) {
   estimate.textContent = `Entrada estimada: ${prompt.value ? Math.max(1, Math.ceil(prompt.value.length / 4)) : 0} tokens`;
 }
 
+let chatBusy = false;
+
+function setChatBusy(busy) {
+  chatBusy = busy;
+  sendButton.textContent = busy ? "Parar" : "Enviar";
+  sendButton.classList.toggle("stop", busy);
+  sendButton.setAttribute("aria-label", busy ? "Parar processo" : "Enviar mensagem");
+  showThinking(busy, "Pensando...");
+}
+
+function showThinking(show, label) {
+  let el = document.getElementById("thinking");
+  if (show) {
+    if (!el) {
+      history.querySelector(".empty-state")?.remove();
+      el = document.createElement("article");
+      el.id = "thinking";
+      el.className = "message assistant thinking";
+      const strong = document.createElement("strong");
+      strong.textContent = "AdoneX";
+      const row = document.createElement("div");
+      row.className = "thinking-row";
+      const dots = document.createElement("span");
+      dots.className = "dots";
+      dots.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
+      const text = document.createElement("span");
+      text.className = "thinking-label";
+      text.textContent = label || "Pensando...";
+      row.append(dots, text);
+      el.append(strong, row);
+      history.appendChild(el);
+      el.scrollIntoView({ behavior: "smooth", block: "end" });
+    } else if (label) {
+      const text = el.querySelector(".thinking-label");
+      if (text) text.textContent = label;
+    }
+  } else if (el) {
+    el.remove();
+  }
+}
+
 function sendMessage() {
+  if (chatBusy) return;
   const task = prompt.value.trim();
   if (!task) return;
   addMessage("user", task);
   vscode.postMessage({ type: "send", task, mode: "local" });
   prompt.value = "";
   estimate.textContent = "Entrada estimada: 0 tokens";
+  setChatBusy(true);
   prompt.focus();
 }
 
-sendButton.addEventListener("click", sendMessage);
+sendButton.addEventListener("click", () => {
+  if (chatBusy) {
+    vscode.postMessage({ type: "stop" });
+    return;
+  }
+  sendMessage();
+});
 attachButton.addEventListener("click", () => vscode.postMessage({ type: "selectAttachments" }));
 memoryButton.addEventListener("click", () => vscode.postMessage({ type: "openSharedMemory" }));
 mentionButton.addEventListener("click", () => vscode.postMessage({ type: "mentionPick" }));
@@ -203,9 +252,18 @@ prompt.addEventListener("keydown", (event) => {
 
 window.addEventListener("message", ({ data }) => {
   if (data.type === "chatResponse") {
+    setChatBusy(false);
     if (activeModel && data.model) activeModel.textContent = `${data.provider || "ollama"}/${data.model}`;
     addMessage("assistant", data.text);
+  } else if (data.type === "stopped") {
+    setChatBusy(false);
+    composerBusy(false);
+    if (!composerView.hidden) showComposerStatus(data.text || "Processo interrompido.", "");
+    addMessage("assistant", data.text || "Processo interrompido.");
+  } else if (data.type === "status") {
+    if (chatBusy) showThinking(true, data.text);
   } else if (data.type === "error") {
+    setChatBusy(false);
     composerBusy(false);
     if (!composerView.hidden) showComposerStatus(data.text, "error");
     addMessage("error", data.text);

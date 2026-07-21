@@ -247,6 +247,17 @@ export class OllamaClient {
     const body = JSON.stringify(payload);
     const transport = url.protocol === "https:" ? https : http;
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finishResolve = (value: { ok: boolean; status: number; body: string }): void => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+      const finishReject = (error: Error): void => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      };
       const request = transport.request(
         url,
         {
@@ -270,22 +281,30 @@ export class OllamaClient {
           });
           response.on("end", () => {
             const status = response.statusCode ?? 0;
-            resolve({
+            finishResolve({
               ok: status >= 200 && status < 300,
               status,
               body: Buffer.concat(chunks).toString("utf8")
             });
           });
+          // Se o cliente aborta durante o streaming, a resposta fecha sem "end";
+          // garante que a promise rejeite em vez de travar.
+          response.on("close", () => finishReject(abortError()));
+          response.on("error", (error: Error) => finishReject(error));
         }
       );
       const abort = (): void => {
         request.destroy(abortError());
+        // Rejeita imediatamente: destruir a request no meio do stream nem sempre
+        // emite "error", o que antes deixava o AdoneX preso ao clicar em Parar.
+        finishReject(abortError());
       };
       signal?.addEventListener("abort", abort, { once: true });
       request.on("timeout", () => {
         request.destroy(abortError());
+        finishReject(abortError());
       });
-      request.on("error", reject);
+      request.on("error", finishReject);
       request.on("close", () => signal?.removeEventListener("abort", abort));
       request.end(body);
     });
