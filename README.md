@@ -117,41 +117,37 @@ Endpoints:
 
 Consulte `docs/AGENTIC_AI_TRANSFORMATION.md`.
 
-## Criar Projetos Pelo VS Code
+## Criar Projetos Pelo Dialogo
 
-O fluxo do VS Code nao exige abrir navegador nem acessar `localhost`.
+Projetos sao criados pela conversa, sem tasks nem scripts manuais. Os canais
+de criacao sao os quatro chats do VS Code (VS Code Chat, AdoneX, Claude Code e
+Codex) e a Vick no navegador, que tambem abre, analisa, melhora e edita
+projetos por voz ou texto.
 
-O caminho principal e a caixa de dialogo: Codex no VS Code, Claude Code ou
-`@adonex /projeto`. Antes de criar ou implementar, o assistente deve perguntar
-no chat qualquer campo faltante do briefing minimo: objetivo, problema de
-negocio, universo, metrica/criterio de aceite, dados/fontes disponiveis e risco.
+Antes de criar ou implementar, o assistente pergunta no proprio chat qualquer
+campo faltante do briefing minimo: objetivo, problema de negocio, universo,
+metrica/criterio de aceite, dados/fontes disponiveis e risco.
 
-Exemplo:
+Exemplos:
 
 ```text
 @adonex /projeto crie uma solucao de IA/RAG para atendimento ao cliente
 ```
 
+```text
+Vick, crie um projeto de ML para prever churn de clientes
+```
+
 Com o briefing completo, o Synapse consulta o BusinessSolutionAnalyzer, gera
 `config/business_solution_analysis.json` e segue arquitetura, testes, evals,
-governanca e custo local-first.
+governanca e custo local-first. O projeto e criado localmente em
+`C:\Users\malves\Documents\Projetos`, com `data/`, experimentos, memoria,
+evals, guardrails, contratos e documentacao aplicaveis ao tipo ML, IA ou
+hibrido.
 
-As conversas compartilham memoria local: AdoneX registra pedidos do VS Code Chat
-em `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`.
-Codex e Claude Code devem ler esses arquivos e usar o MCP `synapse-peers` para
-mensagens curtas entre sessoes ativas.
-
-As tasks do VS Code continuam como atalhos opcionais:
-
-1. Abra `Ctrl+Shift+P`.
-2. Rode `Tasks: Run Task`.
-3. Escolha `Enterprise: Validar stack`.
-4. Escolha `Synapse: Preparar runtime VS Code sem navegador`.
-5. Escolha `AI Factory: Menu interativo` ou `AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados`.
-
-O projeto sera criado localmente em `C:\Users\malves\Documents\Projetos`,
-com `data/`, experimentos, memoria, evals, guardrails, contratos e
-documentacao aplicaveis ao tipo ML, IA ou hibrido.
+Todos os canais compartilham memoria local: pedidos e resultados ficam em
+`.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`, e o
+MCP `synapse-peers` cobre mensagens curtas entre sessoes ativas.
 
 ### Conteudo Por Universo
 
@@ -196,17 +192,11 @@ O script gera dataset tratado em `data/processed/` e relatorio em
 duplicatas exatas, trata ausentes com justificativa estatistica, agrupa
 categorias raras e cria flags de outliers sem remove-los automaticamente.
 
-## VS Code Project Factory
+## Project Factory
 
-You can create and validate IA/ML projects from VS Code tasks:
-
-1. Open `Ctrl+Shift+P`.
-2. Run `Tasks: Run Task`.
-3. Choose `AI Factory: Menu interativo`,
-   `AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados`, or
-   `Synapse: Preparar runtime VS Code sem navegador`.
-
-See `docs/vscode-workflow.md`.
+The factory engine in `scripts/create_ai_project.ps1` is invoked by the dialog
+channels after the briefing is complete; it is an internal engine, not a
+user-facing entry point. See `docs/vscode-workflow.md`.
 
 The project factory configures `config/runtime_manifest.json`,
 `config/enterprise.yaml`, `config/project_universe.json`,
@@ -225,12 +215,6 @@ a first setup checklist, a creation report, and runs validation by default.
 Artifacts that do not apply to the selected universe are removed. For example,
 an IA-only project does not receive an ML model card, while an ML-only project
 does not receive the RAG and AI framework layers.
-
-To create a project:
-
-```powershell
-.\criar_projeto_ia.ps1 -NomeProjeto compradores_B2B2C_IA
-```
 
 The generated project contains no application backend, frontend or factory
 script. It does contain its own Ruflo runtime, MCP configuration, memory,
