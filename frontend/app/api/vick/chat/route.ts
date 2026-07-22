@@ -944,7 +944,7 @@ export async function POST(request: NextRequest) {
   const asksMlPerformance =
     /\b(desempenho|performance|metrica|metricas|acuracia|avalia|avaliar|mede|medir)\b.*\b(ml|modelo|modelos|machine learning)\b/.test(
       normalizedPrompt,
-    ) || /\bmlflow\b/.test(normalizedPrompt);
+    );
   const asksAiPerformance =
     /\b(desempenho|performance|metrica|metricas|avalia|avaliar|mede|medir)\b.*\b(ia|ai|llm|prompt|agente|agentes)\b/.test(
       normalizedPrompt,

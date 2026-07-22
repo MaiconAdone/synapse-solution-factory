@@ -5,7 +5,6 @@ from typing import Any
 
 from app.schemas.evals import EvalCaseResult
 from app.schemas.models import ModelPredictionRequest
-from app.services.mlflow_service import MlflowService
 from app.services.model_service import ModelService
 
 
@@ -18,11 +17,9 @@ class EvalService:
         self,
         root: Path | None = None,
         model_service: ModelService | None = None,
-        mlflow_service: MlflowService | None = None,
     ) -> None:
         self.root = root or Path(__file__).resolve().parents[3]
         self.model_service = model_service or ModelService(root=self.root)
-        self.mlflow_service = mlflow_service or MlflowService(root=self.root)
 
     def run_ml_eval(self, model_id: str | None = None, cases_path: str = "evals/ml_cases.jsonl") -> dict[str, Any]:
         cases = self._load_jsonl(cases_path)
@@ -42,15 +39,7 @@ class EvalService:
             metrics["rmse"] = float(math.sqrt(sum(error**2 for error in absolute_errors) / len(absolute_errors)))
 
         passed = self._passed(results)
-        response = self._response("ml", passed, metrics, gates, results)
-        response["mlflow"] = self.mlflow_service.log_eval_run(
-            eval_type="ml",
-            metrics=metrics,
-            params={"model_id": model_id or "", "cases_path": cases_path},
-            tags={"Synapse.eval_layer": "ml"},
-            results=response,
-        )
-        return response
+        return self._response("ml", passed, metrics, gates, results)
 
     def run_ai_eval(self, cases_path: str = "evals/prompt_cases.jsonl") -> dict[str, Any]:
         cases = self._load_jsonl(cases_path)
@@ -59,15 +48,7 @@ class EvalService:
         metrics = self._aggregate_results(results)
         required_pass_rate = float(gates.get("required_pass_rate", 0))
         passed = self._passed(results) and metrics["pass_rate"] >= required_pass_rate
-        response = self._response("ai_prompt", passed, metrics, gates, results)
-        response["mlflow"] = self.mlflow_service.log_eval_run(
-            eval_type="ai_prompt",
-            metrics=metrics,
-            params={"cases_path": cases_path},
-            tags={"Synapse.eval_layer": "ai"},
-            results=response,
-        )
-        return response
+        return self._response("ai_prompt", passed, metrics, gates, results)
 
     def _evaluate_ml_case(self, case: dict[str, Any], model_id: str | None, gates: dict[str, Any]) -> EvalCaseResult:
         checks: dict[str, bool] = {}

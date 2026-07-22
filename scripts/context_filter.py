@@ -66,7 +66,7 @@ def line_matches_ignored_directory(line: str, policy: dict) -> bool:
 
 KEEP_PATTERNS = [
     re.compile(r"\b(error|failed|exception|traceback|assert|warning)\b", re.IGNORECASE),
-    re.compile(r"\b(todo|fixme|security|cost|token|agent|rag|mcp|mlflow)\b", re.IGNORECASE),
+    re.compile(r"\b(todo|fixme|security|cost|token|agent|rag|mcp)\b", re.IGNORECASE),
     re.compile(r"^\s*(def|class|function|param|import|from|export|type|interface)\b"),
     re.compile(r"^\s*[-*]\s+"),
 ]

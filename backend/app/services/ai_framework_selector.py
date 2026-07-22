@@ -100,8 +100,6 @@ class AiFrameworkSelector:
         if not matched:
             defaults = set(self.catalog.get("default_technology_recommendation", []))
             matched = [technology for technology in technologies if technology["id"] in defaults]
-        if universe in {"ml", "hybrid"}:
-            matched = self._with_required_technology(matched, technologies, "mlflow")
         if universe in {"ia", "chatbolt", "hybrid"}:
             for required_id in ["fastapi", "ollama", "mcp-servers"]:
                 matched = self._with_required_technology(matched, technologies, required_id)
@@ -198,7 +196,7 @@ class AiFrameworkSelector:
             pipelines.append({"id": "agentic_execution", "stages": ["plan", "select_tools", "execute", "review", "record_memory"]})
         if "automation" in capabilities:
             pipelines.append({"id": "automation", "stages": ["trigger", "transform", "call_service", "notify", "audit"]})
-        if "experiments" in capabilities:
+        if "experiments" in capabilities or technology_layer.get("universe") in {"ml", "hybrid"}:
             pipelines.append({"id": "mlops", "stages": ["baseline", "train", "track", "register", "monitor"]})
         return pipelines
 

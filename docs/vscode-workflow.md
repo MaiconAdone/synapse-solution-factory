@@ -9,7 +9,6 @@ navegador.
 - Ruflo com 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
 - Project Factory em PowerShell para criar projetos completos.
 - FastAPI apenas como runtime interno quando alguma automacao precisar de API.
-- MLflow apenas como tracking interno quando houver treino, avaliacao ou release.
 - Memoria local, Vector DB, playbooks, evals, guardrails e workflows versionados.
 
 ## Criar Projeto Pelo Chat

@@ -237,12 +237,12 @@ agents:
     cognitive_pattern: systems
     memory: semantic
     mission: desenha drift monitoring, alertas e gatilhos de retreino
-  - id: mlflow-ops-specialist
+  - id: experiment-tracking-specialist
     tier: specialist
     domain: ml
     cognitive_pattern: systems
     memory: episodic
-    mission: gerencia MLflow, registry aliases e promocao de modelos
+    mission: gerencia tracking local de experimentos, registry aliases e promocao de modelos
   - id: model-card-reviewer
     tier: specialist
     domain: ml

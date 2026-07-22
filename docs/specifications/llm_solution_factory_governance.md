@@ -100,7 +100,7 @@ Use MLOps:
 - baseline
 - features
 - treino e avaliacao
-- MLflow/artifacts
+- Registry local/artifacts
 - model card
 - monitoramento e drift
 - testes determinisiticos em `tests/`

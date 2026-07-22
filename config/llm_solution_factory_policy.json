@@ -102,7 +102,7 @@
   },
   "architecture_rules": {
     "ml": [
-      "Use MLOps architecture with data contract, baseline, feature pipeline, model card, MLflow artifacts, monitoring, drift checks, tests, and evals.",
+      "Use MLOps architecture with data contract, baseline, feature pipeline, model card, local registry artifacts, monitoring, drift checks, tests, and evals.",
       "Map experience, task, performance measure, hypothesis space, assumptions, estimation objective, validation strategy, regularization, and feature transformations before choosing algorithms.",
       "Use math/statistics metrics appropriate to the business problem before optimizing models."
     ],

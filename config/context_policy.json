@@ -90,7 +90,7 @@
   ],
   "line_keep_patterns": [
     "\\b(error|failed|exception|traceback|assert|warning)\\b",
-    "\\b(todo|fixme|security|cost|token|agent|rag|mcp|mlflow|gateway)\\b",
+    "\\b(todo|fixme|security|cost|token|agent|rag|mcp|gateway)\\b",
     "^\\s*(def|class|function|param|import|from|export|type|interface)\\b",
     "^\\s*[-*]\\s+"
   ]

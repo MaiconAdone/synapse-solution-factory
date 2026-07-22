@@ -15,7 +15,7 @@ import {
 test("workspace context detects common Synapse stack components", () => {
   const stack = detectStack(
     ["backend/main.py", "requirements.txt", "frontend/package.json", "tsconfig.json", "docker-compose.yml"],
-    "FastAPI React next postgres mlflow ollama openai"
+    "FastAPI React next postgres ollama openai"
   );
   assert.ok(stack.includes("Python"));
   assert.ok(stack.includes("FastAPI"));
@@ -86,7 +86,7 @@ test("workspace context ignores generated and dependency directories", () => {
   assert.equal(isIgnoredContextPath(".venv/Lib/site.py"), true);
   assert.equal(isIgnoredContextPath("src/__pycache__/module.pyc"), true);
   assert.equal(isIgnoredContextPath("output/smoke-project/result.json"), true);
-  assert.equal(isIgnoredContextPath("artifacts/mlflow/model/requirements.txt"), true);
+  assert.equal(isIgnoredContextPath("artifacts/models/model.json"), true);
   assert.equal(isIgnoredContextPath(".claude-flow/security/audit.json"), true);
   assert.equal(isIgnoredContextPath(".claude/commands/review.md"), true);
   assert.equal(isIgnoredContextPath(".adonex/tasks/task.md"), true);

@@ -26,7 +26,7 @@ specialist routing.
 - Visual and no-code builders: LangFlow, Flowise, Dify.
 - Automation and ingestion: n8n, Firecrawl, Deep Research, Awesome Lists.
 - Knowledge and retrieval: Vector DBs, RAG frameworks, KAG / Knowledge Graph.
-- MLOps and serving: MLflow, FastAPI.
+- MLOps and serving: FastAPI.
 - Local-first runtime and tool boundaries: Ollama, MCP servers.
 
 ## Required Outputs
@@ -43,7 +43,7 @@ specialist routing.
 - Start with the business problem, success metric, data or knowledge sources, and risk level.
 - Use local Ollama for triage, summarization, planning, and review by default.
 - Use FastAPI, Ollama, and MCP servers as local-first defaults for IA, Chatbolt, and hybrid projects.
-- Use MLflow for ML and hybrid projects.
+- Use the local model registry and evals for ML and hybrid projects.
 - Use RAG technologies only when trusted knowledge or citations matter.
 - Use agents only when the solution must plan, call tools, coordinate steps, or execute workflows.
 - Use Swarms or larger Ruflo routes only when parallel exploration or many specialists are justified.

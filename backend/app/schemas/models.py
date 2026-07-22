@@ -37,7 +37,6 @@ class ModelTrainingResponse(BaseModel):
     version: str
     artifact_path: str
     metrics: dict[str, float]
-    mlflow: dict[str, object] | None = None
 
 
 class ModelPredictionResponse(BaseModel):

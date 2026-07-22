@@ -25,7 +25,6 @@ from app.services.business_solution_analyzer import BusinessSolutionAnalyzer
 from app.services.eval_service import EvalService
 from app.services.enterprise_spec_service import EnterpriseSpecService
 from app.services.memory_service import MemoryService
-from app.services.mlflow_service import MlflowService
 from app.services.model_service import ModelService
 from app.services.project_briefing_service import ProjectBriefingService
 from app.services.project_factory_service import PROJECT_SWARM_AGENTS, PROJECT_UNIVERSES, ProjectFactoryError, ProjectFactoryService
@@ -1174,7 +1173,6 @@ def test_ai_framework_selector_has_required_frameworks_and_selects_by_scenario()
         "vector-dbs",
         "rag-frameworks",
         "kag-knowledge-graph",
-        "mlflow",
         "fastapi",
         "ollama",
         "mcp-servers",
@@ -1197,7 +1195,7 @@ def test_ai_framework_selector_has_required_frameworks_and_selects_by_scenario()
     ml_selection = selector.select("Treinar um classificador de churn", universe="ml")
     assert ml_selection["active"] is False
     assert ml_selection["technology_layer"]["active"] is True
-    assert "mlflow" in ml_selection["technology_layer"]["recommended_technology_ids"]
+    assert "mlflow" not in ml_selection["technology_layer"]["recommended_technology_ids"]
 
 
 def test_runtime_ai_framework_endpoints_are_available():
@@ -1210,7 +1208,7 @@ def test_runtime_ai_framework_endpoints_are_available():
 
     assert catalog_response.status_code == 200
     assert len(catalog_response.json()["frameworks"]) == 14
-    assert len(catalog_response.json()["technology_catalog"]) >= 18
+    assert len(catalog_response.json()["technology_catalog"]) >= 17
     assert select_response.status_code == 200
     assert select_response.json()["active"] is True
     assert "mcp-sdks" in select_response.json()["recommended_framework_ids"]
@@ -1481,7 +1479,7 @@ def test_business_solution_analyzer_maps_business_problem_to_architecture():
     assert churn["recommended_universe"] == "ml"
     assert churn["ml_archetype"]["id"] == "classification_scoring"
     assert "tests/test_ml_contract.py" in churn["test_strategy"]
-    assert "mlflow" in churn["technology_layer"]["recommended_technology_ids"]
+    assert "mlflow" not in churn["technology_layer"]["recommended_technology_ids"]
     assert churn["ml_foundations"]["active"] is True
     assert churn["ml_foundations"]["policy_path"] == "config/ml_foundations_policy.json"
     assert any(gate["id"] == "learning_problem_mapping" for gate in churn["ml_foundations"]["required_reasoning_gates"])
@@ -1627,7 +1625,7 @@ def test_model_service_trains_registers_and_predicts(tmp_path):
 
     assert registry["models"][0]["id"] == training["model_id"]
     assert training["metrics"]["training_rows"] == 3
-    assert training["mlflow"]["available"] in (True, False)
+    assert "mlflow" not in training
     assert prediction["prediction"] == pytest.approx(50)
 
 
@@ -2283,22 +2281,11 @@ def test_protected_model_training_accepts_valid_api_key(monkeypatch, tmp_path):
     assert response.status_code == 200
 
 
-def test_mlflow_service_reports_unavailable_without_package(monkeypatch):
-    service = MlflowService()
-    monkeypatch.setattr(service, "_load_mlflow", lambda: None)
-
-    result = service.status()
-
-    assert result["available"] is False
-    assert result["reason"] == "mlflow package is not installed"
-
-
-def test_mlflow_status_endpoint_is_readable():
+def test_mlflow_routes_are_removed():
     client = TestClient(app)
     response = client.get("/mlflow/status")
 
-    assert response.status_code == 200
-    assert "available" in response.json()
+    assert response.status_code == 404
 
 
 def test_ml_eval_service_runs_contract_cases(tmp_path):
@@ -2308,7 +2295,7 @@ def test_ml_eval_service_runs_contract_cases(tmp_path):
     assert result["eval_type"] == "ml"
     assert result["cases_total"] == 2
     assert "pass_rate" in result["metrics"]
-    assert result["mlflow"]["available"] in (True, False)
+    assert "mlflow" not in result
 
 
 def test_ai_eval_service_runs_prompt_cases():
@@ -2318,7 +2305,7 @@ def test_ai_eval_service_runs_prompt_cases():
     assert result["eval_type"] == "ai_prompt"
     assert result["cases_total"] == 2
     assert "pass_rate" in result["metrics"]
-    assert result["mlflow"]["available"] in (True, False)
+    assert "mlflow" not in result
 
 
 def test_eval_endpoints_require_api_key_in_production(monkeypatch):
@@ -2612,7 +2599,7 @@ def test_project_briefing_agent_releases_project_creation_when_complete():
     assert "Historico de clientes" in result["business_solution_analysis"]["dialog_context"]["available_data_or_knowledge_sources"]
     assert "tests/test_ml_contract.py" in result["business_solution_analysis"]["test_strategy"]
     assert result["business_solution_analysis"]["technology_layer"]["active"] is True
-    assert "mlflow" in result["business_solution_analysis"]["technology_layer"]["recommended_technology_ids"]
+    assert "mlflow" not in result["business_solution_analysis"]["technology_layer"]["recommended_technology_ids"]
     assert result["ruflo"]["parallel_default"] is True
     assert "tokens" in result["token_strategy"]
 
@@ -2926,7 +2913,7 @@ def test_security_and_deployment_contracts_are_hardened():
     assert "project_members.user_id = auth.uid()" in migration
     assert 'ENVIRONMENT: production' in compose
     assert 'PROJECT_CREATION_MODE: managed' in compose
-    assert '127.0.0.1:5000:5000' in compose
+    assert 'mlflow' not in compose
     assert 'NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-}' in compose
     assert 'SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}' in compose
     assert mcp["mcpServers"]["ruflo"]["env"]["CLAUDE_FLOW_MAX_AGENTS"] == "60"

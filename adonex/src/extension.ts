@@ -377,7 +377,7 @@ function registerSynapseCommands(
   });
   register("adonex.synapse.generateRoadmap", async () => {
     await panel.queueTask(
-      "Generate a pragmatic Synapse product and engineering roadmap focused on AI quality, multi-agent governance, Ruflo, MCP, FastAPI, React, Postgres, MLflow, Jupyter, Ollama/OpenAI routing, automation, and cost reduction.",
+      "Generate a pragmatic Synapse product and engineering roadmap focused on AI quality, multi-agent governance, Ruflo, MCP, FastAPI, React, Postgres, Jupyter, Ollama/OpenAI routing, automation, and cost reduction.",
       "synapse_roadmap",
       "synapse"
     );

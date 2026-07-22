@@ -24,7 +24,7 @@ Chat, o AdoneX, o Claude Code e o Codex. Consulte
 - Project Factory em `scripts/create_ai_project.ps1`.
 - Memoria hibrida working/episodic/semantic.
 - RAG e Vector DB em `vector_db/`.
-- MLflow e FastAPI apenas como runtimes internos quando necessario.
+- FastAPI apenas como runtime interno quando necessario.
 
 ## Vick - Assistente De Voz Web
 
@@ -154,7 +154,7 @@ documentacao aplicaveis ao tipo ML, IA ou hibrido.
 ### Conteudo Por Universo
 
 - **ML:** tratamento de dados, estatistica, contratos de dados, notebooks,
-  MLflow, model card, metricas, monitoramento e drift.
+  model card, metricas, monitoramento e drift.
 - **IA:** prompts, agentes como contratos, RAG, retrieval evals, guardrails,
   memoria, observabilidade e governanca.
 - **ML + IA:** combina os artefatos dos universos ML e IA.
@@ -249,9 +249,6 @@ The backend includes a first ML model layer for local baselines:
 - trains `linear_regression` models from inline JSON data or JSONL files
 - stores versioned artifacts in `artifacts/models/`
 - maintains `artifacts/models/registry.json`
-- logs training runs to MLflow when `MLFLOW_TRACKING_URI` is available
-- registers MLflow pyfunc models for lifecycle aliases such as `candidate`,
-  `challenger`, and `champion`
 - serves predictions through `POST /models/{model_id}/predict`
 
 Example training payload:
@@ -269,32 +266,6 @@ Example training payload:
 }
 ```
 
-## Run MLflow Locally
-
-```powershell
-python -m mlflow server `
-  --backend-store-uri sqlite:///artifacts/mlflow/mlflow.db `
-  --default-artifact-root ./artifacts/mlflow/artifacts `
-  --host 127.0.0.1 `
-  --port 5000
-```
-
-The Synapse backend reads:
-
-```powershell
-MLFLOW_TRACKING_URI=http://localhost:5000
-MLFLOW_REGISTRY_URI=http://localhost:5000
-MLFLOW_EXPERIMENT_NAME=synapse-ai
-```
-
-MLflow runtime endpoints:
-
-- `GET /mlflow/status`
-- `GET /mlflow/experiments`
-- `GET /mlflow/runs`
-- `GET /mlflow/models`
-- `POST /mlflow/models/alias`
-
 ## Run Model And AI Evals
 
 The evaluation layer is split between ML and AI prompt checks:
@@ -305,8 +276,8 @@ The evaluation layer is split between ML and AI prompt checks:
 - `POST /evals/ai` reads `evals/prompt_cases.jsonl`, checks prompt readiness,
   expected terms, and simple prompt-injection guards.
 
-Both eval paths log results to MLflow when the local tracking server is
-available, and fall back to structured API responses when it is offline.
+Both eval paths return structured API responses with pass rates, metrics,
+and quality gates.
 
 From VS Code, run:
 

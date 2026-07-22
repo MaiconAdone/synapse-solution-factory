@@ -7,7 +7,6 @@ from typing import Any
 import numpy as np
 
 from app.schemas.models import ModelPredictionRequest, ModelTrainingRequest
-from app.services.mlflow_service import MlflowService
 
 
 class ModelServiceError(ValueError):
@@ -18,34 +17,11 @@ class ModelNotFoundError(ModelServiceError):
     pass
 
 
-class LinearRegressionPyFunc:
-    def __init__(self, intercept: float, coefficients: dict[str, float]) -> None:
-        self.intercept = intercept
-        self.coefficients = coefficients
-
-    def predict(self, context: Any, model_input: Any) -> list[float]:
-        if hasattr(model_input, "to_dict"):
-            rows = model_input.to_dict(orient="records")
-        elif isinstance(model_input, list):
-            rows = model_input
-        else:
-            rows = [model_input]
-
-        return [
-            float(
-                self.intercept
-                + sum(self.coefficients[column] * float(row[column]) for column in self.coefficients)
-            )
-            for row in rows
-        ]
-
-
 class ModelService:
-    def __init__(self, root: Path | None = None, mlflow_service: MlflowService | None = None) -> None:
+    def __init__(self, root: Path | None = None) -> None:
         self.root = root or Path(__file__).resolve().parents[3]
         self.models_dir = self.root / "artifacts" / "models"
         self.registry_path = self.models_dir / "registry.json"
-        self.mlflow_service = mlflow_service or MlflowService(root=self.root)
 
     def list_models(self) -> dict[str, Any]:
         registry = self._load_registry()
@@ -60,11 +36,11 @@ class ModelService:
     def train(self, request: ModelTrainingRequest) -> dict[str, Any]:
         records = self._load_records(request)
         if request.problem_type == "forecasting":
-            artifact, metrics, pyfunc_model = self._train_forecast(request, records)
+            artifact, metrics = self._train_forecast(request, records)
         elif request.problem_type == "classification":
-            artifact, metrics, pyfunc_model = self._train_classifier(request, records)
+            artifact, metrics = self._train_classifier(request, records)
         else:
-            artifact, metrics, pyfunc_model = self._train_regressor(request, records)
+            artifact, metrics = self._train_regressor(request, records)
 
         now = datetime.now(timezone.utc)
         version = now.strftime("%Y%m%d%H%M%S")
@@ -86,26 +62,6 @@ class ModelService:
         self.models_dir.mkdir(parents=True, exist_ok=True)
         artifact_path.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
 
-        mlflow_result = self.mlflow_service.log_training_run(
-            model_id=model_id,
-            model_name=request.model_name,
-            artifact_path=artifact_path,
-            params={
-                "model_name": request.model_name,
-                "problem_type": request.problem_type,
-                "algorithm": request.algorithm,
-                "feature_columns": ",".join(request.feature_columns),
-                "target_column": request.target_column,
-            },
-            metrics=metrics,
-            tags={
-                "Synapse.model_id": model_id,
-                "Synapse.source": "model_service",
-                "Synapse.registry": "local-json-with-mlflow-fallback",
-            },
-            pyfunc_model=pyfunc_model,
-        )
-
         model_summary = {
             "id": model_id,
             "name": request.model_name,
@@ -117,7 +73,6 @@ class ModelService:
             "metrics": metrics,
             "artifact_path": str(artifact_path.relative_to(self.root)),
             "created_at": artifact["created_at"],
-            "mlflow": mlflow_result,
         }
         registry = self._load_registry()
         registry["models"] = [model for model in registry["models"] if model["id"] != model_id]
@@ -129,7 +84,6 @@ class ModelService:
             "version": version,
             "artifact_path": model_summary["artifact_path"],
             "metrics": metrics,
-            "mlflow": mlflow_result,
         }
 
     def predict(self, model_id: str, request: ModelPredictionRequest) -> dict[str, Any]:
@@ -169,7 +123,7 @@ class ModelService:
         self,
         request: ModelTrainingRequest,
         records: list[dict[str, Any]],
-    ) -> tuple[dict[str, Any], dict[str, float], Any]:
+    ) -> tuple[dict[str, Any], dict[str, float]]:
         self._require_features(request)
         x = self._feature_matrix(records, request.feature_columns)
         y = np.array([float(record[request.target_column]) for record in records], dtype=float)
@@ -179,7 +133,7 @@ class ModelService:
         if request.algorithm == "neural_network_regression":
             artifact, predictions = self._fit_mlp(x, y, request, classification=False)
             metrics = self._regression_metrics(y, predictions)
-            return artifact, metrics, None
+            return artifact, metrics
 
         design = np.column_stack([np.ones(x.shape[0]), x])
         if request.algorithm == "ridge_regression":
@@ -203,13 +157,13 @@ class ModelService:
             "coefficients": coefficients,
             "metrics": metrics,
         }
-        return artifact, metrics, LinearRegressionPyFunc(float(weights[0]), coefficients)
+        return artifact, metrics
 
     def _train_classifier(
         self,
         request: ModelTrainingRequest,
         records: list[dict[str, Any]],
-    ) -> tuple[dict[str, Any], dict[str, float], None]:
+    ) -> tuple[dict[str, Any], dict[str, float]]:
         self._require_features(request)
         x = self._feature_matrix(records, request.feature_columns)
         labels = [record[request.target_column] for record in records]
@@ -242,13 +196,13 @@ class ModelService:
         predictions = (probabilities >= 0.5).astype(float)
         metrics = self._classification_metrics(y, predictions, probabilities)
         artifact.update({"classes": classes, "metrics": metrics})
-        return artifact, metrics, None
+        return artifact, metrics
 
     def _train_forecast(
         self,
         request: ModelTrainingRequest,
         records: list[dict[str, Any]],
-    ) -> tuple[dict[str, Any], dict[str, float], None]:
+    ) -> tuple[dict[str, Any], dict[str, float]]:
         series_records = sorted(records, key=lambda item: str(item.get(request.time_column or "", "")))
         y = np.array([float(record[request.target_column]) for record in series_records], dtype=float)
         if y.shape[0] < 2:
@@ -279,7 +233,7 @@ class ModelService:
             "season_length": request.season_length,
             "metrics": metrics,
         }
-        return artifact, metrics, None
+        return artifact, metrics
 
     def _fit_mlp(
         self,

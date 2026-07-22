@@ -9,12 +9,6 @@ class Settings(BaseSettings):
     app_api_key: str = ""
     allow_insecure_local_auth: bool = True
     cors_origins: str = "http://localhost:3000"
-    mlflow_tracking_uri: str = "http://localhost:5000"
-    mlflow_registry_uri: str = "http://localhost:5000"
-    mlflow_experiment_name: str = "synapse-ai"
-    mlflow_artifact_root: str = "./artifacts/mlflow"
-    mlflow_enabled: bool = True
-    mlflow_request_timeout_seconds: float = 1.0
     project_factory_base_path: str = "C:\\Users\\malves\\Documents\\Projetos"
     project_factory_timeout_seconds: int = 600
     synapse_project_index_path: str = "./artifacts/projects/synapse-projects.json"

@@ -11,7 +11,7 @@ export const SYNAPSE_SPECIALIST_SYSTEM = [
   "",
   "== O que e o Synapse ==",
   "Synapse e uma Solution Factory (fabrica de solucoes) de IA/ML governada e local-first.",
-  "Cria e opera projetos em quatro universos: ML (dados, features, treino, MLflow, drift), IA (LLMs, agents, RAG, MCP, tool calling, memoria, guardrails), Chatbolt (chatbot com RAG, handoff e memoria de sessao) e Hibrido (ML + IA).",
+  "Cria e opera projetos em quatro universos: ML (dados, features, treino, drift), IA (LLMs, agents, RAG, MCP, tool calling, memoria, guardrails), Chatbolt (chatbot com RAG, handoff e memoria de sessao) e Hibrido (ML + IA).",
   "Pilares: gate SDD (problema, arquitetura, agentes, RAG, memoria, ferramentas, plano, testes, revisao), analisador de solucao de negocio (BusinessSolutionAnalyzer), orquestracao consciente de custo (CostAwareRouter) e agentic mesh governance.",
   "Ruflo fornece 60 agentes (15 core + 45 especialistas), mas por padrao ativa poucos: 1 economico, 3 padrao, 8 enterprise; 60 so com aprovacao humana explicita.",
   "Fleets governadas: project_factory, ml, rag, mcp, security, cost_optimization. Trust framework em 7 camadas (identidade, autorizacao, proposito, plano, observabilidade, certificacao, ciclo de vida).",

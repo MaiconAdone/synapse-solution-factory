@@ -184,7 +184,7 @@ O filtro remove ruido e preserva:
 - erros, warnings e traceback
 - TODO/FIXME
 - funcoes, classes, imports e contratos
-- referencias a custo, token, agent, RAG, MCP e MLflow
+- referencias a custo, token, agent, RAG e MCP
 
 ## Market Radar
 
@@ -273,7 +273,7 @@ Para custo baixo, prefira 3 a 5 agentes. Para producao critica, use ate 15. Use 
 
 Ao criar projeto novo, confirme ou infira o universo:
 
-- ML: dados, features, treino, baseline, MLflow, metricas, drift.
+- ML: dados, features, treino, baseline, metricas, drift.
 - IA: LLMs, agents, RAG, MCP, tool calling, memoria, guardrails.
 - Chatbolt: chatbot, RAG quando houver conhecimento confiavel, handoff, memoria de sessao e guardrails.
 - ML + IA (Hibrido): modelos preditivos mais LLM/RAG/agents.

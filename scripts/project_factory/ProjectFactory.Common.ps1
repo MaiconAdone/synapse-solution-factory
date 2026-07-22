@@ -27,7 +27,7 @@ function Resolve-ProjectUniverse {
                 ruflo_core_agents = 15
                 ruflo_max_agents = 60
                 ruflo_specialist_agents = 45
-                description = "Projeto focado em Machine Learning, dados, features, treino, avaliacao, MLflow, monitoramento e producao."
+                description = "Projeto focado em Machine Learning, dados, features, treino, avaliacao, monitoramento e producao."
             }
         }
         { $_ -in @("ia", "ai") } {

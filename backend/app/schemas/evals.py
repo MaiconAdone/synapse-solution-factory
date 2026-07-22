@@ -30,4 +30,3 @@ class EvalRunResponse(BaseModel):
     metrics: dict[str, float]
     quality_gates: dict[str, object]
     results: list[EvalCaseResult]
-    mlflow: dict[str, object] | None = None

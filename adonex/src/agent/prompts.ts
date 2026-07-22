@@ -67,7 +67,7 @@ export function actionPrompt(action: AgentAction): string {
     commit: "Retorne um conventional commit conciso e, opcionalmente, um corpo curto em pt-BR.",
     synapse_architecture: [
       "Analise em pt-BR a arquitetura do Synapse como arquiteto senior de IA.",
-      "Cubra limites de modulos, integracao FastAPI/React/Postgres, coordenacao Ruflo, permissoes MCP, roteamento Ollama/OpenAI, linhagem MLflow/Jupyter, custos, seguranca, observabilidade e riscos de producao.",
+      "Cubra limites de modulos, integracao FastAPI/React/Postgres, coordenacao Ruflo, permissoes MCP, roteamento Ollama/OpenAI, linhagem de experimentos/Jupyter, custos, seguranca, observabilidade e riscos de producao.",
       "Comece por achados concretos e recomendacoes priorizadas."
     ].join("\n"),
     synapse_agent: [
@@ -82,7 +82,7 @@ export function actionPrompt(action: AgentAction): string {
       "Crie uma ferramenta MCP tipada e de menor privilegio com validacao, limites de aprovacao, timeout, tratamento de erros, logs e testes."
     ].join("\n"),
     synapse_pipeline: [
-      "Revise em pt-BR o pipeline de IA/ML do Synapse considerando contratos de dados, qualidade de RAG ou ML, linhagem MLflow, reprodutibilidade Jupyter, custo, latencia, seguranca, observabilidade, rollback e gates de producao.",
+      "Revise em pt-BR o pipeline de IA/ML do Synapse considerando contratos de dados, qualidade de RAG ou ML, linhagem de experimentos, reprodutibilidade Jupyter, custo, latencia, seguranca, observabilidade, rollback e gates de producao.",
       "Comece pelos achados ordenados por severidade."
     ].join("\n"),
     synapse_roadmap: [

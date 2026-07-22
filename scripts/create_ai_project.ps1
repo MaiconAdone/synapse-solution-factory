@@ -1119,8 +1119,6 @@ function Create-ProjectStructure {
         "experiments\runs",
         "artifacts\models",
         "artifacts\evals",
-        "artifacts\mlflow",
-        "artifacts\mlflow\artifacts",
         "artifacts\reports",
         "artifacts\rag_indexes",
         "artifacts\llm-routing",
@@ -1590,7 +1588,7 @@ Nenhuma implementacao deve comecar sem:
 ## ML
 
 - Ativo neste projeto: $($ProjectUniverse.ml_enabled)
-- Quando ativo, definir objetivo de negocio, alvo, contrato de dados, baseline, metricas offline/online, MLflow, model card, monitoramento, drift e rollback.
+- Quando ativo, definir objetivo de negocio, alvo, contrato de dados, baseline, metricas offline/online, registry local de modelos, model card, monitoramento, drift e rollback.
 
 ## Producao
 
@@ -1682,7 +1680,6 @@ templates a partir do problema de negocio.
 - Vector DBs
 - RAG frameworks
 - KAG / Knowledge Graph
-- MLflow
 - FastAPI
 - Ollama
 - MCP servers
@@ -1701,7 +1698,7 @@ templates a partir do problema de negocio.
 - Comecar pelo problema de negocio, metrica, fontes disponiveis e risco.
 - Usar Ollama local para triagem, planejamento e revisao por padrao.
 - Usar FastAPI, Ollama e MCP servers como base local-first para IA, Chatbolt e hibridos.
-- Usar MLflow em projetos ML e hibridos.
+- Usar registry local de modelos e evals em projetos ML e hibridos.
 - Usar RAG somente quando conhecimento confiavel, busca ou citacoes forem necessarios.
 - Usar agentes somente quando houver planejamento, ferramentas, coordenacao ou execucao multi-etapas.
 - Nao ativar os 60 agentes nem cloud sem pedido explicito e aprovacao humana.
@@ -1756,7 +1753,7 @@ para criar, operar e auditar agents e fleets de forma corporativa.
 ## Fleets Governadas
 
 - A fabrica de projetos permanece exclusiva da plataforma Synapse.
-- ml_fleet: dados, baseline, treino, avaliacao, MLflow, model card e drift.
+- ml_fleet: dados, baseline, treino, avaliacao, tracking de experimentos, model card e drift.
 - rag_fleet: ingestao, chunking, retrieval, reranking, citacoes e fidelidade.
 - mcp_fleet: MCP, tool calling, schemas, permissoes e fallbacks.
 - security_fleet: LGPD, threat modeling, policies, red team e aprovacoes.
@@ -2010,7 +2007,7 @@ def test_ml_universe_has_mlops_release_contracts():
     assert (ROOT / "ml_systems/model_card.md").exists()
     assert (ROOT / "ml_systems/monitoring_plan.yaml").exists()
     assert (ROOT / "evals/ml_cases.jsonl").exists()
-    assert (ROOT / "artifacts/mlflow").exists()
+    assert (ROOT / "artifacts/models").exists()
 
 
 def test_ml_eval_cases_cover_classification_or_forecasting():
@@ -2240,7 +2237,7 @@ function Create-Runbooks {
         "1. Confirmar contrato de dados.",
         "2. Criar ou atualizar baseline.",
         "3. Rodar avaliacoes ML e IA.",
-        "4. Registrar execucao no MLflow.",
+        "4. Registrar execucao no registry local de modelos.",
         "5. Atualizar model card.",
         "6. Revisar plano de monitoramento.",
         "7. Promover modelo com alias candidate, challenger ou champion.",
@@ -2539,7 +2536,6 @@ function Create-CreationReport {
 - Project model card, data contract, prompts, evals, runbooks, and checklist created
 - Project tests/ contract layer created for the selected universe
 - Codex data treatment prompt and task available
-- MLflow local configuration created
  - No backend or frontend copied into the solution project
  - No project factory copied into the solution project
 - Ruflo runtime and agents copied into the solution project

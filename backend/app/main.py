@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core_config import get_settings
-from app.routes import agents, auth, business, evals, health, hybrid_llm, learning, local_llm, memory, mlflow, models, projects, rag, runtime, swarm, tools, workflows
+from app.routes import agents, auth, business, evals, health, hybrid_llm, learning, local_llm, memory, models, projects, rag, runtime, swarm, tools, workflows
 from app.services.governed_swarm_dependencies import close_governed_swarm_service
 from app.services.llm_dependencies import close_llm_services
 
@@ -40,7 +40,6 @@ app.include_router(agents.router, prefix="/agents", tags=["agents"])
 app.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
 app.include_router(models.router, prefix="/models", tags=["models"])
 app.include_router(evals.router, prefix="/evals", tags=["evals"])
-app.include_router(mlflow.router, prefix="/mlflow", tags=["mlflow"])
 app.include_router(projects.router, prefix="/projects", tags=["projects"])
 app.include_router(rag.router, prefix="/rag", tags=["rag"])
 app.include_router(memory.router, prefix="/memory", tags=["memory"])

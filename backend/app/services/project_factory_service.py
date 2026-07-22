@@ -920,7 +920,7 @@ class ProjectFactoryService:
                 "- Cada fleet deve respeitar identidade, permissoes, proposito, explicabilidade, observabilidade, certificacao e lifecycle governance.",
                 "- Manter 60 agentes disponiveis, mas ativar apenas o conjunto minimo util para o cenario.",
                 "- Usar cache, compressao de contexto, deduplicacao e roteamento por tier de modelo para reduzir tokens OpenAI/Anthropic.",
-                "- Registrar experimentos no MLflow quando houver treino, avaliacao ou promocao de modelo.",
+                "- Registrar experimentos no registry local quando houver treino, avaliacao ou promocao de modelo.",
                 "- Rodar testes separados de ML e IA antes de liberar qualquer fluxo.",
                 "- Manter este briefing como fonte de contexto para Ruflo, Codex e agentes autonomos.",
                 "",

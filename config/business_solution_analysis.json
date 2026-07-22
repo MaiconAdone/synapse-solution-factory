@@ -54,38 +54,11 @@
     "active": true,
     "universe": "ia",
     "recommended_technology_ids": [
-      "mlflow",
       "fastapi",
       "ollama",
       "mcp-servers"
     ],
     "recommended_technologies": [
-      {
-        "id": "mlflow",
-        "name": "MLflow",
-        "category": "mlops",
-        "capabilities": [
-          "experiments",
-          "model_registry",
-          "metrics",
-          "artifacts"
-        ],
-        "best_for": [
-          "model_tracking",
-          "baseline_comparison",
-          "model_registry"
-        ],
-        "select_when": [
-          "ml",
-          "model",
-          "experiment",
-          "training",
-          "metrics"
-        ],
-        "templates": [
-          "templates/mlops/mlflow_experiment.py"
-        ]
-      },
       {
         "id": "fastapi",
         "name": "FastAPI",
@@ -192,7 +165,6 @@
       "integration"
     ],
     "template_paths": [
-      "templates/mlops/mlflow_experiment.py",
       "templates/backend/fastapi_service.py",
       "templates/llm/ollama_router.py",
       "templates/mcp/server.py"
@@ -218,7 +190,6 @@
       "mcp-sdks"
     ],
     "technology_ids": [
-      "mlflow",
       "fastapi",
       "ollama",
       "mcp-servers"
@@ -255,7 +226,6 @@
     }
   ],
   "solution_templates": [
-    "templates/mlops/mlflow_experiment.py",
     "templates/backend/fastapi_service.py",
     "templates/llm/ollama_router.py",
     "templates/mcp/server.py"

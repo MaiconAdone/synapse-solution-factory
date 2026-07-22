@@ -117,9 +117,6 @@ export function OpsConsole() {
   const [modelId, setModelId] = useState("");
   const [workflowId, setWorkflowId] = useState("rag-build");
   const [parallelWorkflow, setParallelWorkflow] = useState(true);
-  const [aliasModelName, setAliasModelName] = useState("");
-  const [aliasVersion, setAliasVersion] = useState("");
-  const [alias, setAlias] = useState("candidate");
   const [projectName, setProjectName] = useState("");
   const [projectType, setProjectType] = useState("ML + IA (Hibrido)");
   const [activateRuflo, setActivateRuflo] = useState(true);
@@ -439,9 +436,6 @@ export function OpsConsole() {
               if (typeof result.model_id === "string") {
                 setModelId(result.model_id);
               }
-              if (typeof result.mlflow?.registered_model_name === "string") {
-                setAliasModelName(result.mlflow.registered_model_name);
-              }
               return result;
             })
           }
@@ -594,42 +588,6 @@ export function OpsConsole() {
           }
         >
           Executar
-        </button>
-      </section>
-
-      <section className="panel ops-panel">
-        <h2>Promover modelo</h2>
-        <label className="ops-field">
-          <span>Modelo registrado</span>
-          <input value={aliasModelName} onChange={(event) => setAliasModelName(event.target.value)} />
-        </label>
-        <label className="ops-field">
-          <span>Versao</span>
-          <input value={aliasVersion} onChange={(event) => setAliasVersion(event.target.value)} />
-        </label>
-        <label className="ops-field">
-          <span>Alias</span>
-          <select value={alias} onChange={(event) => setAlias(event.target.value)}>
-            <option value="candidate">candidate</option>
-            <option value="challenger">challenger</option>
-            <option value="champion">champion</option>
-            <option value="archived">archived</option>
-          </select>
-        </label>
-        <button
-          className="ops-button"
-          type="button"
-          onClick={() =>
-            run("promover modelo", () =>
-              postSynapse("/mlflow/models/alias", {
-                model_name: aliasModelName,
-                version: aliasVersion,
-                alias,
-              }),
-            )
-          }
-        >
-          Promover
         </button>
       </section>
 

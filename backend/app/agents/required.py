@@ -40,7 +40,7 @@ SPECIALIST_AGENT_POOL: tuple[str, ...] = (
     "ml-baseline-engineer",
     "model-evaluation-specialist",
     "drift-monitoring-specialist",
-    "mlflow-ops-specialist",
+    "experiment-tracking-specialist",
     "model-card-reviewer",
     "statistics-reviewer",
     "math-for-ml-specialist",

@@ -56,33 +56,6 @@ export type SwarmStatus = {
   anti_drift: boolean;
 };
 
-export type MlflowStatus = {
-  available: boolean;
-  reason?: string;
-  tracking_uri: string;
-  registry_uri: string;
-  experiment_name: string;
-  experiment_id?: string | null;
-  ui_url?: string;
-};
-
-export type MlflowRun = {
-  run_id: string;
-  status: string;
-  start_time?: number | null;
-  end_time?: number | null;
-  params: Record<string, string>;
-  metrics: Record<string, number>;
-  tags: Record<string, string>;
-};
-
-export type MlflowRuns = {
-  available: boolean;
-  reason?: string;
-  experiment_id?: string;
-  runs?: MlflowRun[];
-};
-
 async function fetchApi<T>(path: string, fallback: T): Promise<ApiResult<T>> {
   try {
     const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -151,20 +124,3 @@ export function getSwarm() {
   });
 }
 
-export function getMlflowStatus() {
-  return fetchApi<MlflowStatus>("/mlflow/status", {
-    available: false,
-    reason: "backend unavailable",
-    tracking_uri: "http://localhost:5000",
-    registry_uri: "http://localhost:5000",
-    experiment_name: "synapse-ai",
-  });
-}
-
-export function getMlflowRuns() {
-  return fetchApi<MlflowRuns>("/mlflow/runs?max_results=10", {
-    available: false,
-    reason: "backend unavailable",
-    runs: [],
-  });
-}

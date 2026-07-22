@@ -25,7 +25,7 @@ export function specialistPrompts(task: string): string[] {
     if (agent.id === "backend") return /api|backend|fastapi|server|database/.test(text);
     if (agent.id === "frontend") return /frontend|react|webview|ui|vscode/.test(text);
     if (agent.id === "data") return /data|dataset|postgres|sql|pipeline/.test(text);
-    if (agent.id === "ml") return /\bml\b|model|training|prediction|mlflow/.test(text);
+    if (agent.id === "ml") return /\bml\b|model|training|prediction/.test(text);
     if (agent.id === "test") return /test|implement|fix|review/.test(text);
     if (agent.id === "docs") return /doc|readme|architecture/.test(text);
     return false;

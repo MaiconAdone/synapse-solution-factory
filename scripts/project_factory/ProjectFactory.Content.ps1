@@ -240,11 +240,6 @@ function Create-EnvironmentFiles {
     $Content = @"
 OPENAI_API_KEY=
 ENVIRONMENT=local
-MLFLOW_TRACKING_URI=http://localhost:5000
-MLFLOW_REGISTRY_URI=http://localhost:5000
-MLFLOW_EXPERIMENT_NAME=$ProjectSlug
-MLFLOW_ARTIFACT_ROOT=./artifacts/mlflow
-MLFLOW_ENABLED=true
 PROJECT_MANAGED_BY=Synapse
 PROJECT_FACTORY_CAPABLE=false
 PROJECT_CONTAINS_BACKEND=false

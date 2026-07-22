@@ -292,15 +292,6 @@
       "templates": ["templates/knowledge_graph/graph_schema.yaml"]
     },
     {
-      "id": "mlflow",
-      "name": "MLflow",
-      "category": "mlops",
-      "capabilities": ["experiments", "model_registry", "metrics", "artifacts"],
-      "best_for": ["model_tracking", "baseline_comparison", "model_registry"],
-      "select_when": ["ml", "model", "experiment", "training", "metrics"],
-      "templates": ["templates/mlops/mlflow_experiment.py"]
-    },
-    {
       "id": "fastapi",
       "name": "FastAPI",
       "category": "api_backend",

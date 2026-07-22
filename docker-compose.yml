@@ -1,22 +1,4 @@
 ﻿services:
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v3.7.0
-    command:
-      - mlflow
-      - server
-      - --backend-store-uri
-      - sqlite:////mlflow/mlflow.db
-      - --default-artifact-root
-      - /mlflow/artifacts
-      - --host
-      - 0.0.0.0
-      - --port
-      - "5000"
-    ports:
-      - "127.0.0.1:5000:5000"
-    volumes:
-      - ./artifacts/mlflow:/mlflow
-
   backend:
     build:
       context: .
@@ -34,8 +16,6 @@
       PROJECT_CREATION_MODE: managed
       ALLOW_INSECURE_LOCAL_AUTH: "false"
       PROJECT_FACTORY_BASE_PATH: /projects
-      MLFLOW_TRACKING_URI: http://mlflow:5000
-      MLFLOW_REGISTRY_URI: http://mlflow:5000
       LOCAL_LLM_ENABLED: ${LOCAL_LLM_ENABLED:-true}
       OLLAMA_BASE_URL: ${OLLAMA_DOCKER_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:3b}
@@ -55,8 +35,6 @@
       - "8000:8000"
     volumes:
       - ./artifacts:/artifacts
-    depends_on:
-      - mlflow
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=10)"]
       interval: 20s

@@ -24,7 +24,7 @@ identidade, permissoes, autonomia controlada, observabilidade e lifecycle.
 ## Fleets
 
 - `project_factory_fleet`: cria projetos ML, IA e Hibridos.
-- `ml_fleet`: treino, avaliacao, MLflow, model card e drift.
+- `ml_fleet`: treino, avaliacao, tracking de experimentos, model card e drift.
 - `rag_fleet`: RAG, chunking, retrieval, reranking, citacoes e fidelidade.
 - `mcp_fleet`: MCP, tool calling, function schemas e permissoes.
 - `security_fleet`: LGPD, threat modeling, policies e red team.

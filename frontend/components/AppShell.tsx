@@ -1,4 +1,4 @@
-﻿import { Activity, BarChart3, Bot, Database, FolderKanban, GitBranch, SlidersHorizontal, Workflow } from "lucide-react";
+﻿import { Activity, Bot, Database, FolderKanban, GitBranch, SlidersHorizontal, Workflow } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -20,7 +20,6 @@ export function AppShell({ children }: AppShellProps) {
           <NavLink href="/agents" label="Agentes" icon={Bot} />
           <NavLink href="/workflows" label="Workflows" icon={Workflow} />
           <NavLink href="/ops" label="OperaÃ§Ãµes" icon={SlidersHorizontal} />
-          <NavLink href="/mlflow" label="MLflow" icon={BarChart3} />
           <NavLink href="/memory" label="MemÃ³ria" icon={Database} />
           <NavLink href="/swarm" label="Swarm" icon={GitBranch} />
         </nav>

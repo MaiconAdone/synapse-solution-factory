@@ -28,8 +28,8 @@
       "universe": ["ml", "hybrid"],
       "lead_agent": "machine-learning",
       "core_agents": ["data-engineering", "data-science", "machine-learning", "testing-qa", "observability-ops"],
-      "specialist_agents": ["feature-engineering-specialist", "ml-baseline-engineer", "model-evaluation-specialist", "drift-monitoring-specialist", "mlflow-ops-specialist"],
-      "success_metrics": ["baseline_defined", "mlflow_logged", "model_card_complete", "drift_plan_defined"]
+      "specialist_agents": ["feature-engineering-specialist", "ml-baseline-engineer", "model-evaluation-specialist", "drift-monitoring-specialist", "experiment-tracking-specialist"],
+      "success_metrics": ["baseline_defined", "experiment_logged", "model_card_complete", "drift_plan_defined"]
     },
     {
       "id": "rag_fleet",

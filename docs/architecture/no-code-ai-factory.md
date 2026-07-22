@@ -45,7 +45,7 @@ The default workflow is `new-ai-project`. It must run with
 
 - `data-engineering`: uploads, schemas, lineage and data validation.
 - `data-science`: analysis, statistics, leakage checks, feature strategy and metrics.
-- `machine-learning`: baselines, target, features, metrics and MLflow.
+- `machine-learning`: baselines, target, features, metrics and local experiment tracking.
 - `llm-engineering`: prompts, tools, agents and guardrails.
 - `rag-engineering`: ingestion, chunking, embeddings and retrieval evals.
 - `backend-engineering`: APIs and secure runtime integration.

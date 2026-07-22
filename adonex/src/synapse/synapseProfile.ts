@@ -8,7 +8,6 @@ export const SYNAPSE_PROFILE = {
     "FastAPI",
     "React and Next.js",
     "Postgres",
-    "MLflow",
     "Jupyter",
     "Ollama",
     "OpenAI API",
@@ -49,7 +48,7 @@ export function synapseSystemContext(
     [
       "Architecture policy:",
       "define functional specification, technical architecture, data flow, acceptance criteria, and tests before implementation;",
-      "prefer modular FastAPI services, React interfaces, Postgres contracts, MLflow experiment lineage, and reproducible Jupyter workflows;",
+      "prefer modular FastAPI services, React interfaces, Postgres contracts, local experiment lineage, and reproducible Jupyter workflows;",
       "design Ruflo multi-agent fleets with explicit objective, tools, memory, context, limits, conflict resolution, and success criteria;",
       "design MCP tools with typed schemas, least privilege, safety boundaries, observability, and graceful fallback;",
       "use Ollama for triage, summaries, routing, and bounded implementation tasks to minimize cost;",

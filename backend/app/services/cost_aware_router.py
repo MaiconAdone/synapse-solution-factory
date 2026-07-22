@@ -50,7 +50,7 @@ class CostAwareRouter:
             return "enterprise"
         if any(term in text for term in ("rag", "mcp", "multiagente", "multi-agent", "agentic", "hibrido", "workflow complexo")):
             return "advanced"
-        if universe == "ml" and any(term in text for term in ("treinar", "classificar", "prever", "baseline", "mlflow")):
+        if universe == "ml" and any(term in text for term in ("treinar", "classificar", "prever", "baseline")):
             return "standard"
         if len(text.split()) <= 14:
             return "simple"

@@ -6,7 +6,7 @@
 - ML archetype: unknown (score 0)
 - AI archetype: voice_coding_agent (score 1)
 - Solution stack: data_treatment, tests, evals, governance, rag, agents, guardrails, token_cost_control, local_llm_routing
-- Technology layer: mlflow, fastapi, ollama, mcp-servers
+- Technology layer: fastapi, ollama, mcp-servers
 
 ## Architecture Decision
 
@@ -21,7 +21,6 @@ Create an AI project with RAG and/or governed agents, tool boundaries, MCP-ready
 
 ### Templates
 
-- templates/mlops/mlflow_experiment.py
 - templates/backend/fastapi_service.py
 - templates/llm/ollama_router.py
 - templates/mcp/server.py

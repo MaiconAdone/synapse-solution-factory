@@ -38,5 +38,5 @@ future implementation options when they would improve the selected archetype.
 ## Release Rule
 
 An ML release is incomplete until the model card, data contract, eval cases,
-monitoring plan, MLflow evidence, and the foundations gates agree with the
+monitoring plan, local registry evidence, and the foundations gates agree with the
 business metric and risk level.

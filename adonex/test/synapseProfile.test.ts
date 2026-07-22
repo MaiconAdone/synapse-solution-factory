@@ -14,7 +14,7 @@ test("Synapse detector requires strong project-specific structure", () => {
       "frontend/package.json",
       "ml_systems/data_contract.yaml"
     ],
-    "Ruflo agentic mesh Ollama OpenAI MLflow Jupyter"
+    "Ruflo agentic mesh Ollama OpenAI Jupyter"
   );
   assert.equal(result.detected, true);
   assert.ok(result.confidence >= 0.8);

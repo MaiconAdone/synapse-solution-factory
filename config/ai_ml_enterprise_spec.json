@@ -106,7 +106,6 @@
       "vector-dbs",
       "rag-frameworks",
       "kag-knowledge-graph",
-      "mlflow",
       "fastapi",
       "ollama",
       "mcp-servers"
@@ -260,8 +259,7 @@
       "python",
       "fastapi",
       "pydantic",
-      "ruflo_mcp",
-      "mlflow"
+      "ruflo_mcp"
     ]
   },
   "ml_systems": {
@@ -299,7 +297,7 @@
       "metric_thresholds",
       "bias_risk_review",
       "model_card_complete",
-      "mlflow_logged"
+      "experiment_logged"
     ]
   },
   "production_readiness": {

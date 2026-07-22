@@ -114,7 +114,7 @@ class ProjectBriefingService:
         if ready:
             return (
                 "Ruflo recebeu o objetivo e o problema de negocio. O swarm pode criar o projeto completo "
-                "com dados, experimentos, MLflow quando aplicavel, testes ML/IA, governanca e briefing operacional."
+                "com dados, experimentos, testes ML/IA, governanca e briefing operacional."
             )
         if business_problem:
             return "Ruflo entendeu o problema inicial. Antes de implementar, preciso fechar as informacoes faltantes pela conversa."
@@ -172,7 +172,7 @@ class ProjectBriefingService:
     def _recommendations(self, focus: str) -> list[str]:
         base = [
             "Definir metrica de sucesso antes da criacao do modelo ou agente.",
-            "Registrar experimentos e avaliacoes no MLflow.",
+            "Registrar experimentos e avaliacoes no registry local de modelos.",
             "Rodar testes separados para ML e IA antes da liberacao.",
         ]
         if focus == "ml":
@@ -231,7 +231,7 @@ class ProjectBriefingService:
             "Gerar contrato de dados, casos de avaliacao, model card e guardrails.",
         ]
         if focus in {"ml", "ai-ml-agents"}:
-            plan.append("Preparar baseline de ML, MLflow e metricas antes do primeiro treino.")
+            plan.append("Preparar baseline de ML e metricas antes do primeiro treino.")
         if focus in {"agents", "ai-ml-agents"}:
             plan.append("Definir agentes, ferramentas permitidas, memoria e limites de autonomia.")
         if focus in {"rag", "ai-ml-agents"}:

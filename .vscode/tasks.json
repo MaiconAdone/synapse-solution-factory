@@ -460,44 +460,6 @@
       }
     },
     {
-      "label": "Dev: MLflow Tracking no VS Code",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "New-Item -ItemType Directory -Force -Path artifacts\\mlflow\\artifacts | Out-Null; python -m mlflow server --backend-store-uri sqlite:///artifacts/mlflow/mlflow.db --default-artifact-root ./artifacts/mlflow/artifacts --host 127.0.0.1 --port 5000"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "isBackground": true,
-      "problemMatcher": {
-        "owner": "python",
-        "pattern": {
-          "regexp": "^(.+):(\\d+):(\\d+):\\s+(.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "message": 4
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "mlflow server",
-          "endsPattern": "Listening at"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "group": "dev-mlflow",
-        "clear": true,
-        "focus": true
-      }
-    },
-    {
       "label": "Dev: Backend FastAPI no VS Code",
       "type": "shell",
       "command": "python",
