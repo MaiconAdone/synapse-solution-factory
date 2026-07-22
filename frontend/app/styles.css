@@ -1264,7 +1264,7 @@ h2 {
   box-shadow: var(--v-shadow);
   display: grid;
   gap: 16px;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   padding: 14px 18px;
 }
 .vick-briefing .b-ico {
@@ -1295,6 +1295,14 @@ h2 {
 }
 .vick-briefing .b-play:hover { background: var(--v-primary); color: #041016; }
 .vick-briefing .b-play:focus-visible { outline: 2px solid var(--v-primary); outline-offset: 2px; }
+.vick-briefing .b-mute { border-color: var(--v-line); color: var(--v-muted); }
+.vick-briefing .b-mute:hover { background: rgba(240, 94, 94, 0.16); border-color: rgba(240, 94, 94, 0.5); color: #f08a8a; }
+.vick-briefing .b-mute.active {
+  background: rgba(240, 94, 94, 0.16);
+  border-color: rgba(240, 94, 94, 0.55);
+  color: #f08a8a;
+}
+.vick-briefing .b-mute.active:hover { background: rgba(240, 94, 94, 0.28); color: #ffb4b4; }
 
 /* KPI tiles (com sparkline) */
 .vick-kpis { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); }
@@ -1383,6 +1391,35 @@ h2 {
   border: 1px solid var(--v-primary-dim);
   border-bottom-right-radius: 4px;
   text-align: left;
+}
+
+/* composer (caixa de diálogo digitada) */
+.vick-composer-area { border-top: 1px solid var(--v-line-soft); }
+.vick-attachment { align-items: center; color: var(--v-muted); display: flex; font-size: 12px; gap: 6px; padding: 8px 14px 0; }
+.vick-attachment span { max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vick-attachment button { background: none; border: none; color: var(--v-faint); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; }
+.vick-attachment button:hover { color: var(--v-primary); }
+.vick-composer { align-items: center; display: flex; gap: 8px; padding: 10px 12px; }
+.vick-composer .c-hidden-file { display: none; }
+.vick-composer .c-attach {
+  align-items: center; background: var(--v-panel-2); border: 1px solid var(--v-line); border-radius: 9px;
+  color: var(--v-muted); cursor: pointer; display: flex; flex: none; height: 34px; justify-content: center; width: 34px;
+}
+.vick-composer .c-attach:hover { border-color: var(--v-primary-dim); color: var(--v-primary); }
+.vick-composer .c-text {
+  background: var(--v-panel-2); border: 1px solid var(--v-line); border-radius: 9px; color: inherit;
+  flex: 1; font: inherit; font-size: 13.5px; height: 34px; min-width: 0; outline: none; padding: 0 12px;
+}
+.vick-composer .c-text:focus { border-color: var(--v-primary-dim); }
+.vick-composer .c-text::placeholder { color: var(--v-faint); }
+.vick-composer .c-send {
+  align-items: center; background: linear-gradient(180deg, rgba(84, 214, 230, 0.24), rgba(84, 214, 230, 0.12));
+  border: 1px solid var(--v-primary-dim); border-radius: 9px; color: var(--v-primary); cursor: pointer;
+  display: flex; flex: none; font-size: 12.5px; font-weight: 700; gap: 6px; height: 34px; padding: 0 14px;
+}
+.vick-composer .c-send:disabled { cursor: not-allowed; opacity: .45; }
+.vick-composer .c-send.c-stop {
+  background: rgba(240, 94, 94, 0.14); border-color: rgba(240, 94, 94, 0.5); color: #f08a8a;
 }
 
 /* ---------- responsive ---------- */

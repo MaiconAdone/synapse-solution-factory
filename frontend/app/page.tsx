@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, Settings2, Volume2 } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { Mic, MicOff, Paperclip, Send, Settings2, Square, Volume2, VolumeX } from "lucide-react";
 import VickOrb from "@/components/VickOrb";
 import NoiseOptimizer from "@/components/NoiseOptimizer";
 
@@ -360,11 +360,6 @@ type RufloCatalog = {
   activationPolicy: string;
 };
 
-const brlFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-
 function formatTokens(tokens: number): string {
   if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens >= 10_000_000 ? 0 : 1)}M tok`;
   if (tokens >= 1000) return `${(tokens / 1000).toFixed(tokens >= 10_000 ? 0 : 1)}k tok`;
@@ -414,9 +409,18 @@ function Sparkline({ points, color }: { points: number[]; color: string }) {
 
 export default function VickDigitalPage() {
   const [messages, setMessages] = useState<Message[]>([{ role: "vick", text: greetings[0] }]);
-  const [, setInput] = useState("");
+  const [input, setInput] = useState("");
   const [listening, setListening] = useState(false);
   const [thinking, setThinking] = useState(false);
+  // Botão Enviar vira Parar enquanto houver requisição em andamento no chat.
+  const [requestActive, setRequestActive] = useState(false);
+  // Mute da voz: corta a fala atual na hora e segura as próximas até reativar.
+  const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(false);
+  // Arquivo de texto anexado pelo clip; segue junto do próximo prompt para o
+  // modelo local (AdoneX/Ollama) via /api/vick/chat.
+  const [attachment, setAttachment] = useState<{ name: string; content: string; truncated: boolean } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [voiceReady, setVoiceReady] = useState(false);
@@ -536,6 +540,7 @@ export default function VickDigitalPage() {
     streamSpeechRef.current = { sentences: 0, queued: 0, ended: false };
     setThinking(false);
     setSpeaking(false);
+    setRequestActive(false);
     setInput("");
     const confirmation = hadActiveRequest
       ? "Solicitação cancelada."
@@ -624,8 +629,33 @@ export default function VickDigitalPage() {
     if (autoListenRef.current) window.setTimeout(startRecognition, 350);
   }
 
+  // Silencia a Vick na hora (cancela a fala em andamento e a fila) e mantém a
+  // voz desligada até apertar de novo. Não interfere no microfone nem no
+  // processamento — as respostas continuam aparecendo por escrito.
+  function toggleMute() {
+    const next = !mutedRef.current;
+    mutedRef.current = next;
+    setMuted(next);
+    if (next) {
+      pendingSpeechRef.current = "";
+      window.speechSynthesis?.cancel();
+      speakingRef.current = false;
+      setSpeaking(false);
+      setStatus("Voz da Vick silenciada");
+    } else {
+      setStatus("Voz da Vick reativada");
+    }
+  }
+
   function speak(text: string) {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+    if (mutedRef.current) {
+      // Mudo: pula o áudio mas fecha o ciclo de fala para a escuta e a fila
+      // de comandos seguirem normalmente.
+      handleSpeechFinished(false);
+      return;
+    }
 
     if (!audioUnlockedRef.current) {
       pendingSpeechRef.current = text;
@@ -646,7 +676,7 @@ export default function VickDigitalPage() {
   function announceProgress(text: string) {
     if (!text || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     setStatus(text);
-    if (!audioUnlockedRef.current) return;
+    if (!audioUnlockedRef.current || mutedRef.current) return;
     const utterance = configureUtterance(text);
     const settle = () => {
       speakingRef.current = false;
@@ -682,7 +712,7 @@ export default function VickDigitalPage() {
   // `full` é o texto cru acumulado até agora. Só falamos frases já fechadas, e
   // o índice é estável porque o texto só cresce no fim.
   function pushStreamingSpeech(full: string) {
-    if (!audioUnlockedRef.current) return;
+    if (!audioUnlockedRef.current || mutedRef.current) return;
     const state = streamSpeechRef.current;
     if (state.sentences >= streamSpeechMaxSentences) return;
     const complete = full.match(/[^.!?]+[.!?]+/g) ?? [];
@@ -702,7 +732,7 @@ export default function VickDigitalPage() {
       return;
     }
     // Sobrou uma frase sem pontuação final (o modelo pode parar no meio).
-    if (state.sentences < streamSpeechMaxSentences) {
+    if (!mutedRef.current && state.sentences < streamSpeechMaxSentences) {
       const complete = full.match(/[^.!?]+[.!?]+/g) ?? [];
       const rest = speechPlainText(full.slice(complete.slice(0, state.sentences).join("").length));
       if (rest) {
@@ -1230,6 +1260,38 @@ export default function VickDigitalPage() {
     }
   }
 
+  // Clip do composer: carrega um arquivo de texto do computador para seguir
+  // junto do próximo prompt ao modelo local. Binários são recusados e textos
+  // longos são truncados para caber no contexto do modelo local.
+  const MAX_ATTACHMENT_CHARS = 24000;
+  async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > 512 * 1024) {
+      setStatus("Arquivo acima de 512KB. Envie um arquivo de texto menor.");
+      return;
+    }
+    let raw: string;
+    try {
+      raw = await file.text();
+    } catch {
+      setStatus("Não consegui ler o arquivo. Tente novamente.");
+      return;
+    }
+    if (raw.includes("\u0000")) {
+      setStatus("Arquivo binário não é suportado. Envie texto ou código.");
+      return;
+    }
+    const truncated = raw.length > MAX_ATTACHMENT_CHARS;
+    setAttachment({
+      name: file.name,
+      content: truncated ? raw.slice(0, MAX_ATTACHMENT_CHARS) : raw,
+      truncated,
+    });
+    setStatus(`Arquivo ${file.name} pronto para envio ao modelo local.`);
+  }
+
   async function handlePrompt(rawPrompt: string) {
     const prompt = cleanReply(rawPrompt);
     if (!prompt) return;
@@ -1273,11 +1335,20 @@ export default function VickDigitalPage() {
     setInput("");
     thinkingRef.current = true;
     setThinking(true);
+    setRequestActive(true);
     setStatus("Vick processando");
     const understandingNotice = pendingUnderstandingNoticeRef.current;
     pendingUnderstandingNoticeRef.current = "";
     announceProgress(understandingNotice || "Entendi sua solicitação. Vou analisar e aviso cada etapa relevante.");
-    const nextMessages = [...messages, { role: "user" as const, text: prompt }];
+    // Anexo do clip: o conteúdo vai só no prompt para o modelo local; na
+    // conversa visível fica apenas o nome do arquivo.
+    const pendingAttachment = attachment;
+    if (pendingAttachment) setAttachment(null);
+    const modelPrompt = pendingAttachment
+      ? `${prompt}\n\n[Arquivo anexado: ${pendingAttachment.name}${pendingAttachment.truncated ? " (truncado)" : ""}]\n\`\`\`\n${pendingAttachment.content}\n\`\`\``
+      : prompt;
+    const displayText = pendingAttachment ? `${prompt}\n📎 ${pendingAttachment.name}` : prompt;
+    const nextMessages = [...messages, { role: "user" as const, text: displayText }];
     setMessages(nextMessages);
     const controller = new AbortController();
     requestAbortRef.current = controller;
@@ -1295,7 +1366,7 @@ export default function VickDigitalPage() {
 
     let streamed = "";
     let streaming = false;
-    const answer = await generateReply(prompt, nextMessages, controller.signal, (full) => {
+    const answer = await generateReply(modelPrompt, nextMessages, controller.signal, (full) => {
       if (requestAbortRef.current !== controller) return;
       const firstDelta = !streaming;
       if (firstDelta) {
@@ -1309,6 +1380,9 @@ export default function VickDigitalPage() {
       writeVickBubble(full, !firstDelta);
       pushStreamingSpeech(full);
     });
+    // A requisição terminou (com resposta ou não): o botão volta a ser Enviar,
+    // exceto se outra requisição já tiver assumido o controle.
+    if (requestAbortRef.current === controller) setRequestActive(false);
     if (requestAbortRef.current !== controller || !answer) return;
     requestAbortRef.current = null;
     thinkingRef.current = false;
@@ -1585,13 +1659,23 @@ export default function VickDigitalPage() {
             >
               <Volume2 size={16} />
             </button>
+            <button
+              className={`b-play b-mute${muted ? " active" : ""}`}
+              onClick={toggleMute}
+              title={muted ? "Reativar a voz da Vick" : "Silenciar a Vick agora"}
+              aria-label={muted ? "Reativar a voz da Vick" : "Silenciar a Vick"}
+              aria-pressed={muted}
+              type="button"
+            >
+              <VolumeX size={16} />
+            </button>
           </div>
 
           <section className="vick-kpis" aria-label="Métricas executivas">
-            <div className="vick-kpi" title="Custo estimado hoje dos eventos Anthropic registrados no ledger do Synapse">
-              <div className="k-label">Gasto Claude Code</div>
+            <div className="vick-kpi" title="Tokens reais registrados hoje nas sessoes do Claude Code neste workspace">
+              <div className="k-label">Tokens Claude Code</div>
               <div className="k-val vick-tabular">
-                {telemetry ? brlFormatter.format(telemetry.providerCosts.claudeCode.brlToday) : "—"}
+                {telemetry ? formatTokens(telemetry.providerCosts.claudeCode.tokensToday) : "—"}
               </div>
               <div className="k-foot">
                 <span className="k-trend flat">
@@ -1600,7 +1684,7 @@ export default function VickDigitalPage() {
                     : "sem uso registrado"}
                 </span>
               </div>
-              <Sparkline points={telemetry?.providerCosts.claudeCode.spark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_OK} />
+              <Sparkline points={telemetry?.providerCosts.claudeCode.tokenSpark ?? [0, 0, 0, 0, 0, 0, 0]} color={VICK_OK} />
             </div>
             <div className="vick-kpi" title="pytest -q — suíte enterprise do Synapse">
               <div className="k-label">Testes verdes</div>
@@ -1645,6 +1729,68 @@ export default function VickDigitalPage() {
                   <p>{message.text}</p>
                 </article>
               ))}
+            </div>
+            <div className="vick-composer-area">
+              {attachment ? (
+                <div className="vick-attachment" title={attachment.name}>
+                  <Paperclip size={12} />
+                  <span>{attachment.name}{attachment.truncated ? " (truncado)" : ""}</span>
+                  <button type="button" onClick={() => setAttachment(null)} aria-label="Remover anexo">×</button>
+                </div>
+              ) : null}
+              <form
+                className="vick-composer"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const text = input.trim() || (attachment ? "Analise o arquivo anexado." : "");
+                  if (!text) return;
+                  void handlePrompt(text);
+                }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="c-hidden-file"
+                  onChange={handleFileSelected}
+                  aria-hidden="true"
+                  tabIndex={-1}
+                />
+                <button
+                  type="button"
+                  className="c-attach"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Anexar arquivo do computador para o modelo local"
+                  aria-label="Anexar arquivo"
+                >
+                  <Paperclip size={16} />
+                </button>
+                <input
+                  className="c-text"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder={attachment ? `Mensagem sobre ${attachment.name}…` : "Digite sua mensagem para a Vick…"}
+                  aria-label="Mensagem para a Vick"
+                />
+                {requestActive ? (
+                  <button
+                    type="button"
+                    className="c-send c-stop"
+                    onClick={cancelCurrentRequest}
+                    title="Parar o processamento"
+                  >
+                    <Square size={14} /> Parar
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="c-send"
+                    disabled={!input.trim() && !attachment}
+                    title="Enviar mensagem"
+                  >
+                    <Send size={14} /> Enviar
+                  </button>
+                )}
+              </form>
             </div>
           </section>
         </div>
