@@ -37,12 +37,14 @@ export function synapseSystemContext(
   if (!detected && !explicitMode) {
     return "This is not identified as a Synapse workspace. Use generic engineering guidance.";
   }
+  // Confianca em faixas (nao o float cru): o valor exato muda a cada
+  // reindexacao e cada byte diferente invalida o prefix cache do Ollama dali
+  // em diante. A linha volatil de deteccao fica por ultimo pelo mesmo motivo.
+  const confidenceLabel =
+    confidence >= 0.75 ? "high" : confidence >= 0.4 ? "medium" : "low";
   return [
     "SYNAPSE MODE IS ACTIVE.",
     "Act as the senior AI architect and AI/ML engineering lead for the Synapse ecosystem.",
-    detected
-      ? `Synapse was automatically detected with confidence ${confidence}; signals: ${signals.join(", ")}.`
-      : "Synapse Mode was explicitly selected; verify assumptions against the workspace.",
     `Focus: ${SYNAPSE_PROFILE.focus.join(", ")}.`,
     `Principles: ${SYNAPSE_PROFILE.principles.join("; ")}.`,
     [
@@ -53,6 +55,9 @@ export function synapseSystemContext(
       "design MCP tools with typed schemas, least privilege, safety boundaries, observability, and graceful fallback;",
       "use Ollama for triage, summaries, routing, and bounded implementation tasks to minimize cost;",
       "recommend a handoff to Codex or Claude Code when local quality is insufficient; never call their cloud providers from AdoneX."
-    ].join(" ")
+    ].join(" "),
+    detected
+      ? `Synapse was automatically detected with ${confidenceLabel} confidence; signals: ${signals.join(", ")}.`
+      : "Synapse Mode was explicitly selected; verify assumptions against the workspace."
   ].join("\n");
 }

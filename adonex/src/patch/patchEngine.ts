@@ -9,7 +9,7 @@ import type {
 } from "../llm/types";
 import { requestApproval } from "../security/approvalGate";
 import { isSensitivePath } from "../security/secretScanner";
-import { applyPatchOperation, createSimpleDiff, resolveSafePath } from "./patchUtils";
+import { applyOperationsToContents, createSimpleDiff, resolveSafePath } from "./patchUtils";
 
 export class PatchEngine {
   public async generate(
@@ -72,6 +72,11 @@ export class PatchEngine {
       throw new Error("Patch application was rejected.");
     }
 
+    // Edits cirurgicos: reaplica as operations contra o estado ATUAL do disco.
+    // Edicoes manuais feitas entre a proposta e o Apply sao preservadas; se o
+    // anchor/expected nao existir mais, o conflito aborta antes de escrever.
+    const freshContentByPath = await this.resolveOperationsAtApplyTime(root, patch);
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const logRoot = path.join(root, ".adonex", "logs");
     const backupRoot = path.join(root, ".adonex", "backups", timestamp);
@@ -97,7 +102,11 @@ export class PatchEngine {
         await fs.writeFile(backup, before, "utf8");
       }
       await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(target, change.content, "utf8");
+      await fs.writeFile(
+        target,
+        freshContentByPath.get(change.path) ?? change.content,
+        "utf8"
+      );
     }
     await fs.writeFile(
       path.join(logRoot, `${timestamp}.patch.log`),
@@ -131,22 +140,48 @@ export class PatchEngine {
     root: string,
     operations: ProposedPatchOperation[]
   ): Promise<ProposedFileChange[]> {
-    const currentByPath = new Map<string, string>();
-    const changed = new Map<string, string>();
-    for (const operation of operations) {
-      assertPatchPathAllowed(operation.path);
-      const target = resolveSafePath(root, operation.path);
-      const current =
-        changed.get(operation.path) ??
-        currentByPath.get(operation.path) ??
-        (await fs.readFile(target, "utf8").catch(() => ""));
-      currentByPath.set(operation.path, current);
-      changed.set(operation.path, applyPatchOperation(current, operation));
-    }
+    const changed = applyOperationsToContents(
+      operations,
+      await this.readCurrentContents(root, operations)
+    );
     return [...changed.entries()].map(([filePath, content]) => ({
       path: filePath,
       content
     }));
+  }
+
+  /**
+   * Reaplica no momento do apply as operations dos arquivos presentes no patch,
+   * lendo o conteudo atual do disco. Retorna o conteudo final por path; paths
+   * sem operations continuam usando o conteudo completo proposto.
+   */
+  private async resolveOperationsAtApplyTime(
+    root: string,
+    patch: GeneratedPatch
+  ): Promise<ReadonlyMap<string, string>> {
+    const selectedPaths = new Set(patch.changes.map((change) => change.path));
+    const operations = (patch.operations ?? []).filter((operation) =>
+      selectedPaths.has(operation.path)
+    );
+    if (!operations.length) return new Map();
+    return applyOperationsToContents(
+      operations,
+      await this.readCurrentContents(root, operations)
+    );
+  }
+
+  private async readCurrentContents(
+    root: string,
+    operations: readonly ProposedPatchOperation[]
+  ): Promise<Map<string, string>> {
+    const currentByPath = new Map<string, string>();
+    for (const operation of operations) {
+      if (currentByPath.has(operation.path)) continue;
+      assertPatchPathAllowed(operation.path);
+      const target = resolveSafePath(root, operation.path);
+      currentByPath.set(operation.path, await fs.readFile(target, "utf8").catch(() => ""));
+    }
+    return currentByPath;
   }
 }
 

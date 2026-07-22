@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
 import {
+  applyOperationsToContents,
   applyPatchOperation,
   createSimpleDiff,
   resolveSafePath
@@ -37,6 +38,64 @@ test("patch operations apply incremental replacements with conflict checks", () 
         expected: "const missing = true;",
         replacement: "const missing = false;"
       }),
+    /Patch conflict/
+  );
+});
+
+test("applyOperationsToContents chains operations per file over current content", () => {
+  const current = new Map([["src/app.ts", "const a = 1;\nconst b = 2;\n"]]);
+  const result = applyOperationsToContents(
+    [
+      {
+        type: "replace",
+        path: "src/app.ts",
+        expected: "const a = 1;",
+        replacement: "const a = 10;"
+      },
+      {
+        type: "replace",
+        path: "src/app.ts",
+        expected: "const b = 2;",
+        replacement: "const b = 20;"
+      }
+    ],
+    current
+  );
+  assert.equal(result.get("src/app.ts"), "const a = 10;\nconst b = 20;\n");
+});
+
+test("applyOperationsToContents preserves simultaneous edits and flags conflicts", () => {
+  // Edicao manual feita depois da proposta: a operation reaplica por cima do
+  // conteudo atual, preservando a linha extra do usuario.
+  const edited = new Map([["src/app.ts", "// user note\nconst a = 1;\n"]]);
+  const result = applyOperationsToContents(
+    [
+      {
+        type: "replace",
+        path: "src/app.ts",
+        expected: "const a = 1;",
+        replacement: "const a = 2;"
+      }
+    ],
+    edited
+  );
+  assert.equal(result.get("src/app.ts"), "// user note\nconst a = 2;\n");
+
+  // Se a edicao manual removeu o trecho esperado, conflita em vez de sobrescrever.
+  const conflicting = new Map([["src/app.ts", "const renamed = 1;\n"]]);
+  assert.throws(
+    () =>
+      applyOperationsToContents(
+        [
+          {
+            type: "replace",
+            path: "src/app.ts",
+            expected: "const a = 1;",
+            replacement: "const a = 2;"
+          }
+        ],
+        conflicting
+      ),
     /Patch conflict/
   );
 });

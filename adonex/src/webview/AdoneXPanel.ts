@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { AgentOrchestrator } from "../agent/agentOrchestrator";
 import { ComposerSession } from "../composer/composerSession";
+import { buildRepairInput, selectValidationCommands } from "../composer/validationLoop";
 import { CommandRunner } from "../execution/commandRunner";
 import type {
   AgentAction,
@@ -383,9 +384,107 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       appliedPaths: result.appliedPaths,
       commands: result.commands
     });
+    const commands = selectValidationCommands(result.commands);
+    if (!commands.length) {
+      this.postRuntimeState(
+        "idle",
+        `Composer aplicou ${result.appliedPaths.length} arquivo(s). Nenhum comando de validacao foi proposto.`
+      );
+      return;
+    }
+    // Ciclo editar -> validar -> corrigir: valida automaticamente e tenta uma
+    // unica correcao governada, como o fluxo autonomo do Synapse Mode.
+    await this.composerValidate(commands, true);
+  }
+
+  /**
+   * Roda os comandos de validacao propostos apos a aplicacao do Composer.
+   * Em caso de falha, gera uma unica correcao a partir da saida capturada;
+   * a correcao volta para revisao humana, exceto no modo autonomo Synapse,
+   * em que e aplicada e revalidada uma vez (sem nova rodada de correcao).
+   */
+  private async composerValidate(commands: string[], allowRepair: boolean): Promise<void> {
+    const root =
+      this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) {
+      this.postRuntimeState("idle", "Sem workspace para validar. Rode os comandos manualmente.");
+      return;
+    }
+    const requireApproval = this.requiresCommandApproval();
+    let failed: CommandResult | undefined;
+    for (const command of commands) {
+      this.post({ type: "composerState", state: "validating", text: `Validando: ${command}` });
+      this.postRuntimeState(
+        "validating",
+        requireApproval
+          ? `Aguardando aprovacao para validar: ${command}`
+          : `Composer validando: ${command}`
+      );
+      const result = await this.commandRunner.runCaptured(command, root, 600_000, requireApproval);
+      this.post({ type: "testResult", result });
+      if (result.exitCode !== 0) {
+        failed = result;
+        break;
+      }
+    }
+    if (!failed) {
+      this.post({
+        type: "composerState",
+        state: "idle",
+        text: `Validacao passou (${commands.length} comando(s)).`
+      });
+      this.postRuntimeState("idle", `Composer validado: ${commands.join("; ")}.`);
+      return;
+    }
+    const diagnosis = diagnoseCommandFailure(failed);
+    this.post({
+      type: "testFailure",
+      text: [failed.stdout, failed.stderr].filter(Boolean).join("\n"),
+      command: failed.command,
+      diagnosis
+    });
+    if (!allowRepair) {
+      this.postRuntimeState(
+        "idle",
+        `Validacao falhou apos a correcao automatica: ${failed.command}. Revise manualmente ou refine no Composer.`
+      );
+      return;
+    }
+    this.post({
+      type: "status",
+      text: "Validacao falhou. Gerando uma unica correcao automatica a partir da saida capturada."
+    });
+    const repaired = await this.composer.repair(
+      buildRepairInput(failed),
+      this.abortController?.signal,
+      (text) => this.postStep(text)
+    );
+    if (this.composerAutonomousSynapse()) {
+      this.post({
+        type: "status",
+        text: `Modo autonomo Synapse: aplicando correcao (${repaired.view.files.length} arquivo(s)) e revalidando.`
+      });
+      const applied = await this.composer.apply(false);
+      this.post({
+        type: "composerApplied",
+        appliedPaths: applied.appliedPaths,
+        commands: applied.commands
+      });
+      // Revalida somente o comando que falhou; sem nova rodada de correcao.
+      await this.composerValidate([failed.command], false);
+      return;
+    }
+    this.postComposerProposal(repaired);
     this.postRuntimeState(
-      "idle",
-      `Composer aplicou ${result.appliedPaths.length} arquivo(s). Valide com os comandos sugeridos.`
+      "awaiting_confirmation",
+      "Correcao proposta a partir da falha capturada. Revise e aplique para revalidar."
+    );
+  }
+
+  private composerAutonomousSynapse(): boolean {
+    return Boolean(
+      this.composer.isSynapseWorkspace() &&
+      vscode.workspace.getConfiguration("adonex").get<boolean>("synapse.autonomous", false)
     );
   }
 
@@ -918,13 +1017,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     if (!this.pending || !this.taskRecord || !this.taskStore) {
       throw new Error("No persistent task is ready for validation.");
     }
-    const commands = [
+    const commands = selectValidationCommands([
       ...(this.proposal?.commands ?? []),
       ...this.pending.plan.commands
-    ].filter(
-      (command, index, all) =>
-        !command.startsWith("Review") && all.indexOf(command) === index
-    );
+    ]);
     if (!commands.length) throw new Error("No test command was proposed.");
 
     const results: CommandResult[] = [];

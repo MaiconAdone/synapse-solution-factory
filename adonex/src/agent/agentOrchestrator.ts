@@ -37,7 +37,7 @@ import type {
   TaskPlan,
   WorkspaceSnapshot
 } from "../llm/types";
-import { actionPrompt, BASE_SYSTEM_PROMPT } from "./prompts";
+import { actionPrompt, BASE_SYSTEM_PROMPT, STATIC_POLICY_PROMPT } from "./prompts";
 import {
   buildProposalRepairPrompt,
   parseProposalText,
@@ -301,16 +301,20 @@ export class AgentOrchestrator {
         `Council Ruflo: lider ${rufloCouncil.leadAgent.id} + ${Math.max(0, rufloCouncil.activeAgents - 1)} revisor(es)`
       );
     }
+    // Ordem pensada para o prefix cache do Ollama (CPU-only): blocos 100%
+    // estaveis primeiro, semi-estaveis no meio e dinamicos por ultimo. Qualquer
+    // byte alterado invalida o cache de tudo que vem depois dele.
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
-      actionPrompt(action),
+      STATIC_POLICY_PROMPT,
+      compiledPrompt.systemAddendum,
       synapseSystemContext(
         snapshot.synapseDetected,
         mode === "synapse",
         snapshot.synapseConfidence,
         snapshot.synapseSignals
       ),
-      compiledPrompt.systemAddendum,
+      actionPrompt(action),
       rufloCouncil.text,
       routerGuidance,
       ...specialistPrompts(task)
@@ -708,6 +712,7 @@ export class AgentOrchestrator {
           "Use o conselho Ruflo completo como contexto consultivo.",
           "Se o contexto nao sustentar uma afirmacao, diga que nao ha evidencia no contexto fornecido e proponha a verificacao minima.",
           "Produza a resposta final diretamente com o modelo rapido; Nao use atalhos deterministicos, resposta pronta ou texto fixo.",
+          STATIC_POLICY_PROMPT,
           synapseModelQuestion
             ? "Para pergunta sobre modelos, preserve nomes exatos, perfis e usos do inventario fornecido."
             : "",
@@ -740,6 +745,7 @@ export class AgentOrchestrator {
         "Antes de decidir arquitetura, consulte ou recomende o BusinessSolutionAnalyzer e config/business_solution_analysis.json.",
         "Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou risco, pergunte ao usuario antes de implementar.",
         "A caixa de dialogo e o caminho principal; tasks VS Code sao atalhos opcionais.",
+        STATIC_POLICY_PROMPT,
         compiledPrompt.systemAddendum,
         "Nao diga que nao consultou o Ollama se esta resposta foi gerada por esta chamada.",
         "Se precisar de validacao real, recomende npm run check."

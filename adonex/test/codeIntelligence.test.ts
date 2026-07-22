@@ -52,6 +52,22 @@ test("code intelligence can request stronger local model profiles", () => {
       .modelProfile,
     "code_critical"
   );
+  assert.equal(
+    buildCodeIntelligence("implemente a feature com modelo forte 14b", [], [])
+      .modelProfile,
+    "code_strong"
+  );
+});
+
+test("code intelligence keeps default implementation on the CPU-friendly code model", () => {
+  // Sem pedido explicito de modelo denso, feature nao deve escalar para 14b.
+  const summary = buildCodeIntelligence(
+    "implemente uma nova feature de exportacao de relatorios",
+    [],
+    []
+  );
+  assert.equal(summary.taskKind, "feature");
+  assert.equal(summary.modelProfile, "code_review");
 });
 
 test("symbol summary extracts imports, exports, and declarations", () => {

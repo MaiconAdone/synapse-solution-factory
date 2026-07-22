@@ -165,9 +165,14 @@ function modelProfileFor(
   if (/\b(causa raiz|root cause|raciocinio|validacao logica|decisao final)\b/.test(text)) {
     return "reasoning_strong";
   }
+  // Modelos densos 14b so por pedido explicito: em maquina CPU-only o custo de
+  // latencia nao compensa como padrao; o lite MoE cobre implementacao comum.
+  if (/\b(14b|modelo forte|modelo strong|code strong)\b/.test(text)) {
+    return "code_strong";
+  }
   if (taskKind === "explanation" || taskKind === "documentation") return "general";
   if (taskKind === "architecture") return "planning_strong";
-  if (riskLevel === "high" || taskKind === "feature") return "code_strong";
+  if (riskLevel === "high" || taskKind === "feature") return "code_review";
   if (taskKind === "bugfix" || taskKind === "test" || taskKind === "security") return "code_review";
   return riskLevel === "low" ? "fast" : "balanced";
 }

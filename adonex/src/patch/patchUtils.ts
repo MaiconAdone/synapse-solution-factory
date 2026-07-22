@@ -56,6 +56,24 @@ export function applyPatchOperation(
 }
 
 /**
+ * Aplica uma sequencia de operations sobre conteudos conhecidos, encadeando
+ * operations do mesmo arquivo. Puro e testavel: o chamador fornece o conteudo
+ * atual de cada path (disco, preview ou fixture) e recebe o conteudo final.
+ * Conflitos de anchor/expected lancam erro antes de qualquer escrita.
+ */
+export function applyOperationsToContents(
+  operations: readonly ProposedPatchOperation[],
+  currentByPath: ReadonlyMap<string, string>
+): Map<string, string> {
+  const changed = new Map<string, string>();
+  for (const operation of operations) {
+    const current = changed.get(operation.path) ?? currentByPath.get(operation.path) ?? "";
+    changed.set(operation.path, applyPatchOperation(current, operation));
+  }
+  return changed;
+}
+
+/**
  * Substitui a primeira ocorrencia de `needle` por `replacement` sem interpretar
  * padroes especiais. String.prototype.replace com string de substituicao trata
  * sequencias `$&`, `$1`, `$$` etc. como referencias — o que corrompe codigo

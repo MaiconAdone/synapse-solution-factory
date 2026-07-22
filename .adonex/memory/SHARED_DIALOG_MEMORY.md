@@ -331,3 +331,16 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 
 ## 2026-07-22 - Claude Code
 - main do GitHub atualizada via fast-forward para cd3d81e: READMEs, Vick, AdoneX editor pro e remocao do MLflow agora visiveis na pagina inicial do repo.
+- [claude-code] 2026-07-22T11:27:59.5532498-03:00 chat AdoneX agora cria projetos ML/IA/Chatbolt/Hibrido pela mesma Solution Factory da Vick (briefing multi-turno -> analyzer gate -> create_ai_project.ps1); modulo novo adonex/src/chat/solutionFactory.ts; 186 testes ok
+
+## 2026-07-22 - Claude Code
+- Prefix cache do Ollama estabilizado no AdoneX: politicas estaticas movidas do user prompt (promptCompiler) para STATIC_POLICY_PROMPT no system prompt; ordem do system prompt reorganizada (estavel -> semi-estavel -> dinamico) no agentOrchestrator; synapseSystemContext agora usa faixa de confianca (high/medium/low) e linha volatil por ultimo. Objetivo: reduzir prompt-eval em CPU sem GPU. 188 testes ok.
+
+## 2026-07-22 - Claude Code
+- Ciclo editar->validar->corrigir fechado no Composer do AdoneX: apos Aplicar, o painel roda os comandos de validacao propostos (ate 3, com gate de aprovacao), e em falha gera UMA correcao automatica via proposeFix reutilizando plano/snapshot; correcao volta para revisao humana, exceto em modo autonomo Synapse (aplica e revalida so o comando que falhou, sem nova correcao). Novos: adonex/src/composer/validationLoop.ts (helpers puros), ComposerSession.repair(). 193 testes ok.
+
+## 2026-07-22 - Claude Code
+- Edits cirurgicos no AdoneX: PatchEngine.apply agora reaplica operations incrementais contra o disco ATUAL (edicoes manuais entre proposta e Apply sao preservadas; anchor ausente vira conflito explicito antes de escrever). ComposerSession.apply deixou de descartar operations (era operations: []) e passa as dos arquivos selecionados. Novo helper puro applyOperationsToContents em patch/patchUtils.ts. 195 testes ok.
+
+## 2026-07-22 - Claude Code
+- Router de modelos calibrado para CPU-only: feature/high-risk deixou de escalar para qwen2.5-coder:14b denso por padrao (agora deepseek-coder-v2:lite MoE via profile code_review; 14b/32b so por pedido explicito '14b/modelo forte/32b'); fallback de implement/fix saiu do 3b para o lite; analises synapse_architecture/pipeline/roadmap vao para balanced (lite). 3b segue para triagem/chat/resumo. Arquivos: context/codeIntelligence.ts, llm/localModels.ts. 197 testes ok.
