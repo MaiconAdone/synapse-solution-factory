@@ -29,7 +29,7 @@ import {
   updateTaskLifecycle
 } from "../tasks/taskLifecycle";
 import { TaskStore } from "../tasks/taskStore";
-import { resolveChatPrompt, routeChatCommand } from "../chat/chatRouting";
+import { resolveChatPrompt, routeChatCommand, shouldUseComposer } from "../chat/chatRouting";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
@@ -242,7 +242,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       } else if (message.type === "plan" && message.task && message.action && message.mode) {
         await this.createPlan(message.task, message.action, message.mode);
       } else if (message.type === "send" && message.task) {
-        await this.sendLocalChat(message.task);
+        await this.handleUnifiedRequest(message.task, message.mode);
       } else if (message.type === "mentionPick") {
         await this.pickMention();
       } else if (message.type === "selectAttachments") {
@@ -317,10 +317,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postVickStatus(this.vick.setState("asleep", "Vick voltou ao repouso."));
   }
 
-  /** Revela o painel e coloca a UI no modo Composer multi-arquivo. */
+  /** Compatibilidade: o antigo comando Composer agora foca o chat unificado. */
   public async openComposer(): Promise<void> {
     await this.reveal();
-    this.post({ type: "setView", view: "composer" });
+    this.post({ type: "focusPrompt" });
   }
 
   private composerMode(requested?: AgentMode): AgentMode {
@@ -335,7 +335,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const result = await this.composer.generate(
       task,
       this.composerMode(mode),
-      this.abortController.signal
+      this.abortController.signal,
+      (text) => this.postStep(text)
     );
     this.postComposerProposal(result);
   }
@@ -347,7 +348,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const result = await this.composer.refine(
       instruction,
       this.composerMode(mode),
-      this.abortController.signal
+      this.abortController.signal,
+      (text) => this.postStep(text)
     );
     this.postComposerProposal(result);
   }
@@ -393,6 +395,18 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postRuntimeState("idle", "Composer: ultima aplicacao revertida.");
   }
 
+  private async handleUnifiedRequest(prompt: string, requestedMode?: AgentMode): Promise<void> {
+    const route = routeChatCommand(undefined, prompt);
+    const resolved = resolveChatPrompt(prompt, route);
+    if (!resolved) return;
+    const mode = requestedMode ?? route.mode;
+    if (shouldUseComposer(route)) {
+      await this.composerGenerate(resolved, mode);
+      return;
+    }
+    await this.sendLocalChat(resolved);
+
+  }
   private async sendLocalChat(prompt: string): Promise<void> {
     const config = vscode.workspace.getConfiguration("adonex");
     if (!config.get<boolean>("ollama.enabled", true)) {
@@ -432,7 +446,9 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       attachmentContext
     ].filter(Boolean).join("\n\n");
     const model = profile.model;
-    this.post({ type: "status", text: `Gerando resposta com ${model}...` });
+    this.postStep(`Gerando resposta com ${model}...`);
+    const chatStartedAt = Date.now();
+    let chatTokensReported = 0;
     const response = await new OllamaClient({
       baseUrl,
       model,
@@ -444,7 +460,21 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       topP: profile.topP,
       repeatPenalty: profile.repeatPenalty,
       maxRetries: config.get<number>("ollama.maxRetries", 2),
-      retryDelayMs: config.get<number>("ollama.retryDelayMs", 250)
+      retryDelayMs: config.get<number>("ollama.retryDelayMs", 250),
+      logger: (event) => {
+        if (event.type === "first_token") {
+          this.postStep(
+            `Primeiro token apos ${Math.round((event.durationMs ?? 0) / 1000)}s; escrevendo...`
+          );
+        }
+      },
+      onToken: (tokens) => {
+        if (tokens - chatTokensReported >= 48) {
+          chatTokensReported = tokens;
+          const elapsed = Math.round((Date.now() - chatStartedAt) / 1000);
+          this.postStep(`Gerando... ~${tokens} tokens (${elapsed}s)`);
+        }
+      }
     }).generate({
       systemPrompt: SYNAPSE_SPECIALIST_SYSTEM,
       userPrompt: safePrompt,
@@ -746,7 +776,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.pending.mode,
       this.pending.plan,
       this.pending.snapshot,
-      { signal: this.abortController?.signal }
+      {
+        signal: this.abortController?.signal,
+        onProgress: (text) => this.postStep(text)
+      }
     );
     this.ensureNotCancelled();
     this.proposal = execution.proposal;
@@ -978,7 +1011,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.pending.mode,
       this.pending.plan,
       refreshedSnapshot,
-      { signal: this.abortController?.signal }
+      {
+        signal: this.abortController?.signal,
+        onProgress: (text) => this.postStep(text)
+      }
     );
     if (!execution.proposal?.changes.length) {
       throw new Error("AdoneX did not produce a correction patch.");
@@ -1097,6 +1133,14 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
 
   private post(message: Record<string, unknown>): void {
     void this.view?.webview.postMessage(message);
+  }
+
+  /**
+   * Modo pensativo: cada passo do pipeline vira uma linha na bolha "pensando"
+   * do chat (ou no status do Composer). Narracao gerada pelo host, custo zero.
+   */
+  private postStep(text: string): void {
+    this.post({ type: "step", text });
   }
 
   private postVickStatus(status: {
@@ -1299,10 +1343,7 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
       </div>
     </div>
     <div class="toolbar">
-      <div class="view-toggle" role="tablist" aria-label="Modo do painel">
-        <button id="viewChat" class="view-tab active" type="button" role="tab" aria-selected="true">Chat</button>
-        <button id="viewComposer" class="view-tab" type="button" role="tab" aria-selected="false">Composer</button>
-      </div>
+
       <select id="mode" aria-label="Agent mode">
         <option value="economic"${selected("economic")}>Economic</option>
         <option value="balanced"${selected("balanced")}>Local Balanced</option>
@@ -1320,12 +1361,12 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
       </div>
     </section>
     <section id="composerView" class="composer-view" hidden aria-label="Composer multi-arquivo">
-      <div class="composer-intro">
+      <div class="composer-intro" hidden>
         <strong>Composer multi-arquivo</strong>
         <p>Descreva a solucao ou feature. O AdoneX planeja, gera e deixa voce revisar e aplicar as mudancas arquivo a arquivo, 100% local.</p>
       </div>
-      <textarea id="composerGoal" rows="4" placeholder="Ex.: crie um endpoint FastAPI /health com teste e registre no roteador principal..."></textarea>
-      <div class="composer-actions">
+      <textarea id="composerGoal" hidden rows="4" placeholder="Ex.: crie um endpoint FastAPI /health com teste e registre no roteador principal..."></textarea>
+      <div class="composer-actions" hidden>
         <button id="composerGenerate" class="primary" type="button">Gerar proposta</button>
         <button id="composerCancel" class="ghost" type="button" hidden>Cancelar</button>
       </div>
@@ -1366,7 +1407,7 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
     <div class="composer-input-row">
       <button id="attach" class="icon-button" type="button" aria-label="Carregar arquivos e imagens" title="Carregar arquivos e imagens"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5 8.9 14.1a3 3 0 0 0 4.2 4.2l7.1-7.1a5 5 0 0 0-7.1-7.1L5.6 11.6a7 7 0 0 0 9.9 9.9l5.3-5.3"/></svg></button>
       <button id="mention" class="icon-button mention-button" type="button" aria-label="Adicionar contexto por mencao" title="Adicionar contexto: @arquivo, @selection, @file">@</button>
-      <textarea id="prompt" rows="3" placeholder="Digite sua mensagem... use @ para citar arquivos"></textarea>
+      <textarea id="prompt" rows="3" placeholder="Converse, peça alterações ou implemente recursos... use @ para citar arquivos"></textarea>
       <button id="memory" class="icon-button" type="button" aria-label="Abrir memoria compartilhada" title="Memoria compartilhada: AdoneX, Claude Code e Codex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h11a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 8.5 4.8 4.8 0 0 0 7 18Z"/><path d="M9 13h6M12 10v6"/></svg></button>
       <button id="send" class="primary" type="button" aria-label="Enviar mensagem">Enviar</button>
     </div>

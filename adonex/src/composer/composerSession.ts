@@ -61,21 +61,23 @@ export class ComposerSession {
   public async generate(
     task: string,
     mode: AgentMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
   ): Promise<ComposerGenerateResult> {
     const safeTask = scanAndRedactSecrets(task).redacted.trim();
     if (!safeTask) throw new Error("Descreva a solucao ou feature antes de gerar.");
     this.history = [safeTask];
-    return this.runGeneration(safeTask, mode, signal);
+    return this.runGeneration(safeTask, mode, signal, onProgress);
   }
 
   public async refine(
     instruction: string,
     mode: AgentMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
   ): Promise<ComposerGenerateResult> {
     if (!this.history.length) {
-      return this.generate(instruction, mode, signal);
+      return this.generate(instruction, mode, signal, onProgress);
     }
     const safe = scanAndRedactSecrets(instruction).redacted.trim();
     if (!safe) throw new Error("Descreva o ajuste antes de refinar a proposta.");
@@ -89,15 +91,17 @@ export class ComposerSession {
       "",
       "Gere a proposta multi-arquivo consolidada considerando todos os ajustes."
     ].join("\n");
-    return this.runGeneration(combined, mode, signal);
+    return this.runGeneration(combined, mode, signal, onProgress);
   }
 
   private async runGeneration(
     task: string,
     mode: AgentMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
   ): Promise<ComposerGenerateResult> {
     const previousSelection = new Set(this.selection);
+    onProgress?.("Planejando a mudanca multi-arquivo...");
     const { plan, snapshot } = await this.orchestrator.createPlan(
       task,
       "implement",
@@ -110,7 +114,7 @@ export class ComposerSession {
       mode,
       plan,
       snapshot,
-      { signal }
+      { signal, onProgress }
     );
     if (!execution.proposal || !execution.proposal.changes.length) {
       this.proposal = execution.proposal;

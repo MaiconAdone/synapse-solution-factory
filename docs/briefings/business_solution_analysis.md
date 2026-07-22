@@ -2,11 +2,11 @@
 
 - Requested universe: ia
 - Recommended universe: ia
-- Domain: developer_productivity (score 2)
+- Domain: developer_productivity (score 1)
 - ML archetype: unknown (score 0)
 - AI archetype: voice_coding_agent (score 1)
 - Solution stack: data_treatment, tests, evals, governance, rag, agents, guardrails, token_cost_control, local_llm_routing
-- Technology layer: fastapi, ollama, mcp-servers
+- Technology layer: ollama, mcp-servers, fastapi
 
 ## Architecture Decision
 
@@ -17,7 +17,6 @@ Create an AI project with RAG and/or governed agents, tool boundaries, MCP-ready
 ### Pipelines
 
 - solution_discovery: business_problem, universe_classification, technology_selection, sdd_gate
-- mlops: baseline, train, track, register, monitor
 
 ### Templates
 

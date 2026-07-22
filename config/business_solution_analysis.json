@@ -4,15 +4,15 @@
   "requested_universe": "ia",
   "recommended_universe": "ia",
   "dialog_context": {
-    "project_goal": "Manter Chat e Composer do AdoneX na Secondary Sidebar junto de Codex e Claude Code, com somente a Administracao na Activity Bar",
-    "business_problem": "Centralizar a administracao do AdoneX sem deslocar sua caixa de dialogo do conjunto de assistentes",
-    "success_metric_or_acceptance_criteria": "Activity Bar exibe somente Administracao; Secondary Sidebar mantem Chat e Composer; integracoes e credenciais permanecem funcionais e protegidas",
-    "available_data_or_knowledge_sources": "Extensao AdoneX existente, FastAPI Synapse Gateway, Ollama, APIs empresariais e servidores MCP stdio HTTP SSE e Streamable HTTP",
+    "project_goal": "Unificar Chat e Composer do AdoneX em uma unica caixa de dialogo com deteccao automatica da intencao",
+    "business_problem": "Eliminar a escolha manual entre Chat e Composer sem perder revisao de patches e aprovacao humana",
+    "success_metric_or_acceptance_criteria": "Interface exibe uma unica caixa de dialogo; pedidos de implementacao abrem automaticamente a revisao interna; perguntas continuam no chat; escrita exige confirmacao",
+    "available_data_or_knowledge_sources": "Roteador de chat, Composer, Ollama local, contexto do workspace e testes existentes do AdoneX",
     "risk_level": "alto"
   },
   "domain": {
     "id": "developer_productivity",
-    "score": 2
+    "score": 1
   },
   "ml_archetype": {
     "id": "unknown",
@@ -54,9 +54,9 @@
     "active": true,
     "universe": "ia",
     "recommended_technology_ids": [
-      "fastapi",
       "ollama",
-      "mcp-servers"
+      "mcp-servers",
+      "fastapi"
     ],
     "recommended_technologies": [
       {
@@ -140,16 +140,11 @@
       }
     ],
     "categories": [
-      "mlops",
       "api_backend",
       "local_llm_runtime",
       "tool_context_protocol"
     ],
     "capabilities": [
-      "experiments",
-      "model_registry",
-      "metrics",
-      "artifacts",
       "api",
       "backend",
       "typed_contracts",
@@ -186,13 +181,14 @@
       "langgraph",
       "openai-agents-sdk",
       "pydantic-ai",
-      "llamaindex",
-      "mcp-sdks"
+      "mcp-sdks",
+      "crewai",
+      "autogen"
     ],
     "technology_ids": [
-      "fastapi",
       "ollama",
-      "mcp-servers"
+      "mcp-servers",
+      "fastapi"
     ],
     "components": [
       "api_gateway",
@@ -212,16 +208,6 @@
         "universe_classification",
         "technology_selection",
         "sdd_gate"
-      ]
-    },
-    {
-      "id": "mlops",
-      "stages": [
-        "baseline",
-        "train",
-        "track",
-        "register",
-        "monitor"
       ]
     }
   ],
@@ -285,6 +271,6 @@
     "tests/test_data_contract.py",
     "tests/test_ai_contract.py"
   ],
-  "project": "synapse-adonex-control-center",
+  "project": "synapse-adonex-unified-chat",
   "source": "scripts/analyze_business_solution.py"
 }

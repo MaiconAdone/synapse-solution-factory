@@ -32,6 +32,12 @@ export interface OllamaClientOptions {
   maxRetries?: number;
   retryDelayMs?: number;
   logger?: (event: OllamaClientEvent) => void;
+  /**
+   * Progresso de geracao ao vivo: chamado com o total aproximado de tokens ja
+   * recebidos (1 linha de streaming ~= 1 token no /api/chat). Alimenta o modo
+   * pensativo da UI sem custo extra de modelo.
+   */
+  onToken?: (tokens: number) => void;
 }
 
 export class OllamaClient {
@@ -226,10 +232,15 @@ export class OllamaClient {
         body: JSON.stringify(payload),
         signal: controller.signal
       });
+      const body = await response.text();
+      if (this.options.onToken) {
+        const lines = body.split("\n").filter((line) => line.trim()).length;
+        this.options.onToken(lines);
+      }
       return {
         ok: response.ok,
         status: response.status,
-        body: await response.text()
+        body
       };
     } finally {
       clearTimeout(timeout);
@@ -272,10 +283,18 @@ export class OllamaClient {
         (response) => {
           const chunks: Buffer[] = [];
           let receivedFirstChunk = false;
+          let streamedLines = 0;
           response.on("data", (chunk: Buffer) => {
             if (!receivedFirstChunk) {
               receivedFirstChunk = true;
               onFirstChunk?.();
+            }
+            if (this.options.onToken) {
+              const text = chunk.toString("utf8");
+              for (let index = 0; index < text.length; index += 1) {
+                if (text[index] === "\n") streamedLines += 1;
+              }
+              this.options.onToken(streamedLines);
             }
             chunks.push(chunk);
           });

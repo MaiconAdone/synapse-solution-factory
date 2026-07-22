@@ -223,3 +223,43 @@ test("ollama client exposes the underlying fetch failure cause", async () => {
     /ECONNREFUSED/
   );
 });
+
+test("ollama client reports streamed token progress via onToken", async () => {
+  const reported: number[] = [];
+  const streamedBody = [
+    JSON.stringify({ message: { content: "a" } }),
+    JSON.stringify({ message: { content: "b" } }),
+    JSON.stringify({ message: { content: "c" }, eval_count: 3 })
+  ].join("\n");
+  const client = new OllamaClient({
+    baseUrl: "http://localhost:11434",
+    model: "qwen-test",
+    onToken: (tokens) => reported.push(tokens),
+    fetcher: async () =>
+      new Response(streamedBody, {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      })
+  });
+  const result = await client.generate({ systemPrompt: "s", userPrompt: "u" });
+  assert.equal(result.text, "abc");
+  assert.deepEqual(reported, [3]);
+});
+
+test("ollama client passes jsonSchema as the format field", async () => {
+  let payload: Record<string, unknown> = {};
+  const schema = { type: "object", properties: { x: { type: "string" } } };
+  const client = new OllamaClient({
+    baseUrl: "http://localhost:11434",
+    model: "qwen-test",
+    fetcher: async (_input, init) => {
+      payload = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({ message: { content: "{}" } }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+  });
+  await client.generate({ systemPrompt: "s", userPrompt: "u", jsonSchema: schema });
+  assert.deepEqual(payload.format, schema);
+});

@@ -110,6 +110,10 @@ export function routeChatCommand(command?: string, prompt = ""): ChatRoute {
   return inferNaturalLanguageRoute(prompt);
 }
 
+export function shouldUseComposer(route: ChatRoute): boolean {
+  return route.governed && route.action === "implement";
+}
+
 export function resolveChatPrompt(
   prompt: string,
   route: ChatRoute

@@ -5,7 +5,8 @@ import {
   parseChatInput,
   renderSolutionFactoryMissingInfo,
   resolveChatPrompt,
-  routeChatCommand
+  routeChatCommand,
+  shouldUseComposer
 } from "../src/chat/chatRouting";
 
 test("chat routing keeps side effects behind the governed panel", () => {
@@ -168,4 +169,9 @@ test("advanced slash commands preserve governance boundaries", () => {
   assert.equal(routeChatCommand("search").governed, false);
   assert.equal(routeChatCommand("improve").action, "implement");
   assert.equal(routeChatCommand("improve").governed, true);
+});
+test("unified chat sends implementation requests to the internal Composer", () => {
+  assert.equal(shouldUseComposer(routeChatCommand(undefined, "adicione um endpoint com testes")), true);
+  assert.equal(shouldUseComposer(routeChatCommand(undefined, "explique a arquitetura")), false);
+  assert.equal(shouldUseComposer(routeChatCommand(undefined, "execute os testes")), false);
 });

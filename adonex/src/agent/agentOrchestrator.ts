@@ -6,7 +6,11 @@ import { WorkspaceContext } from "../context/workspaceContext";
 import { estimateCost, estimateTokenCost } from "../cost/costGuard";
 import { synapseSystemContext } from "../synapse/synapseProfile";
 import { buildRufloCouncilContext } from "../synapse/rufloCouncil";
-import { OllamaClient, OllamaClientError } from "../llm/ollamaClient";
+import {
+  OllamaClient,
+  OllamaClientError,
+  type OllamaClientEvent
+} from "../llm/ollamaClient";
 import { SynapseGatewayClient, SynapseGatewayClientError } from "../llm/synapseGatewayClient";
 import { normalizeOllamaBaseUrl } from "../llm/ollamaEndpoint";
 import {
@@ -166,13 +170,24 @@ export class AgentOrchestrator {
     mode: AgentMode,
     plan: TaskPlan,
     snapshot: WorkspaceSnapshot,
-    options: { signal?: AbortSignal } = {}
+    options: { signal?: AbortSignal; onProgress?: (text: string) => void } = {}
   ): Promise<AgentExecution> {
     const configuration = vscode.workspace.getConfiguration("adonex");
+    // Modo pensativo: o pipeline narra os proprios passos (custo zero de modelo).
+    const progress = (text: string): void => {
+      try {
+        options.onProgress?.(text);
+      } catch {
+        // narracao nunca pode quebrar a execucao
+      }
+    };
     this.lastCodeModelProfile = snapshot.codeIntelligence?.modelProfile;
     const fullRufloLocalQuestion = this.isSynapseSystemQuestion(task, action);
     const workspaceBudget = this.workspaceBudgetForAction(action);
     let workspaceText = formatWorkspaceSnapshot(snapshot, workspaceBudget);
+    progress(
+      `Contexto coletado: ${snapshot.relevantFiles.length} arquivo(s) relevante(s), ~${Math.round(workspaceText.length / 1000)}k chars`
+    );
     const rufloLocalProfile = this.selectOllamaProfile(action, task, configuration);
     const rufloCouncil = buildRufloCouncilContext(snapshot.root, task, {
       enabled:
@@ -234,10 +249,21 @@ export class AgentOrchestrator {
       );
       if (graphFocus.length) {
         routerDecision = { focusFiles: graphFocus, strategy: "", roles: [] };
+        progress(`Foco por grafo de simbolos: ${graphFocus.join(", ")}`);
       }
     }
     // Fallback: sub-agent 3B roteia foco/estrategia quando o grafo nao decidiu.
     if (!routerDecision) {
+      const routerWillRun =
+        requiresJsonProposal(action) &&
+        shouldRunRouter(
+          configuration.get<boolean>("synapse.router.enabled", false),
+          configuration.get<number>("synapse.router.autoThreshold", 3),
+          snapshot.relevantFiles.length
+        );
+      if (routerWillRun) {
+        progress("Router local (3B) escolhendo arquivos-foco e estrategia...");
+      }
       routerDecision = await this.tryRouterAgent(
         task,
         action,
@@ -245,6 +271,9 @@ export class AgentOrchestrator {
         configuration,
         options.signal
       );
+      if (routerDecision?.focusFiles.length) {
+        progress(`Foco do router: ${routerDecision.focusFiles.join(", ")}`);
+      }
     }
     const routerGuidance = routerDecision
       ? formatRouterGuidance(routerDecision)
@@ -260,7 +289,17 @@ export class AgentOrchestrator {
         routerDecision.focusFiles,
         workspaceBudget
       );
-      if (narrowed) workspaceText = narrowed;
+      if (narrowed) {
+        progress(
+          `Contexto estreitado para os arquivos-foco (~${Math.round(narrowed.length / 1000)}k chars)`
+        );
+        workspaceText = narrowed;
+      }
+    }
+    if (rufloCouncil.enabled && rufloCouncil.leadAgent) {
+      progress(
+        `Council Ruflo: lider ${rufloCouncil.leadAgent.id} + ${Math.max(0, rufloCouncil.activeAgents - 1)} revisor(es)`
+      );
     }
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
@@ -322,6 +361,8 @@ export class AgentOrchestrator {
       );
       const selectedProfile = this.selectOllamaProfile(action, task, configuration);
       const selectedModel = selectedProfile.model;
+      const startedAt = Date.now();
+      let lastReportedTokens = 0;
       const clientOptions = {
         baseUrl: normalizeOllamaBaseUrl(configuration.get<string>(
           "ollama.baseUrl",
@@ -339,7 +380,26 @@ export class AgentOrchestrator {
         topP: selectedProfile.topP,
         repeatPenalty: selectedProfile.repeatPenalty,
         maxRetries: configuration.get<number>("ollama.maxRetries", 2),
-        retryDelayMs: configuration.get<number>("ollama.retryDelayMs", 250)
+        retryDelayMs: configuration.get<number>("ollama.retryDelayMs", 250),
+        // Modo pensativo: eventos do cliente viram passos visiveis na UI.
+        logger: (event: OllamaClientEvent): void => {
+          if (event.type === "request") {
+            progress(`Chamando ${event.model} (lendo o prompt)...`);
+          } else if (event.type === "first_token") {
+            progress(
+              `Primeiro token apos ${Math.round((event.durationMs ?? 0) / 1000)}s; escrevendo a resposta...`
+            );
+          } else if (event.type === "retry") {
+            progress("Falha transitoria do Ollama; tentando de novo...");
+          }
+        },
+        onToken: (tokens: number): void => {
+          if (tokens - lastReportedTokens >= 48) {
+            lastReportedTokens = tokens;
+            const elapsed = Math.round((Date.now() - startedAt) / 1000);
+            progress(`Gerando... ~${tokens} tokens (${elapsed}s)`);
+          }
+        }
       };
       try {
         return await new OllamaClient(clientOptions).generate({
@@ -362,9 +422,15 @@ export class AgentOrchestrator {
     };
 
     const response = await runModel(request);
+    if (wantsProposal) progress("Interpretando a proposta JSON do modelo...");
     const proposal = wantsProposal
-      ? await this.parseProposalWithRepair(response, request, runModel)
+      ? await this.parseProposalWithRepair(response, request, runModel, progress)
       : undefined;
+    if (proposal) {
+      progress(
+        `Proposta pronta: ${proposal.changes.length} arquivo(s), ${proposal.operations?.length ?? 0} operacao(oes)`
+      );
+    }
 
     return {
       plan,
@@ -396,12 +462,14 @@ export class AgentOrchestrator {
       seed?: number;
       signal?: AbortSignal;
     },
-    runModel: (req: typeof request) => Promise<LlmResponse>
+    runModel: (req: typeof request) => Promise<LlmResponse>,
+    onProgress?: (text: string) => void
   ): Promise<ImplementationProposal> {
     try {
       return parseProposalText(response.text);
     } catch (firstError) {
       try {
+        onProgress?.("JSON invalido; pedindo ao modelo a versao corrigida...");
         const repaired = await runModel({
           ...request,
           userPrompt: buildProposalRepairPrompt(response.text),
@@ -426,7 +494,7 @@ export class AgentOrchestrator {
     mode: AgentMode,
     plan: TaskPlan,
     snapshot: WorkspaceSnapshot,
-    options: { signal?: AbortSignal } = {}
+    options: { signal?: AbortSignal; onProgress?: (text: string) => void } = {}
   ): Promise<AgentExecution> {
     const fixPrompt = [
       `Original task:\n${originalTask}`,

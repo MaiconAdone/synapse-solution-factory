@@ -12,6 +12,9 @@ AdoneX neste workspace Synapse.
 
 ## Recent Dialog Context
 
+- 2026-07-22 | Codex | done | AdoneX 0.7.14 unificou Chat e Composer em uma unica caixa de dialogo. O roteador identifica pedidos de implementacao e aciona o Composer internamente; a revisao aparece apenas quando existe proposta, mantendo selecao de arquivos, refinamento, aplicacao e undo. Perguntas seguem no chat local e escrita continua sob confirmacao humana. Suite 177/177 passou.
+
+
 - 2026-07-21 | Codex | done | Descricao publica da extensao AdoneX corrigida para UTF-8, removendo mojibake de memoria e integracao. Versao 0.7.5 empacotada e instalada no VS Code.
 
 
@@ -319,3 +322,12 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - Envio textual agora consulta diretamente o Ollama local e exibe a resposta; Vick permanece exclusiva da interface web.
 - Validacao: compilacao e 118 testes aprovados.
 
+
+## 2026-07-22 - Claude Code
+- READMEs (raiz e adonex) alinhados com Vick (voz/telemetria/progresso) e AdoneX editor pro; commit c603654 pushed em agent/harmonize-governance.
+
+## 2026-07-22 - Claude Code
+- Integracao MLflow removida do Synapse (backend, frontend, compose, tasks, factory, docs); agente renomeado para experiment-tracking-specialist; registry local em artifacts/models segue oficial. Commit 8fc4c1c pushed. Pendente: remover linhas MLFLOW_* do .env.example (arquivo protegido por permissao).
+
+## 2026-07-22 - Claude Code
+- main do GitHub atualizada via fast-forward para cd3d81e: READMEs, Vick, AdoneX editor pro e remocao do MLflow agora visiveis na pagina inicial do repo.
