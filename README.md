@@ -6,17 +6,59 @@ core. Synapse is the control plane and the only project factory.
 ## Interfaces Oficiais
 
 O Synapse funciona de forma independente no navegador e no VS Code, com o
-mesmo nucleo de agentes, projetos, dados, evals e governanca. Consulte
+mesmo nucleo de agentes, projetos, dados, evals e governanca. No navegador a
+interface e a Vick, assistente de voz web. No VS Code os canais sao o VS Code
+Chat, o AdoneX, o Claude Code e o Codex. Consulte
 `docs/dual-interface-contract.md`.
 
 ## Stack Oficial No VS Code
 
-- Codex no VS Code para dialogo, implementacao e revisao.
+- Quatro canais oficiais de dialogo: VS Code Chat, AdoneX, Claude Code e Codex,
+  todos ligados a mesma Solution Factory, memoria compartilhada e governanca.
+- Separacao de provedores: AdoneX usa exclusivamente Ollama local; Claude Code
+  usa Anthropic diretamente; Codex usa OpenAI. Nenhum canal delega geracao ao
+  provedor do outro.
+- Memoria compartilhada entre canais em `.adonex/memory/SHARED_DIALOG_MEMORY.md`,
+  `.adonex/memory/CHAT_TASKS.md` e MCP `synapse-peers`.
 - Ruflo com swarm hierarchical-mesh, 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
 - Project Factory em `scripts/create_ai_project.ps1`.
 - Memoria hibrida working/episodic/semantic.
 - RAG e Vector DB em `vector_db/`.
 - MLflow e FastAPI apenas como runtimes internos quando necessario.
+
+## Vick - Assistente De Voz Web
+
+A Vick e a interface de navegador do Synapse, um assistente de voz que roda no
+frontend Next.js e conversa com o mesmo nucleo de governanca dos demais canais.
+
+- Chat por voz e texto via `POST /api/vick/chat`, com Whisper local para
+  transcricao e Web Speech para sintese.
+- Cockpit de telemetria via `GET /api/vick/telemetry`: custo do dia, atividade
+  ao vivo e gastos/tokens de Codex e Claude Code lidos do ledger de roteamento
+  LLM e da memoria compartilhada.
+- Narracao segura de progresso dos assistentes via `GET /api/vick/progress`,
+  com quality gates de voz e tolerancia a desconexoes do polling.
+- Acoes de projeto pela conversa: abrir, analisar, melhorar e editar projetos.
+  A edicao real usa a ponte HTTP local do AdoneX (`127.0.0.1` + token).
+- Autostart opcional controlado por `scripts/toggle_vick_autostart.py`.
+
+## AdoneX - Editor Pro Local
+
+O AdoneX e a extensao do VS Code em `adonex/`, um agente de engenharia 100%
+local que usa exclusivamente modelos do Ollama. Nenhum prompt do AdoneX vai
+para provedores de nuvem. Consulte `adonex/README.md`.
+
+- Composer agentico multi-arquivo: plano, proposta, revisao por arquivo com
+  diff nativo e aplicacao seletiva com backup e rollback.
+- Edicao inline (`Ctrl+Alt+K`): reescreve somente a selecao com undo nativo.
+- Autocomplete inline ghost text via fill-in-middle no Ollama, com debounce,
+  cancelamento e timeout.
+- Contexto rico por mencoes: `@arquivo`, `@selection`, `@file` e `@editor`.
+- Chat especialista Synapse, botao parar e indicador de andamento no painel.
+- Router agent e control center para roteamento economico e administracao
+  local dos perfis Ollama.
+- Ponte HTTP opcional para a Vick, desativada por padrao, apenas em
+  `127.0.0.1` e com token obrigatorio.
 
 ## Arquitetura Dos Projetos
 

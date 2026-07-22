@@ -34,6 +34,25 @@ O AdoneX usa exclusivamente o Ollama. OpenAI/Codex e Anthropic/Claude Code sao c
 - Ferramentas MCP e integração com o assistente de voz Vick.
 - Memória compartilhada entre AdoneX, VS Code Chat, Claude Code e Codex.
 
+## Editor pro local
+
+O AdoneX funciona como editor de código profissional com modelos locais:
+
+- **Composer agêntico multi-arquivo** (`AdoneX: Open Composer`): plano →
+  proposta → revisão por arquivo (badge create/modify/delete, +/−, diff
+  nativo) → aplicação seletiva com backup e rollback.
+- **Edição inline** (`Ctrl+Alt+K`): reescreve somente a seleção via
+  WorkspaceEdit, com undo nativo; bloqueia secrets e caminhos sensíveis.
+- **Autocomplete inline** (ghost text): fill-in-middle 100% local via Ollama,
+  com debounce, cancelamento e timeout. Configurável em
+  `adonex.inlineCompletion.*` e `adonex.inlineEdit.*`.
+- **Contexto rico por menções**: `@arquivo`, `@selection`, `@file` e `@editor`
+  viram contexto no chat; botão `@` com QuickPick.
+- **Painel de chat**: chat especialista Synapse, botão parar funcional e
+  indicador de andamento das execuções.
+- **Router agent e control center**: roteamento econômico entre perfis locais
+  do Ollama e administração local das execuções.
+
 ## Modos locais
 
 - **Econômico**: tarefas rápidas e respostas curtas em modelo local leve.
