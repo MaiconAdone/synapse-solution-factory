@@ -1,4 +1,4 @@
-﻿# Shared Dialog Memory
+# Shared Dialog Memory
 
 Memoria persistente local compartilhada por VS Code Chat, Codex, Claude Code e
 AdoneX neste workspace Synapse.
@@ -11,6 +11,14 @@ AdoneX neste workspace Synapse.
 - Usar `synapse-peers` para mensagens curtas entre sessoes ativas.
 
 ## Recent Dialog Context
+
+- 2026-07-21 | Codex | done | Descricao publica da extensao AdoneX corrigida para UTF-8, removendo mojibake de memoria e integracao. Versao 0.7.5 empacotada e instalada no VS Code.
+
+
+- 2026-07-21 | Codex | done | Servico local de voz da Vick passou a tratar BrokenPipeError, ConnectionAbortedError e ConnectionResetError como desconexoes normais do polling /events, evitando traceback WinError 10053 sem ocultar outros erros de socket. Teste focado 2/2 passou e py_compile validou o servico.
+
+
+- 2026-07-21 | Codex | done | AdoneX 0.7.4 separado corretamente: Activity Bar contem somente o centro de Administracao (Configuracoes, APIs, MCP, Modelos Ollama, Memoria e Diagnostico), enquanto Chat/Composer voltou para a Secondary Sidebar junto de Codex e Claude Code. Credenciais usam SecretStorage; MCP permanece desativado por padrao e diagnostico nao executa stdio.
 
 - 2026-07-21 | Codex | done | Nuvem do chat AdoneX evoluida para continuidade entre assistentes: abre painel interno com historico unificado de `SHARED_DIALOG_MEMORY.md` e `CHAT_TASKS.md`, identifica origem/estado, prioriza pending/received/briefing/blocked e permite selecionar `Continuar com AdoneX local`. Retomada consulta memoria/workspace e entra no fluxo governado, mantendo confirmacao humana para patches/comandos. AdoneX 0.6.19 recompilado, 118/118 testes passaram, VSIX reinstalado.
 

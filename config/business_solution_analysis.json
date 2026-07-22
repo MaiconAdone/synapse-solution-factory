@@ -2,53 +2,40 @@
   "schema": "synapse-business-solution-analysis.v1",
   "status": "analyzed",
   "requested_universe": "ia",
-  "recommended_universe": "hybrid",
+  "recommended_universe": "ia",
   "dialog_context": {
-    "project_goal": "Fixar uma caixa de dialogo exclusiva do AdoneX ao lado das abas Claude Code, Chat e Codex no VS Code",
-    "business_problem": "Dar acesso direto e permanente ao chat local do AdoneX no mesmo conjunto visual dos demais assistentes",
-    "success_metric_or_acceptance_criteria": "A aba ADONEX fica visivel e fixa ao lado de Claude Code, Chat e Codex, abre o chat exclusivo e preserva o historico",
-    "available_data_or_knowledge_sources": "Extensao AdoneX existente e imagem de referencia fornecida pelo usuario",
-    "risk_level": "baixo"
+    "project_goal": "Manter Chat e Composer do AdoneX na Secondary Sidebar junto de Codex e Claude Code, com somente a Administracao na Activity Bar",
+    "business_problem": "Centralizar a administracao do AdoneX sem deslocar sua caixa de dialogo do conjunto de assistentes",
+    "success_metric_or_acceptance_criteria": "Activity Bar exibe somente Administracao; Secondary Sidebar mantem Chat e Composer; integracoes e credenciais permanecem funcionais e protegidas",
+    "available_data_or_knowledge_sources": "Extensao AdoneX existente, FastAPI Synapse Gateway, Ollama, APIs empresariais e servidores MCP stdio HTTP SSE e Streamable HTTP",
+    "risk_level": "alto"
   },
   "domain": {
     "id": "developer_productivity",
-    "score": 1
+    "score": 2
   },
   "ml_archetype": {
-    "id": "document_intelligence",
-    "label": "Document, NLP and computer vision intelligence",
-    "score": 1,
-    "matched_keywords": [
-      "imagem"
-    ],
-    "techniques": [
-      "nlp",
-      "computer_vision",
-      "ocr",
-      "deep_learning",
-      "human_review"
-    ],
-    "metrics": [
-      "accuracy",
-      "entity_f1",
-      "ocr_error_rate",
-      "human_review_rate"
-    ]
+    "id": "unknown",
+    "label": "Unknown",
+    "score": 0,
+    "matched_keywords": [],
+    "techniques": [],
+    "metrics": []
   },
   "ai_archetype": {
-    "id": "chatbot",
-    "label": "Conversational chatbot",
-    "score": 2,
+    "id": "voice_coding_agent",
+    "label": "Voice-driven agentic coding assistant",
+    "score": 1,
     "matched_keywords": [
-      "chatbot",
-      "chat"
+      "adonex"
     ],
     "techniques": [],
     "metrics": [
-      "containment_rate",
-      "handoff_quality",
-      "csat",
-      "safety_refusal_quality"
+      "task_success_rate",
+      "patch_test_pass_rate",
+      "human_approval_rate",
+      "rollback_success_rate",
+      "p95_task_latency_ms"
     ]
   },
   "solution_stack": [
@@ -56,13 +43,6 @@
     "tests",
     "evals",
     "governance",
-    "mlops",
-    "nlp",
-    "computer_vision",
-    "ocr",
-    "deep_learning",
-    "human_review",
-    "chatbot",
     "rag",
     "agents",
     "guardrails",
@@ -72,91 +52,14 @@
   "technology_layer": {
     "schema": "synapse-technology-layer.v1",
     "active": true,
-    "universe": "hybrid",
+    "universe": "ia",
     "recommended_technology_ids": [
-      "langflow",
-      "flowise",
-      "dify",
-      "ollama",
       "mlflow",
       "fastapi",
+      "ollama",
       "mcp-servers"
     ],
     "recommended_technologies": [
-      {
-        "id": "langflow",
-        "name": "LangFlow",
-        "category": "visual_llm_builder",
-        "capabilities": [
-          "visual_flows",
-          "llm",
-          "rag",
-          "prototyping"
-        ],
-        "best_for": [
-          "visual_prototyping",
-          "operator_editable_flows"
-        ],
-        "select_when": [
-          "visual",
-          "builder",
-          "prototype",
-          "langflow"
-        ],
-        "templates": [
-          "templates/no_code/langflow_export.json"
-        ]
-      },
-      {
-        "id": "flowise",
-        "name": "Flowise",
-        "category": "visual_llm_builder",
-        "capabilities": [
-          "visual_flows",
-          "llm",
-          "rag",
-          "tools"
-        ],
-        "best_for": [
-          "rapid_prototyping",
-          "operator_editable_pipelines"
-        ],
-        "select_when": [
-          "visual",
-          "flowise",
-          "chain builder",
-          "operator"
-        ],
-        "templates": [
-          "templates/no_code/flowise_chatflow.json"
-        ]
-      },
-      {
-        "id": "dify",
-        "name": "Dify",
-        "category": "llm_app_platform",
-        "capabilities": [
-          "llm_apps",
-          "chatbots",
-          "workflows",
-          "rag",
-          "observability"
-        ],
-        "best_for": [
-          "no_code_llm_apps",
-          "ops_ui",
-          "chatbot_workflows"
-        ],
-        "select_when": [
-          "no-code",
-          "chatbot",
-          "ops ui",
-          "dify"
-        ],
-        "templates": [
-          "templates/no_code/dify_app.yaml"
-        ]
-      },
       {
         "id": "mlflow",
         "name": "MLflow",
@@ -264,23 +167,12 @@
       }
     ],
     "categories": [
-      "visual_llm_builder",
-      "llm_app_platform",
       "mlops",
       "api_backend",
       "local_llm_runtime",
       "tool_context_protocol"
     ],
     "capabilities": [
-      "visual_flows",
-      "llm",
-      "rag",
-      "prototyping",
-      "tools",
-      "llm_apps",
-      "chatbots",
-      "workflows",
-      "observability",
       "experiments",
       "model_registry",
       "metrics",
@@ -294,14 +186,12 @@
       "offline_inference",
       "model_routing",
       "mcp",
+      "tools",
       "resources",
       "prompts",
       "integration"
     ],
     "template_paths": [
-      "templates/no_code/langflow_export.json",
-      "templates/no_code/flowise_chatflow.json",
-      "templates/no_code/dify_app.yaml",
       "templates/mlops/mlflow_experiment.py",
       "templates/backend/fastapi_service.py",
       "templates/llm/ollama_router.py",
@@ -310,119 +200,27 @@
     "selection_reason": "Selected by business-problem signals, universe requirements, and local-first Synapse defaults."
   },
   "ml_foundations": {
-    "active": true,
+    "active": false,
     "policy_path": "config/ml_foundations_policy.json",
     "spec_path": "docs/specifications/ml_foundations.md",
-    "reason": "Use foundational ML gates before model selection, training, evaluation, or release.",
-    "required_reasoning_gates": [
-      {
-        "id": "learning_problem_mapping",
-        "description": "Map experience, task, and performance measure before choosing a model.",
-        "required_outputs": [
-          "experience_data",
-          "prediction_task",
-          "performance_measure"
-        ]
-      },
-      {
-        "id": "hypothesis_space_and_bias",
-        "description": "Name the hypothesis family, its assumptions, and expected bias/variance tradeoff.",
-        "required_outputs": [
-          "hypothesis_family",
-          "bias_assumptions",
-          "variance_risk"
-        ]
-      },
-      {
-        "id": "probabilistic_assumptions",
-        "description": "State whether the solution needs probabilistic outputs, calibration, independence assumptions, or distributional checks.",
-        "required_outputs": [
-          "probability_model",
-          "calibration_need",
-          "distribution_checks"
-        ]
-      },
-      {
-        "id": "estimation_objective",
-        "description": "Define the estimation or loss objective used to fit the model.",
-        "required_outputs": [
-          "loss_function",
-          "estimator",
-          "optimization_method"
-        ]
-      },
-      {
-        "id": "statistical_validation",
-        "description": "Use holdout/cross-validation, confidence intervals, or hypothesis checks before claiming improvement.",
-        "required_outputs": [
-          "evaluation_split",
-          "confidence_or_significance_check",
-          "baseline_delta"
-        ]
-      },
-      {
-        "id": "regularization_and_optimization",
-        "description": "Document regularization, convergence, and optimization limits for fitted models.",
-        "required_outputs": [
-          "regularization",
-          "convergence_criteria",
-          "failure_modes"
-        ]
-      },
-      {
-        "id": "attribute_selection_transformation",
-        "description": "Review feature relevance, leakage risk, transformations, and dimensionality before release.",
-        "required_outputs": [
-          "feature_selection_policy",
-          "leakage_check",
-          "transformations"
-        ]
-      }
-    ],
-    "algorithm_guidance": {
-      "foundation_topics": [
-        "naive_bayes",
-        "maximum_entropy",
-        "multiclass_classification",
-        "feature_transformation"
-      ],
-      "synapse_candidates": [
-        "nlp",
-        "computer_vision",
-        "deep_learning"
-      ],
-      "missing_candidates_to_consider": [
-        "text_naive_bayes_baseline",
-        "linear_text_classifier_baseline"
-      ],
-      "metrics": [
-        "accuracy",
-        "entity_f1",
-        "human_review_rate"
-      ]
-    },
-    "required_artifacts": [
-      "docs/specifications/ml_foundations.md",
-      "ml_systems/data_contract.yaml",
-      "ml_systems/model_card.md",
-      "ml_systems/monitoring_plan.yaml",
-      "evals/ml_cases.jsonl"
-    ]
+    "reason": "Not required for non-ML universe.",
+    "required_reasoning_gates": [],
+    "algorithm_guidance": {},
+    "required_artifacts": []
   },
   "architecture_blueprint": {
-    "style": "hybrid_mlops_rag_agent_architecture",
+    "style": "rag_agentic_service_architecture",
     "framework_ids": [
-      "dify",
-      "flowise",
-      "ragflow"
+      "langgraph",
+      "openai-agents-sdk",
+      "pydantic-ai",
+      "llamaindex",
+      "mcp-sdks"
     ],
     "technology_ids": [
-      "langflow",
-      "flowise",
-      "dify",
-      "ollama",
       "mlflow",
       "fastapi",
+      "ollama",
       "mcp-servers"
     ],
     "components": [
@@ -430,13 +228,7 @@
       "governance",
       "tests",
       "evals",
-      "observability",
-      "ingestion_pipeline",
-      "retrieval_service",
-      "citation_evals",
-      "experiment_tracking",
-      "model_registry",
-      "drift_monitoring"
+      "observability"
     ],
     "local_first": true,
     "cloud_requires_explicit_approval": true
@@ -452,17 +244,6 @@
       ]
     },
     {
-      "id": "rag",
-      "stages": [
-        "ingest",
-        "embed",
-        "retrieve",
-        "rerank",
-        "answer",
-        "evaluate"
-      ]
-    },
-    {
       "id": "mlops",
       "stages": [
         "baseline",
@@ -474,37 +255,31 @@
     }
   ],
   "solution_templates": [
-    "templates/no_code/langflow_export.json",
-    "templates/no_code/flowise_chatflow.json",
-    "templates/no_code/dify_app.yaml",
     "templates/mlops/mlflow_experiment.py",
     "templates/backend/fastapi_service.py",
     "templates/llm/ollama_router.py",
     "templates/mcp/server.py"
   ],
-  "architecture_decision": "Create a hybrid project combining MLOps with RAG/agents so predictive intelligence and task execution share data contracts, tests, evals, and governance.",
+  "architecture_decision": "Create an AI project with RAG and/or governed agents, tool boundaries, MCP-ready integration, cost controls, and prompt/RAG/tool evals.",
   "data_strategy": {
     "data_contract_required": true,
-    "baseline_required": true,
+    "baseline_required": false,
     "monitoring_required": true,
     "primary_metrics": [
-      "accuracy",
-      "entity_f1",
-      "ocr_error_rate",
-      "human_review_rate"
+      "groundedness",
+      "task_success_rate",
+      "cost_per_task"
     ]
   },
   "test_strategy": [
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
-    "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
   "eval_strategy": [
     "evals/project_cases.jsonl",
     "evals/quality_gates.yaml",
-    "evals/ml_cases.jsonl using accuracy, entity_f1, ocr_error_rate, human_review_rate",
     "evals/prompt_cases.jsonl",
     "evals/rag_cases.jsonl"
   ],
@@ -514,36 +289,32 @@
     "max_agents": 60,
     "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
     "recommended_fleets": [
-      "project_factory_fleet",
-      "ml_fleet",
       "rag_fleet",
-      "cost_optimization_fleet"
+      "mcp_fleet",
+      "security_fleet"
     ]
   },
   "book_alignment": [
     "AI Engineering: define quality, cost, latency, safety, and evaluation gates before scaling models or agents.",
     "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
     "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
-    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions."
+    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
+    "Agentic Coding: engineer repository context, tool permissions, reusable workflows, validation hooks, and controlled execution.",
+    "Prompt Engineering for LLMs: compile spoken intent into an explicit objective, constraints, evidence, tools, and response contract."
   ],
   "required_artifacts": [
     "docs/briefings/business_solution_analysis.md",
     "config/business_solution_analysis.json",
     "config/ai_framework_selection.json",
-    "config/ml_foundations_policy.json",
-    "docs/specifications/ml_foundations.md",
-    "ml_systems/data_contract.yaml",
-    "guardrails/policy.yaml",
-    "evals/ml_cases.jsonl",
-    "prompts/chatbot_assistant.md",
-    "evals/chatbot_cases.jsonl",
-    "docs/checklists/chatbot_quality_checklist.md",
+    "docs/specifications/voice_agentic_coding.md",
+    "config/voice_agent_quality_gates.json",
+    "evals/voice_agent_cases.jsonl",
+    "evals/agentic_coding_cases.jsonl",
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
-    "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
-  "project": "synapse",
+  "project": "synapse-adonex-control-center",
   "source": "scripts/analyze_business_solution.py"
 }

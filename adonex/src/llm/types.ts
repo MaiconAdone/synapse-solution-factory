@@ -30,6 +30,11 @@ export interface LlmRequest {
   maxOutputTokens?: number;
   signal?: AbortSignal;
   jsonMode?: boolean;
+  /**
+   * JSON Schema para structured outputs. Quando presente, tem prioridade sobre
+   * jsonMode: o provedor restringe a geracao ao formato exato do schema.
+   */
+  jsonSchema?: object;
   seed?: number;
 }
 

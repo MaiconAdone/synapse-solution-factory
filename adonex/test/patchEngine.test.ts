@@ -41,6 +41,39 @@ test("patch operations apply incremental replacements with conflict checks", () 
   );
 });
 
+test("patch replace preserves dollar sequences literally", () => {
+  const result = applyPatchOperation("const label = OLD;\n", {
+    type: "replace",
+    path: "src/app.ts",
+    expected: "OLD",
+    replacement: "`total: $${amount}`"
+  });
+
+  assert.equal(result, "const label = `total: $${amount}`;\n");
+});
+
+test("patch replace keeps regex backreferences from being interpreted", () => {
+  const result = applyPatchOperation("x = MARK;\n", {
+    type: "replace",
+    path: "src/app.ts",
+    expected: "MARK",
+    replacement: "$&$1$`"
+  });
+
+  assert.equal(result, "x = $&$1$`;\n");
+});
+
+test("patch insert_after keeps dollar content literal", () => {
+  const result = applyPatchOperation("run();\n", {
+    type: "insert_after",
+    path: "src/app.ts",
+    anchor: "run();",
+    content: "\nlog(`$${x}`);"
+  });
+
+  assert.equal(result, "run();\nlog(`$${x}`);\n");
+});
+
 test("patch operations reject ambiguous anchors", () => {
   assert.throws(
     () =>

@@ -36,11 +36,11 @@ export function applyPatchOperation(
 ): string {
   if (operation.type === "replace") {
     assertContainsOnce(current, operation.expected, operation.path);
-    return current.replace(operation.expected, operation.replacement);
+    return replaceOnce(current, operation.expected, operation.replacement);
   }
   if (operation.type === "delete") {
     assertContainsOnce(current, operation.expected, operation.path);
-    return current.replace(operation.expected, "");
+    return replaceOnce(current, operation.expected, "");
   }
   if (operation.type === "insert_before" || operation.type === "insert_after") {
     assertContainsOnce(current, operation.anchor, operation.path);
@@ -48,11 +48,28 @@ export function applyPatchOperation(
       operation.type === "insert_before"
         ? `${operation.content}${operation.anchor}`
         : `${operation.anchor}${operation.content}`;
-    return current.replace(operation.anchor, replacement);
+    return replaceOnce(current, operation.anchor, replacement);
   }
   return current.endsWith("\n")
     ? `${current}${operation.content}`
     : `${current}\n${operation.content}`;
+}
+
+/**
+ * Substitui a primeira ocorrencia de `needle` por `replacement` sem interpretar
+ * padroes especiais. String.prototype.replace com string de substituicao trata
+ * sequencias `$&`, `$1`, `$$` etc. como referencias — o que corrompe codigo
+ * gerado por modelos locais (template strings, regex, shell, jQuery). Fatiar por
+ * indice preserva o texto literal. `assertContainsOnce` ja garante presenca.
+ */
+export function replaceOnce(
+  haystack: string,
+  needle: string,
+  replacement: string
+): string {
+  const index = haystack.indexOf(needle);
+  if (index < 0) return haystack;
+  return haystack.slice(0, index) + replacement + haystack.slice(index + needle.length);
 }
 
 function assertContainsOnce(current: string, needle: string, filePath: string): void {

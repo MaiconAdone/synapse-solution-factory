@@ -34,11 +34,27 @@ import type {
   WorkspaceSnapshot
 } from "../llm/types";
 import { actionPrompt, BASE_SYSTEM_PROMPT } from "./prompts";
+import {
+  buildProposalRepairPrompt,
+  parseProposalText,
+  PROPOSAL_JSON_SCHEMA
+} from "./proposalParser";
+import {
+  buildRouterSystemPrompt,
+  buildRouterUserPrompt,
+  formatRouterGuidance,
+  parseRouterDecision,
+  ROUTER_JSON_SCHEMA,
+  selectFocusPaths,
+  shouldRunRouter,
+  type RouterDecision
+} from "./routerAgent";
 import { compilePrompt } from "./promptCompiler";
 import { specialistPrompts } from "./specialists";
 import { classifyTaskComplexity } from "./taskRouter";
 import { MemoryReader } from "../memory/memoryReader";
 import { formatWorkspaceSnapshot } from "../context/contextFormatter";
+import { selectFocusFilesByGraph } from "../context/focusSelector";
 import { extractPrimaryTask } from "../chat/chatRouting";
 
 export interface AgentExecution {
@@ -155,10 +171,8 @@ export class AgentOrchestrator {
     const configuration = vscode.workspace.getConfiguration("adonex");
     this.lastCodeModelProfile = snapshot.codeIntelligence?.modelProfile;
     const fullRufloLocalQuestion = this.isSynapseSystemQuestion(task, action);
-    const workspaceText = formatWorkspaceSnapshot(
-      snapshot,
-      this.workspaceBudgetForAction(action)
-    );
+    const workspaceBudget = this.workspaceBudgetForAction(action);
+    let workspaceText = formatWorkspaceSnapshot(snapshot, workspaceBudget);
     const rufloLocalProfile = this.selectOllamaProfile(action, task, configuration);
     const rufloCouncil = buildRufloCouncilContext(snapshot.root, task, {
       enabled:
@@ -204,6 +218,50 @@ export class AgentOrchestrator {
         actualEstimatedCostUsd: 0
       };
     }
+    // Foco por grafo de simbolos (deterministico, sem LLM): se a tarefa nomeia
+    // um simbolo ou arquivo, escolhemos os arquivos-foco de graca e pulamos o
+    // router 3B (economiza ~14-25s). So cai no router LLM quando isso e
+    // inconclusivo. Best-effort: nunca bloqueia a edicao.
+    let routerDecision: RouterDecision | undefined;
+    if (
+      requiresJsonProposal(action) &&
+      configuration.get<boolean>("synapse.router.graphFocus", true)
+    ) {
+      const graphFocus = selectFocusFilesByGraph(
+        task,
+        snapshot.relevantFiles.map((file) => ({ path: file.path, content: file.content })),
+        3
+      );
+      if (graphFocus.length) {
+        routerDecision = { focusFiles: graphFocus, strategy: "", roles: [] };
+      }
+    }
+    // Fallback: sub-agent 3B roteia foco/estrategia quando o grafo nao decidiu.
+    if (!routerDecision) {
+      routerDecision = await this.tryRouterAgent(
+        task,
+        action,
+        snapshot,
+        configuration,
+        options.signal
+      );
+    }
+    const routerGuidance = routerDecision
+      ? formatRouterGuidance(routerDecision)
+      : "";
+    // Estreita o contexto para os arquivos-foco: e aqui que o router paga o
+    // proprio custo em CPU, cortando prompt-eval em tarefas multi-arquivo.
+    if (
+      routerDecision?.focusFiles.length &&
+      configuration.get<boolean>("synapse.router.narrowContext", true)
+    ) {
+      const narrowed = this.narrowWorkspaceForFocus(
+        snapshot,
+        routerDecision.focusFiles,
+        workspaceBudget
+      );
+      if (narrowed) workspaceText = narrowed;
+    }
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
       actionPrompt(action),
@@ -215,29 +273,44 @@ export class AgentOrchestrator {
       ),
       compiledPrompt.systemAddendum,
       rufloCouncil.text,
+      routerGuidance,
       ...specialistPrompts(task)
-    ].join("\n\n");
-    const request = {
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    const wantsProposal = requiresJsonProposal(action);
+    const useStructuredOutput =
+      wantsProposal && configuration.get<boolean>("ollama.structuredOutput", true);
+    const request: {
+      systemPrompt: string;
+      userPrompt: string;
+      workspaceContext: string;
+      maxOutputTokens: number;
+      jsonMode: boolean;
+      jsonSchema?: object;
+      seed?: number;
+      signal?: AbortSignal;
+    } = {
       systemPrompt,
       userPrompt: compiledPrompt.optimizedPrompt,
       workspaceContext: workspaceText,
       maxOutputTokens: compiledPrompt.maxOutputTokens ?? plan.estimatedOutputTokens,
-      jsonMode: requiresJsonProposal(action),
+      jsonMode: wantsProposal,
+      jsonSchema: useStructuredOutput ? PROPOSAL_JSON_SCHEMA : undefined,
       seed: this.seedForAction(action),
       signal: options.signal
     };
-    let response: LlmResponse;
-    {
+
+    // Encapsula gateway-ou-ollama para poder reexecutar no reparo de JSON.
+    const runModel = async (req: typeof request): Promise<LlmResponse> => {
       const gatewayResponse = await this.tryGenerateWithSynapseGateway(
-        request,
+        req,
         action,
         task,
         snapshot,
         configuration
       );
-      if (gatewayResponse) {
-        response = gatewayResponse;
-      } else {
+      if (gatewayResponse) return gatewayResponse;
       if (!configuration.get<boolean>("ollama.enabled", true)) {
         throw new Error(
           "Ollama is disabled in AdoneX settings. Enable it to use AdoneX."
@@ -269,8 +342,8 @@ export class AgentOrchestrator {
         retryDelayMs: configuration.get<number>("ollama.retryDelayMs", 250)
       };
       try {
-        response = await new OllamaClient(clientOptions).generate({
-          ...request,
+        return await new OllamaClient(clientOptions).generate({
+          ...req,
           maxOutputTokens: outputBudgetForTask(selectedProfile, action, task)
         });
       } catch (error) {
@@ -279,30 +352,72 @@ export class AgentOrchestrator {
           error instanceof OllamaClientError &&
           /not found|pull model|model/i.test(error.message)
         ) {
-          response = await new OllamaClient({
+          return await new OllamaClient({
             ...clientOptions,
             model: baseModel
-          }).generate(request);
-        } else {
-          throw error;
+          }).generate(req);
         }
+        throw error;
       }
-      }
-    }
+    };
+
+    const response = await runModel(request);
+    const proposal = wantsProposal
+      ? await this.parseProposalWithRepair(response, request, runModel)
+      : undefined;
 
     return {
       plan,
       response,
-      proposal:
-        ["implement", "fix", "synapse_agent", "synapse_mcp"].includes(action)
-          ? this.parseImplementationProposal(response.text)
-          : undefined,
+      proposal,
       actualEstimatedCostUsd: estimateTokenCost(
         response.inputTokens || plan.estimatedInputTokens,
         response.outputTokens || plan.estimatedOutputTokens,
         "local"
       ).estimatedCostUsd
     };
+  }
+
+  /**
+   * Interpreta a proposta com tolerancia a JSON quase valido. Se ainda assim
+   * falhar, faz UMA regeneracao de reparo pedindo ao modelo somente o JSON
+   * corrigido (com o schema forcado quando disponivel). Isso evita perder a
+   * geracao inteira por prosa ou virgula sobrando de um modelo local.
+   */
+  private async parseProposalWithRepair(
+    response: LlmResponse,
+    request: {
+      systemPrompt: string;
+      userPrompt: string;
+      workspaceContext: string;
+      maxOutputTokens: number;
+      jsonMode: boolean;
+      jsonSchema?: object;
+      seed?: number;
+      signal?: AbortSignal;
+    },
+    runModel: (req: typeof request) => Promise<LlmResponse>
+  ): Promise<ImplementationProposal> {
+    try {
+      return parseProposalText(response.text);
+    } catch (firstError) {
+      try {
+        const repaired = await runModel({
+          ...request,
+          userPrompt: buildProposalRepairPrompt(response.text),
+          jsonMode: true,
+          jsonSchema: request.jsonSchema ?? PROPOSAL_JSON_SCHEMA,
+          maxOutputTokens: Math.min(request.maxOutputTokens, 2_048)
+        });
+        return parseProposalText(repaired.text);
+      } catch {
+        throw new Error(
+          `The model did not return a valid AdoneX patch proposal: ${
+            firstError instanceof Error ? firstError.message : String(firstError)
+          }`
+        );
+      }
+    }
   }
 
   public async proposeFix(
@@ -351,6 +466,7 @@ export class AgentOrchestrator {
       workspaceContext: string;
       maxOutputTokens: number;
       jsonMode: boolean;
+      jsonSchema?: object;
     },
     action: AgentAction,
     task: string,
@@ -366,7 +482,8 @@ export class AgentOrchestrator {
     const selectedProfile = this.selectOllamaProfile(action, task, configuration);
     const client = new SynapseGatewayClient({
       baseUrl: configuration.get<string>("synapse.llmGateway.baseUrl", "http://127.0.0.1:8000"),
-      apiKey: configuration.get<string>("synapse.llmGateway.apiKey", ""),
+      apiKey: (await this.extensionContext.secrets.get("adonex.synapse.gatewayApiKey")) ??
+        configuration.get<string>("synapse.llmGateway.apiKey", ""),
       projectId: configuration.get<string>("synapse.llmGateway.projectId", "adonex"),
       agentId: "adonex",
       toolName: `adonex.${action}`,
@@ -385,28 +502,6 @@ export class AgentOrchestrator {
         return undefined;
       }
       return undefined;
-    }
-  }
-
-  private parseImplementationProposal(text: string): ImplementationProposal {
-    const cleaned = text
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "");
-    try {
-      const parsed = JSON.parse(cleaned) as ImplementationProposal;
-      parsed.changes = Array.isArray(parsed.changes) ? parsed.changes : [];
-      parsed.operations = Array.isArray(parsed.operations) ? parsed.operations : [];
-      if (!Array.isArray(parsed.commands)) {
-        throw new Error("Invalid proposal arrays.");
-      }
-      return parsed;
-    } catch (error) {
-      throw new Error(
-        `The model did not return a valid AdoneX patch proposal: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
     }
   }
 
@@ -713,15 +808,114 @@ export class AgentOrchestrator {
   }
 
   private workspaceBudgetForAction(action: AgentAction): number {
-    return ["chat", "explain", "synapse_explain", "commit"].includes(action)
-      ? 4_000
-      : 16_000;
+    if (["chat", "explain", "synapse_explain", "commit"].includes(action)) {
+      return 4_000;
+    }
+    // Em CPU o prompt-eval (~27 tok/s medido) domina a latencia de uma edicao;
+    // 16k chars de contexto custavam ~175s so para "ler". Configuravel para
+    // maquinas rapidas subirem; default enxuto para o caso comum.
+    const configured = vscode.workspace
+      .getConfiguration("adonex")
+      .get<number>("context.codeEditMaxChars", 10_000);
+    return Math.max(2_000, Math.min(configured, 48_000));
+  }
+
+  /**
+   * Sub-agent de roteamento: uma chamada rapida a um modelo pequeno que escolhe
+   * arquivos-foco, estrategia e papeis antes da geracao forte. Sequencial (nao
+   * paralelo — em CPU sem GPU concorrencia so disputa o mesmo nucleo), opt-in via
+   * `synapse.router.enabled`, e best-effort: qualquer falha retorna "" e o fluxo
+   * segue exatamente como sem router.
+   */
+  private async tryRouterAgent(
+    task: string,
+    action: AgentAction,
+    snapshot: WorkspaceSnapshot,
+    configuration: vscode.WorkspaceConfiguration,
+    signal?: AbortSignal
+  ): Promise<RouterDecision | undefined> {
+    if (!requiresJsonProposal(action)) return undefined;
+    if (!configuration.get<boolean>("ollama.enabled", true)) return undefined;
+    const shouldRun = shouldRunRouter(
+      configuration.get<boolean>("synapse.router.enabled", false),
+      configuration.get<number>("synapse.router.autoThreshold", 3),
+      snapshot.relevantFiles.length
+    );
+    if (!shouldRun) return undefined;
+    const candidateFiles = snapshot.relevantFiles.map((file) => file.path);
+    try {
+      const client = new OllamaClient({
+        baseUrl: normalizeOllamaBaseUrl(
+          configuration.get<string>("ollama.baseUrl", "http://127.0.0.1:11434")
+        ),
+        model: normalizeLocalModel(
+          configuration.get<string>("synapse.router.model"),
+          ADONEX_FAST_LOCAL_MODEL
+        ),
+        apiStyle: configuration.get<"chat" | "generate">("ollama.apiStyle", "chat"),
+        timeoutMs:
+          Math.max(configuration.get<number>("synapse.router.timeoutSeconds", 20), 5) *
+          1_000,
+        keepAlive: configuration.get<string>("ollama.keepAlive", "10m"),
+        numCtx: 2_048,
+        temperature: 0,
+        maxRetries: 0
+      });
+      const response = await client.generate({
+        systemPrompt: buildRouterSystemPrompt(),
+        userPrompt: buildRouterUserPrompt(task, candidateFiles),
+        maxOutputTokens: configuration.get<number>("synapse.router.maxTokens", 200),
+        jsonMode: true,
+        jsonSchema: ROUTER_JSON_SCHEMA,
+        signal
+      });
+      return parseRouterDecision(response.text, candidateFiles);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Estreita o contexto de workspace para os focus_files do router. Ataca o
+   * gargalo real em CPU (prompt-eval): em tarefas multi-arquivo, enviar so os
+   * arquivos-foco corta milhares de tokens de leitura. Retorna undefined quando
+   * nao ha ganho (nenhum match ou o foco cobre todos os arquivos), preservando o
+   * contexto completo.
+   */
+  private narrowWorkspaceForFocus(
+    snapshot: WorkspaceSnapshot,
+    focusFiles: string[],
+    budget: number
+  ): string | undefined {
+    const focusPaths = selectFocusPaths(
+      snapshot.relevantFiles.map((file) => file.path),
+      focusFiles
+    );
+    if (!focusPaths.length || focusPaths.length >= snapshot.relevantFiles.length) {
+      return undefined;
+    }
+    const focusSet = new Set(focusPaths);
+    const narrowed: WorkspaceSnapshot = {
+      ...snapshot,
+      relevantFiles: snapshot.relevantFiles.filter((file) => focusSet.has(file.path))
+    };
+    return formatWorkspaceSnapshot(narrowed, budget);
   }
 
   private rufloCouncilBudgetForAction(action: AgentAction): number {
-    return ["chat", "explain", "synapse_explain", "commit"].includes(action)
-      ? 2_000
-      : 12_000;
+    // Em CPU (~5,5 tok/s) o texto do council entra em TODA geracao e concorre com
+    // o prefix cache. Para edicao de codigo ele deve condicionar, nao dominar:
+    // council enxuto = menos prompt-eval e sinal do papel certo menos diluido.
+    if (["implement", "fix", "synapse_agent", "synapse_mcp"].includes(action)) {
+      return 2_500;
+    }
+    if (["synapse_architecture", "synapse_pipeline", "synapse_roadmap"].includes(action)) {
+      return 8_000;
+    }
+    if (["chat", "explain", "synapse_explain", "commit"].includes(action)) {
+      return 1_500;
+    }
+    return 4_000;
   }
 
   private rufloCouncilMaxAgents(
@@ -730,7 +924,7 @@ export class AgentOrchestrator {
     fullRufloLocalQuestion: boolean,
     configuration: vscode.WorkspaceConfiguration
   ): number {
-    const configured = configuration.get<number>("synapse.rufloCouncil.maxAgents", 8);
+    const configured = configuration.get<number>("synapse.rufloCouncil.maxAgents", 3);
     const normalized = task
       .normalize("NFD")
       .replace(/\p{Diacritic}/gu, "")
@@ -739,7 +933,8 @@ export class AgentOrchestrator {
       return Math.min(60, Math.max(configured, 60));
     }
     if (["implement", "fix", "synapse_agent", "synapse_mcp"].includes(action)) {
-      return Math.min(12, Math.max(configured, 8));
+      // Edicao de codigo: subconjunto enxuto (lider + 1-2 revisores) para latencia.
+      return Math.max(1, Math.min(configured, 3));
     }
     if (["synapse_architecture", "synapse_pipeline", "synapse_roadmap"].includes(action)) {
       return Math.min(15, Math.max(configured, 10));

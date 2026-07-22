@@ -40,6 +40,7 @@ export class SynapseGatewayClient {
       human_approved: this.options.humanApproved ?? false,
       local_model_profile: this.options.localModelProfile ?? "auto",
       json_mode: request.jsonMode ?? false,
+      json_schema: request.jsonSchema,
       temperature: this.options.temperature ?? 0,
       project_id: this.options.projectId ?? "adonex",
       agent_id: this.options.agentId ?? "adonex",

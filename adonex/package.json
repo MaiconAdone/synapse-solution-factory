@@ -1,8 +1,8 @@
 {
   "name": "adonex",
   "displayName": "AdoneX",
-  "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memÃ³ria compartilhada com Claude Code e Codex, e integraÃ§Ã£o Synapse.",
-  "version": "0.7.2",
+  "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memória compartilhada com Claude Code e Codex, e integração Synapse.",
+  "version": "0.7.12",
   "publisher": "synapse-ai",
   "icon": "media/adonex-icon.png",
   "license": "UNLICENSED",
@@ -558,6 +558,11 @@
           "maximum": 5000,
           "markdownDescription": "Atraso entre retries do cliente local para reduzir pressÃ£o sobre o modelo."
         },
+        "adonex.ollama.structuredOutput": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Forca a saida de propostas de patch a um JSON Schema (structured outputs do Ollama). Reduz drasticamente falhas de parsing com modelos locais. Desative apenas se o modelo instalado nao suportar `format` com schema."
+        },
         "adonex.chat.maxTokens": {
           "type": "number",
           "default": 384,
@@ -744,10 +749,10 @@
         },
         "adonex.synapse.rufloCouncil.maxAgents": {
           "type": "number",
-          "default": 8,
+          "default": 3,
           "minimum": 1,
           "maximum": 60,
-          "markdownDescription": "Quantidade maxima de papeis Ruflo considerados por tarefa. Um lider e executado diretamente e os demais revisam em contexto comprimido. Use 8 para desempenho; peca explicitamente os 60 para auditorias amplas."
+          "markdownDescription": "Quantidade maxima de papeis Ruflo considerados por tarefa. Um lider e executado diretamente e os demais revisam em contexto comprimido. Edicoes de codigo usam um subconjunto enxuto (lider + 1-2 revisores) para reduzir latencia em CPU; tarefas de arquitetura elevam automaticamente para ~10 papeis; peca explicitamente os 60 para auditorias amplas."
         },
         "adonex.synapse.rufloCouncil.llmConcurrency": {
           "type": "number",
@@ -762,6 +767,54 @@
           "minimum": 1000,
           "maximum": 24000,
           "markdownDescription": "Tamanho maximo do contexto sintetico e comprimido do conselho Ruflo enviado ao Ollama."
+        },
+        "adonex.context.codeEditMaxChars": {
+          "type": "number",
+          "default": 10000,
+          "minimum": 2000,
+          "maximum": 48000,
+          "markdownDescription": "Tamanho maximo (chars) do contexto de workspace enviado ao Ollama em edicoes de codigo. Em CPU o prompt-eval domina a latencia (~27 tok/s medido nesta maquina): 16000 chars custavam ~175s so para o modelo ler antes de gerar. 10000 equilibra foco e velocidade; suba em maquinas com GPU/mais RAM, baixe para respostas mais rapidas."
+        },
+        "adonex.synapse.router.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Forca o sub-agent de roteamento SEMPRE (mesmo em edicao de 1 arquivo): uma chamada rapida a um modelo pequeno que escolhe arquivos-foco, estrategia e papeis ANTES da geracao de codigo. Sequencial e best-effort. Normalmente deixe FALSE e confie no modo automatico (`router.autoThreshold`), que so liga o router quando ha varios arquivos relevantes — onde o narrowing de contexto compensa o custo. Nunca bloqueia a edicao se falhar."
+        },
+        "adonex.synapse.router.autoThreshold": {
+          "type": "number",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 20,
+          "markdownDescription": "Liga o sub-agent de roteamento automaticamente quando o contexto tem esta quantidade (ou mais) de arquivos relevantes, mesmo com `router.enabled` = false. Em tarefas multi-arquivo o narrowing corta prompt-eval e o router se paga (medido ~4x mais rapido). Use 0 para desligar o modo automatico; edicoes de 1-2 arquivos nunca acionam o router."
+        },
+        "adonex.synapse.router.graphFocus": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Antes de chamar o sub-agent 3B, tenta escolher os arquivos-foco de forma DETERMINISTICA pelo grafo de simbolos (imports/exports/declaracoes que o AdoneX ja extrai). Quando a tarefa nomeia um simbolo ou arquivo, o narrowing acontece de graca e pula a geracao do router, economizando ~14-25s. So cai no router LLM quando o grafo e inconclusivo. Nao esbarra em licenca (reimplementacao propria, sem dependencia externa)."
+        },
+        "adonex.synapse.router.narrowContext": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Quando o sub-agent de roteamento esta ativo, envia ao modelo de codigo apenas os arquivos-foco escolhidos, em vez de todo o contexto de workspace. E o que faz o router compensar em CPU: corta prompt-eval em tarefas multi-arquivo. So estreita quando ha ganho real (foco < total de arquivos relevantes); caso contrario mantem o contexto completo."
+        },
+        "adonex.synapse.router.model": {
+          "type": "string",
+          "default": "qwen2.5-coder:3b",
+          "markdownDescription": "Modelo local do sub-agent de roteamento. Use um modelo rapido (3B) para manter a latencia do passo de roteamento baixa."
+        },
+        "adonex.synapse.router.maxTokens": {
+          "type": "number",
+          "default": 200,
+          "minimum": 64,
+          "maximum": 512,
+          "markdownDescription": "Limite de tokens da decisao de roteamento. A saida e um JSON curto (arquivos-foco, estrategia, papeis), entao valores baixos bastam."
+        },
+        "adonex.synapse.router.timeoutSeconds": {
+          "type": "number",
+          "default": 20,
+          "minimum": 5,
+          "maximum": 120,
+          "markdownDescription": "Tempo maximo do passo de roteamento antes de seguir sem ele. O router e best-effort: se estourar, a edicao continua normalmente."
         },
         "adonex.synapse.llmGateway.enabled": {
           "type": "boolean",
@@ -895,6 +948,13 @@
       }
     },
     "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "adonexAdmin",
+          "title": "ADONEX ADMIN",
+          "icon": "media/adonex.svg"
+        }
+      ],
       "secondarySidebar": [
         {
           "id": "adonex",
@@ -910,6 +970,12 @@
           "id": "adonex.chatView",
           "name": "AdoneX",
           "visibility": "visible"
+        }
+      ],
+      "adonexAdmin": [
+        {
+          "id": "adonex.controlCenterView",
+          "name": "Administração"
         }
       ]
     },

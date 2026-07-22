@@ -15,6 +15,7 @@ import { AdoneXHttpBridge } from "./bridge/httpBridge";
 import { AdoneXPanel } from "./webview/AdoneXPanel";
 import { InlineEditService } from "./inline/inlineEditService";
 import { AdoneXInlineCompletionProvider } from "./inline/inlineCompletionProvider";
+import { AdoneXControlCenter } from "./control/controlCenter";
 
 export function activate(context: vscode.ExtensionContext): void {
   const panel = new AdoneXPanel(context);
@@ -26,6 +27,7 @@ export function activate(context: vscode.ExtensionContext): void {
   registerAdoneXChatParticipant(context, panel);
   registerMemoryCommands(context);
   registerInlineFeatures(context);
+  context.subscriptions.push(...new AdoneXControlCenter(context).register());
 
   // Ponte HTTP local: deixa a Vick web acionar o fluxo governado do AdoneX.
   // Desligada por padrao e exige token (ver adonex.bridge.* nas settings).

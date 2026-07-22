@@ -43,6 +43,7 @@ header {
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
+  filter: brightness(0) invert(1);
 }
 
 .brand {

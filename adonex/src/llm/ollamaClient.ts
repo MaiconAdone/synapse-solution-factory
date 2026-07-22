@@ -161,7 +161,7 @@ export class OllamaClient {
       messages,
       think: false,
       stream: this.options.stream ?? true,
-      format: request.jsonMode ? "json" : undefined,
+      format: request.jsonSchema ?? (request.jsonMode ? "json" : undefined),
       keep_alive: this.options.keepAlive ?? "10m",
       options: this.createOptions(request)
     };
@@ -181,7 +181,7 @@ export class OllamaClient {
         .join("\n\n"),
       think: false,
       stream: this.options.stream ?? true,
-      format: request.jsonMode ? "json" : undefined,
+      format: request.jsonSchema ?? (request.jsonMode ? "json" : undefined),
       keep_alive: this.options.keepAlive ?? "10m",
       options: this.createOptions(request)
     };

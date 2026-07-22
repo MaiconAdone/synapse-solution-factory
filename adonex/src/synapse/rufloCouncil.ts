@@ -122,6 +122,10 @@ export function profileForAgent(
   return "fast";
 }
 
+const agentsCache = new Map<string, { mtimeMs: number; agents: RufloCouncilAgent[] }>();
+const rankCache = new Map<string, RufloCouncilAgent[]>();
+const RANK_CACHE_MAX = 64;
+
 export function readEnterpriseAgents(workspaceRoot: string): RufloCouncilAgent[] {
   const agentsPath = path.join(
     workspaceRoot,
@@ -129,8 +133,20 @@ export function readEnterpriseAgents(workspaceRoot: string): RufloCouncilAgent[]
     "definitions",
     "enterprise_agents.yaml"
   );
-  if (!fs.existsSync(agentsPath)) {
+  let stat: fs.Stats | undefined;
+  try {
+    stat = fs.statSync(agentsPath);
+  } catch {
+    stat = undefined;
+  }
+  if (!stat) {
     return expandFallbackAgents();
+  }
+  // O YAML de 60 agentes nao muda entre geracoes; le do disco so quando o mtime
+  // muda para nao pagar I/O + parse a cada chamada ao Ollama.
+  const cached = agentsCache.get(agentsPath);
+  if (cached && cached.mtimeMs === stat.mtimeMs) {
+    return cached.agents;
   }
   const content = fs.readFileSync(agentsPath, "utf8");
   const agents: RufloCouncilAgent[] = [];
@@ -154,13 +170,20 @@ export function readEnterpriseAgents(workspaceRoot: string): RufloCouncilAgent[]
     if (key === "mission") current.mission = value.trim();
   }
   if (current?.id) agents.push(normalizeAgent(current));
-  return agents.length ? agents : expandFallbackAgents();
+  const result = agents.length ? agents : expandFallbackAgents();
+  agentsCache.set(agentsPath, { mtimeMs: stat.mtimeMs, agents: result });
+  return result;
 }
 
 function rankAgentsForTask(
   agents: RufloCouncilAgent[],
   task: string
 ): RufloCouncilAgent[] {
+  // O ranking so depende dos agentes (estaveis) e do texto da tarefa; memoiza
+  // para nao repontuar 60 papeis a cada geracao com a mesma tarefa.
+  const cacheKey = `${agents.length}:${task}`;
+  const cachedRank = rankCache.get(cacheKey);
+  if (cachedRank) return cachedRank;
   const lower = task.toLowerCase();
   const scored = agents.map((agentItem, index) => {
     const haystack = [
@@ -185,9 +208,14 @@ function rankAgentsForTask(
     if (/\b(teste|valid|erro|bug|regress)\b/i.test(lower) && agentItem.domain === "quality") score += 18;
     return { agentItem, score, index };
   });
-  return scored
+  const ranked = scored
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map((item) => item.agentItem);
+  if (rankCache.size >= RANK_CACHE_MAX) {
+    rankCache.delete(rankCache.keys().next().value as string);
+  }
+  rankCache.set(cacheKey, ranked);
+  return ranked;
 }
 
 function councilStrategy(

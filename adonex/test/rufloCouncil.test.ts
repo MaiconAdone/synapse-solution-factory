@@ -84,3 +84,32 @@ test("Ruflo council uses a compressed selective set for AdoneX code work", () =>
   assert.ok(council.domains.includes("backend"));
   assert.ok(council.domains.includes("quality"));
 });
+
+test("Ruflo council keeps a lean subset small and compact", () => {
+  const lean = buildRufloCouncilContext(root, "corrigir bug no backend", {
+    enabled: true,
+    maxAgents: 3,
+    llmConcurrency: 1,
+    maxChars: 2_500,
+    action: "fix",
+    localModelProfile: "code_strong"
+  });
+  const wide = buildRufloCouncilContext(root, "corrigir bug no backend", {
+    enabled: true,
+    maxAgents: 12,
+    llmConcurrency: 1,
+    maxChars: 12_000,
+    action: "fix",
+    localModelProfile: "code_strong"
+  });
+
+  assert.equal(lean.activeAgents, 3);
+  assert.ok(lean.text.length <= 2_500);
+  assert.ok(lean.text.length < wide.text.length);
+});
+
+test("readEnterpriseAgents caches by file mtime and returns a stable reference", () => {
+  const first = readEnterpriseAgents(root);
+  const second = readEnterpriseAgents(root);
+  assert.equal(first, second);
+});
