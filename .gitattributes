@@ -1,0 +1,16 @@
+# Normaliza fim de linha: LF no repositorio, checkout conforme plataforma.
+* text=auto
+
+# Scripts Windows sempre com CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios comuns.
+*.png binary
+*.jpg binary
+*.ico binary
+*.vsix binary
+*.rvf binary
+*.db binary
+*.sqlite binary

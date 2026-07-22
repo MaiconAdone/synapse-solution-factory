@@ -498,7 +498,10 @@ def test_all_60_agents_have_governed_model_router_tool():
 
 def test_governed_swarm_requires_human_approval_for_all_60(tmp_path):
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=FakeHybridRouter(),
         ruflo=FakeGovernedRuflo(),
     )
@@ -517,7 +520,10 @@ def test_governed_swarm_requires_human_approval_for_all_60(tmp_path):
 
 def test_governed_swarm_aligns_agents_with_security_fleet(tmp_path):
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=FakeHybridRouter(),
         ruflo=FakeGovernedRuflo(),
     )
@@ -546,7 +552,10 @@ def test_governed_swarm_aligns_agents_with_security_fleet(tmp_path):
 
 def test_governed_swarm_aligns_rag_agents_and_model_profile(tmp_path):
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=FakeHybridRouter(),
         ruflo=FakeGovernedRuflo(),
     )
@@ -564,7 +573,10 @@ def test_governed_swarm_aligns_rag_agents_and_model_profile(tmp_path):
 
 def test_governed_swarm_plan_is_deterministic_for_equivalent_input(tmp_path):
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=FakeHybridRouter(),
         ruflo=FakeGovernedRuflo(),
     )
@@ -581,7 +593,10 @@ def test_governed_swarm_routes_model_and_persists_ruflo_memory(tmp_path):
     ruflo = FakeGovernedRuflo()
     llm = FakeHybridRouter("ollama")
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=llm,
         ruflo=ruflo,
     )
@@ -611,7 +626,10 @@ def test_simple_synapse_questions_force_ruflo_and_local_ollama(tmp_path):
     ruflo = FakeGovernedRuflo()
     llm = FakeHybridRouter("openai")
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=llm,
         ruflo=ruflo,
     )
@@ -636,7 +654,10 @@ def test_simple_synapse_questions_force_ruflo_and_local_ollama(tmp_path):
 
 def test_governed_swarm_requires_human_approval_for_cloud(tmp_path):
     service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
+        settings=Settings(
+            governed_swarm_audit_path=str(tmp_path / "audit.jsonl"),
+            learning_events_path=str(tmp_path / "learning.jsonl"),
+        ),
         llm_gateway=FakeHybridRouter("openai"),
         ruflo=FakeGovernedRuflo(),
     )

@@ -32,3 +32,11 @@ dist/
 build/
 .cache/
 .swarm/
+.adonex/tasks/
+.adonex/index/
+.adonex-backup/
+.vick-panel
+debug.log
+scratch_*.log
+*.bak
+mlruns/

@@ -1,4 +1,4 @@
-﻿{
+{
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_FLOW_V3_ENABLED": "true",
@@ -65,13 +65,56 @@
       "Bash(python -c \"import json; d=json.load\\(open\\('.claude/settings.json',encoding='utf-8'\\)\\); print\\('JSON valido. defaultMode =', d['permissions'].get\\('defaultMode'\\)\\); print\\('deny preservado:', d['permissions'].get\\('deny'\\)\\)\")",
       "Bash(curl -s -m 40 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/impout.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
       "Bash(curl -s -m 30 -X POST http://127.0.0.1:8766/command -H 'Content-Type: application/json' -H 'X-Adonex-Token: $ADONEX_BRIDGE_TOKEN' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/edit.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/editout.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
-      "Bash(curl -s -m 40 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp2.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp2out.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')"
+      "Bash(curl -s -m 40 -X POST http://127.0.0.1:3000/api/vick/chat -H 'Content-Type: application/json' --data-binary @C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp2.json -o C:/Users/malves/AppData/Local/Temp/claude/c--Users-malves-Documents-Projetos-synapse/d1bb1039-b720-4b9d-92a5-2e57f5562147/scratchpad/imp2out.txt -w 'HTTP %{http_code} tempo %{time_total}s\\\\n')",
+      "Bash(python -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\('top keys:', list\\(d.keys\\(\\)\\)\\); print\\('type:', d.get\\('type'\\)\\); print\\('cwd:', d.get\\('cwd'\\)\\); print\\('ts:', d.get\\('timestamp'\\)\\); m=d.get\\('message',{}\\); print\\('msg keys:', list\\(m.keys\\(\\)\\)\\); print\\('model:', m.get\\('model'\\)\\); print\\('usage:', json.dumps\\(m.get\\('usage'\\), indent=2\\)\\)\")",
+      "Bash(rm -f /tmp/test_cc.mjs /tmp/test_cc2.mjs /tmp/dbg.mjs)",
+      "Read(//c/Users/malves/.claude/plugins/**)",
+      "Read(//c/Users/malves/.claude/plugins/marketplaces/**)",
+      "Read(//c/Users/malves/.claude/**)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('keys:', list\\(d.keys\\(\\)\\)\\); print\\('hooks:', json.dumps\\(d.get\\('hooks'\\), indent=2\\)[:1500]\\); print\\('enabledPlugins:', d.get\\('enabledPlugins'\\)\\)\")",
+      "Read(//c/Users/malves/.claude/plugins/cache/thedotmack/claude-mem/10.5.5/hooks/**)",
+      "Bash(python -c \"import json;d=json.load\\(open\\('adonex/package.json'\\)\\);print\\('name:',d.get\\('name'\\)\\);print\\('deps:',list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\);print\\('scripts:',list\\(d.get\\('scripts',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(awk '{print $1}')",
+      "Bash(git commit -m '@ *)",
+      "Bash(git commit *)",
+      "Bash(python -c \"import json;d=json.load\\(open\\('adonex/package.json'\\)\\);c=d.get\\('contributes',{}\\);print\\('keys:',list\\(c.keys\\(\\)\\)\\);[print\\(' -',k,':',json.dumps\\(c[k]\\)[:300]\\) for k in \\('viewsContainers','views','chatParticipants','commands'\\) if k in c]\")",
+      "Bash(python -c \"import json;d=json.load\\(open\\('adonex/package.json'\\)\\);c=d.get\\('contributes',{}\\);print\\('COMMANDS:'\\);[print\\(' ',x.get\\('command'\\),'->',x.get\\('title'\\)\\) for x in c.get\\('commands',[]\\)];print\\('KEYBINDINGS:',json.dumps\\(c.get\\('keybindings','\\(none\\)'\\)\\)\\);print\\('MENUS keys:',list\\(c.get\\('menus',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(python -c \"import json;d=json.load\\(open\\('package.json'\\)\\);print\\(json.dumps\\(d['scripts'],indent=2\\)\\)\")",
+      "Read(//c/Users/malves/.vscode/extensions/**)",
+      "Read(//c/Users/malves/.cursor/**)",
+      "Read(//c/Users/malves/.vscode/extensions/synapse-ai.adonex-0.6.17/media//**)",
+      "Read(//c/Users/malves/.vscode/extensions/synapse-ai.adonex-0.6.17/dist/**)",
+      "Bash(code --install-extension adonex-0.6.18.vsix --force)",
+      "Bash(ls -d /c/Users/malves/.vscode/extensions/synapse-ai.adonex-* 2>/dev/null)",
+      "Bash(tasklist)",
+      "Bash(powershell -NoProfile -Command \"Get-Process Code -ErrorAction SilentlyContinue | Select-Object -First 3 Id,ProcessName\")",
+      "Read(//c/Users/malves/.vscode/extensions/synapse-ai.adonex-0.6.18/dist/**)",
+      "Read(//c/Users/malves/.vscode/extensions/synapse-ai.adonex-0.6.18/src/webview/media/**)",
+      "Read(//c/Users/malves/.vscode/extensions/synapse-ai.adonex-0.6.18/**)",
+      "Edit(adonex/**)",
+      "Write(adonex/**)",
+      "Read(adonex/**)",
+      "Bash(node --test dist/test/composerModel.test.js)",
+      "Bash(node --test dist/test/*.test.js)",
+      "Bash(code --install-extension adonex-0.7.0.vsix --force)",
+      "Bash(git commit -m ' *)",
+      "Bash(code --install-extension adonex-0.7.1.vsix --force)",
+      "Bash(curl -s -m 5 http://127.0.0.1:11434/api/tags -o /dev/null -w \"api/tags HTTP %{http_code} em %{time_total}s\\\\n\")",
+      "Bash(curl -s -m 5 http://127.0.0.1:11434/api/ps)",
+      "Bash(curl -s -m 60 -o /dev/null -w \"generate HTTP %{http_code} em %{time_total}s\\\\n\" -X POST http://127.0.0.1:11434/api/generate -H \"Content-Type: application/json\" -d '{\"model\":\"qwen2.5-coder:3b\",\"prompt\":\"oi\",\"stream\":false,\"options\":{\"num_predict\":8}}')",
+      "Bash(code --install-extension adonex-0.7.2.vsix --force)",
+      "Bash(xargs grep -l \"patchEngine\\\\|PatchEngine\")",
+      "Bash(curl -s http://127.0.0.1:11434/api/tags)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(m['name']+' '+str\\(round\\(m['size']/1e9,1\\)\\)+'GB' for m in d.get\\('models',[]\\)\\)\\)\\)\")"
     ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)"
     ],
-    "defaultMode": "default"
+    "defaultMode": "default",
+    "additionalDirectories": [
+      "c:\\Users\\malves\\.claude\\projects\\c--Users-malves-Documents-Projetos-synapse\\memory"
+    ]
   },
   "statusLine": {
     "type": "command",
@@ -182,5 +225,3 @@
     }
   }
 }
-
-

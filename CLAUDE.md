@@ -107,7 +107,7 @@ Arquivos oficiais:
 - `config/agent_trust_framework.json`
 - `config/agent_fleets.json`
 - `AgenticMeshGovernanceService`
-- `docs/specifications/agentic_mesh_governance.md`
+- `docs/architecture/agentic-mesh-governance.md`
 - `docs/checklists/agent_fleet_certification.md`
 - `docs/runbooks/agent_sre.md`
 - `config/agent_blueprint_contract.json`
