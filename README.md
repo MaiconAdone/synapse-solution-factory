@@ -1,7 +1,9 @@
 ﻿# synapse-ai
 
-Enterprise AI/ML solution factory using Codex + Ruflo as the operational
-core. Synapse is the control plane and the only project factory.
+Enterprise AI/ML solution factory with Ruflo as the multi-agent core and four
+official dialog channels: VS Code Chat, AdoneX, Claude Code, and Codex.
+Synapse is the control plane and the only project factory. Experiment tracking
+uses the local model registry in `artifacts/models/`.
 
 ## Interfaces Oficiais
 
@@ -145,7 +147,7 @@ As tasks do VS Code continuam como atalhos opcionais:
 2. Rode `Tasks: Run Task`.
 3. Escolha `Enterprise: Validar stack`.
 4. Escolha `Synapse: Preparar runtime VS Code sem navegador`.
-5. Escolha `AI Factory: Menu interativo` ou `AI Factory: Criar projeto com Codex + Ruflo 60 agents + tratamento dados`.
+5. Escolha `AI Factory: Menu interativo` ou `AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados`.
 
 O projeto sera criado localmente em `C:\Users\malves\Documents\Projetos`,
 com `data/`, experimentos, memoria, evals, guardrails, contratos e
@@ -201,7 +203,7 @@ You can create and validate IA/ML projects from VS Code tasks:
 1. Open `Ctrl+Shift+P`.
 2. Run `Tasks: Run Task`.
 3. Choose `AI Factory: Menu interativo`,
-   `AI Factory: Criar projeto com Codex + Ruflo 60 agents + tratamento dados`, or
+   `AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados`, or
    `Synapse: Preparar runtime VS Code sem navegador`.
 
 See `docs/vscode-workflow.md`.
@@ -244,11 +246,15 @@ e seus contratos de workflows e memoria.
 
 ## Local Model Layer
 
-The backend includes a first ML model layer for local baselines:
+The backend includes an ML model layer for local baselines:
 
-- trains `linear_regression` models from inline JSON data or JSONL files
+- trains regression (`linear_regression`, `ridge_regression`,
+  `neural_network_regression`), classification (`logistic_regression`,
+  `neural_network_classifier`), and forecasting (`moving_average_forecast`,
+  `seasonal_naive_forecast`) models from inline JSON data or JSONL files
 - stores versioned artifacts in `artifacts/models/`
-- maintains `artifacts/models/registry.json`
+- maintains `artifacts/models/registry.json` as the local model registry and
+  experiment tracking source of truth
 - serves predictions through `POST /models/{model_id}/predict`
 
 Example training payload:
