@@ -164,6 +164,40 @@ test("solution factory chat proceeds when briefing is complete", () => {
   assert.deepEqual(check.missingFields, []);
 });
 
+test("natural language ML project creation follows the Vick solution factory flow", () => {
+  const prompt = "crie um projeto ML modelo para previsao de compradores";
+  const route = routeChatCommand(undefined, prompt);
+  assert.equal(route.action, "synapse_agent");
+  assert.equal(route.mode, "synapse");
+  assert.equal(route.governed, true);
+  const check = checkSolutionFactoryDialog(prompt, route);
+  assert.equal(check.applies, true);
+  assert.ok(!check.missingFields.includes("requested_universe"));
+  assert.ok(!check.missingFields.includes("business_problem"));
+  assert.ok(check.missingFields.includes("success_metric_or_acceptance_criteria"));
+  assert.ok(check.missingFields.includes("risk_level"));
+});
+
+test("natural language IA and hybrid creations also route to the factory", () => {
+  assert.equal(
+    routeChatCommand(undefined, "crie uma solucao de IA com RAG para contratos").action,
+    "synapse_agent"
+  );
+  assert.equal(
+    routeChatCommand(undefined, "monte um novo projeto hibrido de churn").action,
+    "synapse_agent"
+  );
+});
+
+test("edit requests mentioning a project stay on governed implementation", () => {
+  const route = routeChatCommand(
+    undefined,
+    "adicione um endpoint novo no projeto"
+  );
+  assert.equal(route.action, "implement");
+  assert.equal(route.governed, true);
+});
+
 test("advanced slash commands preserve governance boundaries", () => {
   assert.equal(routeChatCommand("search").action, "review");
   assert.equal(routeChatCommand("search").governed, false);

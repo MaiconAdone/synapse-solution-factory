@@ -22,6 +22,8 @@ export interface ComposerGenerateResult {
   view: ComposerProposalView;
   responseText: string;
   model: string;
+  /** Avisos nao fatais da geracao (ex.: entradas malformadas descartadas no parse). */
+  warnings?: string[];
 }
 
 export interface ComposerApplyResult {
@@ -147,7 +149,8 @@ export class ComposerSession {
     this.proposal = execution.proposal;
     this.patch = await this.patchEngine.generate(
       execution.proposal.changes,
-      execution.proposal.operations
+      execution.proposal.operations,
+      { droppedOperations: execution.proposal.droppedOperations }
     );
     const befores = await this.readBefores(this.patch);
     const files = buildComposerFiles(
@@ -164,7 +167,8 @@ export class ComposerSession {
         commands: execution.proposal.commands ?? []
       },
       responseText: execution.response.text,
-      model: `${execution.response.provider}/${execution.response.model}`
+      model: `${execution.response.provider}/${execution.response.model}`,
+      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {})
     };
   }
 
@@ -196,7 +200,8 @@ export class ComposerSession {
     this.proposal = execution.proposal;
     this.patch = await this.patchEngine.generate(
       execution.proposal.changes,
-      execution.proposal.operations
+      execution.proposal.operations,
+      { droppedOperations: execution.proposal.droppedOperations }
     );
     const befores = await this.readBefores(this.patch);
     const files = buildComposerFiles(this.patch.changes, befores);
@@ -209,7 +214,8 @@ export class ComposerSession {
         commands: execution.proposal.commands ?? []
       },
       responseText: execution.response.text,
-      model: `${execution.response.provider}/${execution.response.model}`
+      model: `${execution.response.provider}/${execution.response.model}`,
+      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {})
     };
   }
 
@@ -229,6 +235,11 @@ export class ComposerSession {
     return this.selection.size;
   }
 
+  /** Paths atualmente selecionados para aplicacao (usado no diff de diagnostics). */
+  public selectedPaths(): string[] {
+    return [...this.selection];
+  }
+
   public async openDiff(path: string): Promise<void> {
     const change = this.patch?.changes.find((item) => item.path === path);
     if (!change) throw new Error(`Sem mudanca proposta para ${path}.`);
@@ -244,7 +255,21 @@ export class ComposerSession {
     const operations = (this.patch.operations ?? []).filter((operation) =>
       this.selection.has(operation.path)
     );
-    const subset: GeneratedPatch = { diff: this.patch.diff, changes, operations };
+    const subset: GeneratedPatch = {
+      diff: this.patch.diff,
+      changes,
+      operations,
+      // Propaga avisos e rewrites de alto risco (dos arquivos selecionados)
+      // para o apply sinalizar no prompt de aprovacao e no log.
+      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {}),
+      ...(this.patch.highRiskRewrites?.length
+        ? {
+            highRiskRewrites: this.patch.highRiskRewrites.filter((rewrite) =>
+              this.selection.has(rewrite.path)
+            )
+          }
+        : {})
+    };
     const receipt = await this.patchEngine.apply(subset, true, requireApproval);
     this.lastReceipt = receipt;
     return {

@@ -809,8 +809,40 @@ export async function POST(request: NextRequest) {
     /\b(quais|liste|listar|mostre|mostrar|ver)\b.*\b(projeto|projetos)\b/.test(normalizedPrompt) ||
     /\b(projeto|projetos)\b.*\b(existem|criados|disponiveis|cadastrados)\b/.test(normalizedPrompt);
   const asksTemplates = /\b(template|templates|modelo|modelos)\b/.test(normalizedPrompt);
+  const asksSuggestedQuestions =
+    /\b(o que|quais|como)\b.*\b(pergunt|pedido|comando|ajuda)\w*/.test(normalizedPrompt) ||
+    /\b(exemplo|exemplos|sugestao|sugestoes)\b.*\b(pergunt|pedido|comando)\w*/.test(
+      normalizedPrompt,
+    );
+  const asksSynapse =
+    /\bsynapse\b/.test(normalizedPrompt) &&
+    (/\b(o que|quem|como|explique|explica|detalhe|descreva|fale|sobre|diferenca)\b/.test(
+      normalizedPrompt,
+    ) ||
+      /\b(capacidade|capacidades|recurso|recursos|arquitetura|funciona|serve|faz)\w*/.test(
+        normalizedPrompt,
+      ));
+  const asksAdonex =
+    /\badonex\b/.test(normalizedPrompt) &&
+    (/\b(o que|quem|como|explique|explica|detalhe|descreva|fale|sobre|diferenca)\b/.test(
+      normalizedPrompt,
+    ) ||
+      /\b(capacidade|capacidades|recurso|recursos|funciona|serve|faz)\w*/.test(
+        normalizedPrompt,
+      ));
+  const asksVick =
+    /\bvick\b/.test(normalizedPrompt) &&
+    (/\b(o que|quem|como|explique|explica|detalhe|descreva|fale|sobre|diferenca)\b/.test(
+      normalizedPrompt,
+    ) ||
+      /\b(capacidade|capacidades|recurso|recursos|funciona|serve|faz)\w*/.test(
+        normalizedPrompt,
+      ));
   const asksCapabilities =
-    /\b(o que|como)\b.*\b(synapse|vick)\b/.test(normalizedPrompt) ||
+    asksSynapse ||
+    asksAdonex ||
+    asksVick ||
+    asksSuggestedQuestions ||
     /\b(capacidade|capacidades|recurso|recursos|pode fazer)\b/.test(normalizedPrompt);
   // "abra a PASTA/DIRETÓRIO do projeto X" → Windows Explorer. Exige a palavra
   // pasta/diretório: "abra o projeto X" (sem pasta) quer ANÁLISE, não o
@@ -1192,12 +1224,60 @@ export async function POST(request: NextRequest) {
       );
     }
     if (asksCapabilities) {
-      answer.push(
-        "O Synapse oferece Solution Factory, Ollama local, AdoneX, Ruflo seletivo, memória compartilhada e criação governada de soluções de IA.",
-      );
+      const wantsEveryTopic =
+        asksSuggestedQuestions ||
+        (!asksSynapse && !asksAdonex && !asksVick) ||
+        [asksSynapse, asksAdonex, asksVick].filter(Boolean).length > 1;
+
+      if (asksSynapse || wantsEveryTopic) {
+        answer.push(
+          [
+            "SYNAPSE",
+            "O Synapse é uma plataforma local-first para projetar, implementar, testar e operar soluções empresariais de IA com governança. Sua Solution Factory transforma um briefing em análise de negócio, decisão de arquitetura, seleção de tecnologia, artefatos, testes e evals.",
+            "Ele integra Codex/OpenAI, Claude Code/Anthropic e AdoneX/Ollama sem misturar os provedores; compartilha continuidade entre os canais por memória local; usa Ruflo de forma seletiva, começando com um agente; e exige autorização humana para cloud ou ativação ampla de agentes.",
+            "Também cobre projetos de ML/DL e séries temporais, IA/RAG/MCP/agentes, Chatbolt e soluções híbridas, com contratos de dados, guardrails, observabilidade, custos e critérios de aceite.",
+          ].join("\n"),
+        );
+      }
+      if (asksAdonex || wantsEveryTopic) {
+        answer.push(
+          [
+            "ADONEX",
+            "O AdoneX é o agente operacional local do Synapse dentro do VS Code. Ele conversa, entende a intenção, usa exclusivamente modelos Ollama e prepara ou executa tarefas governadas sobre o workspace.",
+            "Pode analisar código e contexto do projeto, orientar criação de soluções, propor e aplicar edições conforme as permissões configuradas, executar validações e preservar revisão, confirmação e rollback quando exigidos pelo risco.",
+            "O AdoneX não chama OpenAI nem Anthropic: essa separação é uma regra fixa do Synapse.",
+          ].join("\n"),
+        );
+      }
+      if (asksVick || wantsEveryTopic) {
+        answer.push(
+          [
+            "VICK",
+            "A Vick é a interface digital e de voz do Synapse. Ela recebe perguntas por texto ou fala, mantém o contexto da conversa, coleta briefings, consulta o runtime local e encaminha pedidos para os fluxos governados do Synapse e do AdoneX.",
+            "Ela pode explicar a plataforma, informar status e projetos locais, conduzir o briefing de uma solução, interpretar comandos de voz e acompanhar ações. A Vick não deve inventar estados nem executar mudanças fora das permissões e aprovações aplicáveis.",
+          ].join("\n"),
+        );
+      }
+      if (asksSuggestedQuestions || wantsEveryTopic) {
+        answer.push(
+          [
+            "PERGUNTAS QUE VOCÊ PODE FAZER",
+            "• “Explique em detalhes o Synapse, sua arquitetura e sua governança.”",
+            "• “Qual é a diferença entre Synapse, AdoneX e Vick?”",
+            "• “O que o AdoneX pode fazer neste projeto e quais aprovações ele respeita?”",
+            "• “Vick, qual é o status do frontend, backend e Ollama?”",
+            "• “Quais projetos locais existem e o que cada um faz?”",
+            "• “Como a memória é compartilhada entre Codex, Claude Code, AdoneX e Vick?”",
+            "• “Como o Synapse escolhe entre ML, RAG, agentes, Chatbolt e solução híbrida?”",
+            "• “Crie um briefing para uma solução e pergunte os dados que faltam.”",
+            "• “Analise este projeto e proponha uma melhoria governada.”",
+            "• “Quais testes, evals, riscos e custos devo validar antes de publicar?”",
+          ].join("\n"),
+        );
+      }
     }
     return NextResponse.json({
-      response: sentimentPrefix(sentiment.sentiment) + answer.join(" "),
+      response: sentimentPrefix(sentiment.sentiment) + answer.join("\n\n"),
       provider: "synapse-local-context",
       model,
       context: { projects },

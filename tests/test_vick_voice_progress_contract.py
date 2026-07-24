@@ -20,7 +20,9 @@ def test_progress_route_uses_only_allowlisted_summaries():
 def test_voice_reports_low_confidence_and_progress_within_target():
     source = PAGE.read_text(encoding="utf-8")
     assert "confidence < 0.6" in source
-    assert "Não entendi a solicitação" in source
+    assert "Não tenho certeza se entendi tudo" in source
+    assert 'speak("Não entendi a solicitação' not in source
+    assert "pendingVoiceCommandRef.current = command" in source
     assert "/api/vick/progress?since=" in source
     assert "}, 1250);" in source
     assert "announceProgress" in source

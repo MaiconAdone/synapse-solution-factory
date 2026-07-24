@@ -5,6 +5,7 @@ import {
   applyOperationsToContents,
   applyPatchOperation,
   createSimpleDiff,
+  detectHighRiskRewrites,
   resolveSafePath
 } from "../src/patch/patchUtils";
 import { summarizePatchForSpeech } from "../src/patch/patchSummary";
@@ -156,4 +157,143 @@ test("patch summary produces a short voice confirmation", () => {
   assert.ok(summary.addedLines >= 1);
   assert.match(summary.spoken, /Preparei uma alteracao/);
   assert.match(summary.spoken, /Diga ou clique em aplicar/);
+});
+
+test("detectHighRiskRewrites flags whole-file rewrites that remove most lines", () => {
+  const before = ["a", "b", "c", "d", "e", "f", "g", "h"].join("\n");
+  const risks = detectHighRiskRewrites(
+    [{ path: "src/app.ts", content: "a\nb" }],
+    new Map([["src/app.ts", before]])
+  );
+  assert.equal(risks.length, 1);
+  assert.equal(risks[0].path, "src/app.ts");
+  assert.equal(risks[0].beforeLines, 8);
+  assert.equal(risks[0].afterLines, 2);
+  assert.equal(risks[0].removedPercent, 75);
+});
+
+test("detectHighRiskRewrites ignores new files, tiny files and safe rewrites", () => {
+  // Arquivo novo (sem conteudo atual): nunca e risco.
+  assert.equal(
+    detectHighRiskRewrites([{ path: "new.ts", content: "x" }], new Map()).length,
+    0
+  );
+  // Arquivo pequeno demais para a guarda.
+  assert.equal(
+    detectHighRiskRewrites(
+      [{ path: "tiny.ts", content: "" }],
+      new Map([["tiny.ts", "a\nb"]])
+    ).length,
+    0
+  );
+  // Rewrite que preserva a maioria das linhas.
+  const before = ["a", "b", "c", "d", "e", "f"].join("\n");
+  assert.equal(
+    detectHighRiskRewrites(
+      [{ path: "src/app.ts", content: ["a", "b", "c", "d", "e", "f", "g"].join("\n") }],
+      new Map([["src/app.ts", before]])
+    ).length,
+    0
+  );
+});
+
+test("detectHighRiskRewrites does not flag removals exactly at the threshold", () => {
+  const before = ["a", "b", "c", "d", "e", "f", "g", "h"].join("\n");
+  assert.equal(
+    detectHighRiskRewrites(
+      [{ path: "src/app.ts", content: "a\nb\nc\nd" }],
+      new Map([["src/app.ts", before]])
+    ).length,
+    0
+  );
+});
+
+test("patch operations tolerate indentation drift via normalized anchor matching", () => {
+  const current = "function main() {\n    console.log('hi');\n}\n";
+  const result = applyPatchOperation(current, {
+    type: "replace",
+    path: "src/app.ts",
+    expected: "console.log('hi');",
+    replacement: "console.log('bye');"
+  });
+  // O replacement e realinhado com a indentacao do trecho encontrado.
+  assert.equal(result, "function main() {\n    console.log('bye');\n}\n");
+});
+
+test("patch operations reindent multi-line replacements to the matched anchor", () => {
+  const current = "if (ok) {\n  run();\n}\n";
+  const result = applyPatchOperation(current, {
+    type: "replace",
+    path: "src/app.ts",
+    // Indentacao divergente do arquivo (4 espacos vs 2): forca o estagio
+    // normalizado, que realinha o replacement com a indentacao do arquivo.
+    expected: "    run();",
+    replacement: "run();\nvalidate();"
+  });
+  assert.equal(result, "if (ok) {\n  run();\n  validate();\n}\n");
+});
+
+test("patch operations fall back to fuzzy matching for slightly altered anchors", () => {
+  const current = [
+    "const timeout = 30;",
+    "const retries = 3;",
+    "connect(timeout, retries);"
+  ].join("\n");
+  const result = applyPatchOperation(current, {
+    type: "replace",
+    path: "src/app.ts",
+    expected: "const timeout = 30;\nconst retries = 5;\nconnect(timeout, retries);",
+    replacement: "const retries = 5;"
+  });
+  assert.equal(result, "const retries = 5;");
+});
+
+test("fuzzy matching refuses anchors with more than one similar candidate", () => {
+  // Duas janelas identicas e muito parecidas com o anchor: empate no fuzzy
+  // aborta em vez de aplicar no trecho errado.
+  const current = "apply_config(mode);\napply_config(mode);\n";
+  assert.throws(
+    () =>
+      applyPatchOperation(current, {
+        type: "replace",
+        path: "src/app.ts",
+        expected: "apply_config(fast);",
+        replacement: "apply_config(safe);"
+      }),
+    /ambiguous/
+  );
+});
+
+test("normalized matching refuses anchors ambiguous after whitespace normalization", () => {
+  const current = "  run();\n    run();\n";
+  assert.throws(
+    () =>
+      applyPatchOperation(current, {
+        type: "replace",
+        path: "src/app.ts",
+        expected: "run();",
+        replacement: "stop();"
+      }),
+    /ambiguous/
+  );
+});
+
+test("insert_before and insert_after tolerate indentation drift too", () => {
+  const current = "function main() {\n    work();\n}\n";
+  // Anchor com indentacao divergente (2 espacos vs 4 no arquivo): forca o
+  // estagio normalizado, cujo span cobre a linha inteira.
+  const before = applyPatchOperation(current, {
+    type: "insert_before",
+    path: "src/app.ts",
+    anchor: "  work();",
+    content: "start();\n"
+  });
+  assert.equal(before, "function main() {\nstart();\n    work();\n}\n");
+  const after = applyPatchOperation(current, {
+    type: "insert_after",
+    path: "src/app.ts",
+    anchor: "  work();",
+    content: "\ndone();"
+  });
+  assert.equal(after, "function main() {\n    work();\ndone();\n}\n");
 });

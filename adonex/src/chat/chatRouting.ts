@@ -226,6 +226,11 @@ function escapeRegExp(value: string): string {
 
 function inferNaturalLanguageRoute(prompt: string): ChatRoute {
   const normalized = prompt.toLowerCase();
+  // Criacao de projeto por linguagem natural segue o mesmo fluxo da Vick:
+  // briefing minimo -> analisador de solucao -> project factory (ML/IA/Hibrido).
+  if (asksProjectCreation(stripAccents(normalized))) {
+    return ROUTES.projeto;
+  }
   const asksForImplementation =
     /\b(corrij[ae]|corrigir|consert[ae]|consertar|repar[ae]|reparar|implemente|implementar|adicione|adicionar|remova|remover|altere|alterar|alteracoes|altera[cç][aã]o|ajuste|ajustar|evolua|evoluir|melhore|melhorar|edite|editar|programe|programar|codifique|codificar|modifique|modificar|refatore|refatorar)\b/.test(
       normalized
@@ -282,6 +287,19 @@ function inferNaturalLanguageRoute(prompt: string): ChatRoute {
   return DEFAULT_ROUTE;
 }
 
+function asksProjectCreation(normalized: string): boolean {
+  // Mesmo gatilho da Vick (frontend/app/api/vick/chat/route.ts), com o alvo
+  // proximo do verbo para nao capturar edicoes como "adicione um endpoint novo".
+  const asksToBuild =
+    /\b(crie|criar|monte|montar|gere|gerar|inicie|iniciar|comece|comecar|construa|construir)\b[^.!?\n]{0,60}\b(projeto|solucao|aplicacao)\b/.test(
+      normalized
+    );
+  const asksNewProject = /\b(novo|nova)\s+(projeto|solucao|aplicacao)\b/.test(
+    normalized
+  );
+  return asksToBuild || asksNewProject;
+}
+
 function isSolutionFactoryPrompt(normalized: string, route: ChatRoute): boolean {
   if (["synapse_agent", "synapse_mcp"].includes(route.action)) return true;
   const asksToBuild =
@@ -306,7 +324,7 @@ function hasProjectGoal(normalized: string): boolean {
 }
 
 function hasBusinessProblem(normalized: string): boolean {
-  return /\b(problema de negocio|problema|dor|resolver|reduzir|aumentar|melhorar|otimizar|prever|detectar|classificar|automatizar|vendas|receita|churn|fraude|demanda|estoque|atendimento|suporte|lead|cliente)\b/.test(
+  return /\b(problema de negocio|problema|dor|resolver|reduzir|aumentar|melhorar|otimizar|prever|previsao|previsoes|predicao|detectar|classificar|automatizar|vendas|venda|receita|churn|fraude|demanda|estoque|atendimento|suporte|lead|leads|cliente|clientes|comprador|compradores)\b/.test(
     normalized
   );
 }

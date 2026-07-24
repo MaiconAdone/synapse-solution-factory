@@ -12,6 +12,8 @@ AdoneX neste workspace Synapse.
 
 ## Recent Dialog Context
 
+- 2026-07-23 | Codex | done | Respostas institucionais da Vick sobre Synapse, AdoneX e Vick passaram a ser determinísticas, detalhadas e separadas por intenção; pedidos combinados e perguntas sobre o que pode ser solicitado retornam também um catálogo de exemplos. Endpoint real validado em quatro formulações e TypeScript focado passou; lint global segue bloqueado por referência preexistente da pasta `.next` à rota removida `app/mlflow/page`.
+
 - 2026-07-22 | Codex | done | AdoneX 0.7.14 unificou Chat e Composer em uma unica caixa de dialogo. O roteador identifica pedidos de implementacao e aciona o Composer internamente; a revisao aparece apenas quando existe proposta, mantendo selecao de arquivos, refinamento, aplicacao e undo. Perguntas seguem no chat local e escrita continua sob confirmacao humana. Suite 177/177 passou.
 
 
@@ -344,3 +346,66 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 
 ## 2026-07-22 - Claude Code
 - Router de modelos calibrado para CPU-only: feature/high-risk deixou de escalar para qwen2.5-coder:14b denso por padrao (agora deepseek-coder-v2:lite MoE via profile code_review; 14b/32b so por pedido explicito '14b/modelo forte/32b'); fallback de implement/fix saiu do 3b para o lite; analises synapse_architecture/pipeline/roadmap vao para balanced (lite). 3b segue para triagem/chat/resumo. Arquivos: context/codeIntelligence.ts, llm/localModels.ts. 197 testes ok.
+- [vick] 2026-07-22T19:18:39.573Z sentimento=neutro confianca=low prompt="Rua cheguei"
+- [vick] 2026-07-22T19:21:13.924Z sentimento=neutro confianca=low prompt="só"
+- [vick] 2026-07-22T19:33:41.692Z sentimento=neutro confianca=low prompt="acho que ele"
+- [vick] 2026-07-23T11:34:35.600Z sentimento=neutro confianca=low prompt="me explique o que é o Projeto Synapse"
+- [vick] 2026-07-23T11:52:57.835Z sentimento=neutro confianca=low prompt="quais perguntas posso fazer sobre Synapse, AdoneX e Vick?"
+- [vick] 2026-07-23T11:52:57.943Z sentimento=neutro confianca=low prompt="me explique o que é o Projeto Synapse"
+- [vick] 2026-07-23T11:52:57.955Z sentimento=neutro confianca=low prompt="quem é você, Vick?"
+- [vick] 2026-07-23T11:52:58.560Z sentimento=neutro confianca=low prompt="quem é o AdoneX e o que ele pode fazer?"
+- [vick] 2026-07-23T12:04:36.888Z sentimento=neutro confianca=low prompt="qual é a diferença entre Synapse, AdoneX e Vick?"
+- [vick] 2026-07-23T12:05:58.625Z sentimento=neutro confianca=low prompt="me explique sobre o Synapse"
+- [vick] 2026-07-23T12:06:31.807Z sentimento=com_pressa confianca=medium prompt="pic me explique agora sobre o AdoneX"
+- [vick] 2026-07-23T12:07:01.336Z sentimento=confuso confianca=medium prompt="me explica agora sobre"
+- [vick] 2026-07-23T12:07:19.679Z sentimento=neutro confianca=low prompt="é a v"
+- [vick] 2026-07-23T12:07:38.417Z sentimento=neutro confianca=low prompt="Me explique sobre o que é FIC"
+- [vick] 2026-07-23T12:07:56.513Z sentimento=neutro confianca=low prompt="vi"
+- [vick] 2026-07-23T12:08:14.977Z sentimento=neutro confianca=low prompt="O que é Vick"
+- [vick] 2026-07-23T12:11:59.771Z sentimento=neutro confianca=low prompt="desgraça viu velho ô desgraça"
+- [vick] 2026-07-23T12:12:27.914Z sentimento=neutro confianca=low prompt="O que é o Synapse"
+- [vick] 2026-07-23T12:13:23.884Z sentimento=neutro confianca=low prompt="O que é o adãonex"
+- [vick] 2026-07-23T12:13:37.712Z sentimento=neutro confianca=low prompt="O que é AdoneX"
+- [vick] 2026-07-23T12:18:54.256Z sentimento=com_pressa confianca=medium prompt="muito bem pessoal vou iniciar aqui agora"
+- [vick] 2026-07-23T12:30:23.832Z sentimento=neutro confianca=low prompt="a vi que a nossa assistente de voz e veja só o que é que ela vai estar fazendo"
+- [vick] 2026-07-23T12:33:26.511Z sentimento=neutro confianca=low prompt="Vicky O que é Synapse"
+- [vick] 2026-07-23T14:39:54.861Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+- [vick] 2026-07-23T14:40:11.191Z sentimento=neutro confianca=low prompt="Vamos colocar problema de classificação"
+- [vick] 2026-07-23T14:40:28.479Z sentimento=neutro confianca=low prompt="universo vai ser ml"
+- [vick] 2026-07-23T14:44:44.641Z sentimento=neutro confianca=low prompt="que vamos criar um projeto de teste"
+- [vick] 2026-07-23T14:44:59.919Z sentimento=neutro confianca=low prompt="problema de classificação de risco"
+- [vick] 2026-07-23T14:45:22.799Z sentimento=neutro confianca=low prompt="o universo utilizado eml"
+- [vick] 2026-07-23T14:49:25.444Z sentimento=neutro confianca=low prompt="coaching"
+- [vick] 2026-07-23T14:59:50.167Z sentimento=neutro confianca=low prompt="Fernando"
+- [vick] 2026-07-23T15:00:20.672Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+- [vick] 2026-07-23T15:03:41.661Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+- [vick] 2026-07-23T15:03:58.687Z sentimento=neutro confianca=low prompt="eu quero que ele resolva o problema de classificação de perda de cliente"
+- [vick] 2026-07-23T15:04:15.896Z sentimento=neutro confianca=low prompt="o universo atendido é ml"
+- [vick] 2026-07-23T15:04:30.066Z sentimento=neutro confianca=low prompt="em classificar se houve perda ou não de cliente"
+- [vick] 2026-07-23T15:04:45.082Z sentimento=neutro confianca=low prompt="para o projeto a fonte de dados eu vou inserir quando for criado"
+- [vick] 2026-07-23T15:17:13.605Z sentimento=neutro confianca=low prompt="hahaha"
+- [vick] 2026-07-23T15:17:40.385Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+
+- 2026-07-23 | Codex | done | Corrigida divergência da Vick em comandos de voz: eventos tardios do Web Speech não podem mais falar “não entendi” depois que a transcrição foi despachada e o briefing começou. Contrato de voz 3/3 e TypeScript passaram.
+
+- 2026-07-23 | Codex | done | Correção reforçada após reprodução real: `recognition.onend` não infere mais falta de entendimento, pois pode chegar depois do envio. Confirmação e baixa confiança usam apenas a transcrição do `onresult`. Vick reiniciada na porta 3000; HTTP 200, contrato 3/3 e TypeScript aprovados.
+- [vick] 2026-07-23T16:17:09.713Z sentimento=neutro confianca=low prompt="Vamos criar um projeto teste"
+- [vick] 2026-07-23T16:17:24.683Z sentimento=neutro confianca=low prompt="o problema de classificação"
+- [vick] 2026-07-23T16:28:24.952Z sentimento=neutro confianca=low prompt="para vocês como ficou o galinheiro depois"
+- [vick] 2026-07-23T16:42:58.917Z sentimento=neutro confianca=low prompt="m"
+- [vick] 2026-07-23T16:49:21.566Z sentimento=neutro confianca=low prompt="fique Vamos criar um projeto de teste"
+- [vick] 2026-07-23T16:49:36.925Z sentimento=neutro confianca=low prompt="problema de classificação"
+- [vick] 2026-07-23T16:49:52.066Z sentimento=neutro confianca=low prompt="o universo atendido é ml"
+- [vick] 2026-07-23T16:50:05.717Z sentimento=neutro confianca=low prompt="tem que classificar se teve ou não perda de cliente"
+- [vick] 2026-07-23T16:50:19.890Z sentimento=neutro confianca=low prompt="os dados eu vou inserir após a criação do projeto"
+- [vick] 2026-07-23T16:50:29.515Z sentimento=neutro confianca=low prompt="alto"
+- [vick] 2026-07-23T16:50:29.933Z analyzer-gate projeto=fique status=analyzed requisitado=ia recomendado=ml
+- [vick] 2026-07-23T16:53:27.689Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+- [vick] 2026-07-23T16:53:42.540Z sentimento=neutro confianca=low prompt="problema de classificação"
+- [vick] 2026-07-23T16:53:56.783Z sentimento=neutro confianca=low prompt="o universo atendido é ml"
+- [vick] 2026-07-23T16:54:10.240Z sentimento=neutro confianca=low prompt="tem classificar se houve perda ou não de clientes"
+- [vick] 2026-07-23T16:54:24.605Z sentimento=neutro confianca=low prompt="os dados eu vou colocar depois que o projeto foi criado"
+- [vick] 2026-07-23T16:54:34.061Z sentimento=neutro confianca=low prompt="alto"
+- [vick] 2026-07-23T16:54:34.451Z analyzer-gate projeto=projeto-vick status=analyzed requisitado=ia recomendado=ml
+
+- 2026-07-24 | Codex | done | Corrigidos matching fuzzy ambiguo e anchors com divergencia de indentacao no PatchEngine do AdoneX; suite completa aprovada com 215/215 testes.

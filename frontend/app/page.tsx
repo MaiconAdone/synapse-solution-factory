@@ -449,6 +449,11 @@ export default function VickDigitalPage() {
   const thinkingRef = useRef(false);
   const expectDirectReplyRef = useRef(false);
   const silenceTimerRef = useRef<number | null>(null);
+  // Comando já capturado aguardando o timer de silêncio enviar. O Web Speech
+  // costuma encerrar a sessão antes do timer disparar; sem este ref o onend
+  // achava que nada foi entendido e falava "não entendi" enquanto o timer
+  // seguia processando o comando normalmente.
+  const pendingVoiceCommandRef = useRef("");
   const handlePromptRef = useRef<(prompt: string) => void>(() => undefined);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -534,6 +539,8 @@ export default function VickDigitalPage() {
     wakeActiveRef.current = false;
     transcriptSubmittedRef.current = false;
     commandBufferRef.current = "";
+    pendingVoiceCommandRef.current = "";
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
     // "Cancelar" tem que cancelar tudo: sem isto um comando enfileirado ou a
     // fala progressiva interrompida voltariam a disparar depois.
     queuedPromptRef.current = "";
@@ -556,6 +563,9 @@ export default function VickDigitalPage() {
     wakeActiveRef.current = true;
     transcriptSubmittedRef.current = false;
     commandBufferRef.current = "";
+    pendingVoiceCommandRef.current = "";
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
     setInput("");
     setStatus("Duas palmas detectadas. Pode falar o comando");
     if (autoListenRef.current) startRecognition();
@@ -618,9 +628,14 @@ export default function VickDigitalPage() {
     }
     if (autoListenRef.current && expectDirectReplyRef.current) {
       wakeActiveRef.current = true;
-      transcriptSubmittedRef.current = false;
-      commandBufferRef.current = "";
-      setInput("");
+      // Se o usuário já respondeu e o comando aguarda o timer de silêncio,
+      // preserva tudo: zerar os guards aqui fazia o onend falar "não entendi"
+      // enquanto o timer enviava o comando normalmente (voz e texto divergiam).
+      if (!pendingVoiceCommandRef.current) {
+        transcriptSubmittedRef.current = false;
+        commandBufferRef.current = "";
+        setInput("");
+      }
       setStatus("Pode responder agora");
       window.setTimeout(startRecognition, 120);
       return;
@@ -1088,6 +1103,7 @@ export default function VickDigitalPage() {
       if (command) setVoiceHeard(command);
       setStatus(command ? "Ouvindo seu comando..." : "Pode falar agora");
       if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+      pendingVoiceCommandRef.current = command;
       if (command) {
         const silenceDelay = interimTranscript ? interimSpeechSilenceDelay : finalSpeechSilenceDelay;
         silenceTimerRef.current = window.setTimeout(() => {
@@ -1096,6 +1112,7 @@ export default function VickDigitalPage() {
           expectDirectReplyRef.current = false;
           wakeActiveRef.current = false;
           commandBufferRef.current = "";
+          pendingVoiceCommandRef.current = "";
           const confidence = voiceConfidenceRef.current;
           pendingUnderstandingNoticeRef.current =
             confidence !== null && confidence < 0.6
@@ -1123,19 +1140,10 @@ export default function VickDigitalPage() {
       const errorKind = recognitionErrorKindRef.current;
       recognitionErrorKindRef.current = "";
 
-      if (
-        autoListenRef.current &&
-        wakeActiveRef.current &&
-        speechDetectedRef.current &&
-        !transcriptSubmittedRef.current &&
-        !recognitionErrorRef.current &&
-        !speakingRef.current
-      ) {
-        wakeActiveRef.current = false;
-        speechDetectedRef.current = false;
-        speak("Não entendi a solicitação. Pode repetir com outras palavras?");
-        return;
-      }
+      // `onend` não decide mais se a Vick entendeu. O Web Speech encerra
+      // sessões de forma assíncrona e pode disparar este callback depois que a
+      // transcrição já foi enviada. A confirmação/baixa confiança é decidida
+      // no `onresult`, que possui o texto efetivamente reconhecido.
 
       if (!autoListenRef.current || micTestRef.current || speakingRef.current) {
         if (!transcriptSubmittedRef.current && !recognitionErrorRef.current) {
@@ -1165,6 +1173,7 @@ export default function VickDigitalPage() {
       requestAbortRef.current?.abort();
       requestAbortRef.current = null;
       if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+      pendingVoiceCommandRef.current = "";
       recognition.stop();
       recognitionRef.current = null;
     };
@@ -1295,6 +1304,11 @@ export default function VickDigitalPage() {
   async function handlePrompt(rawPrompt: string) {
     const prompt = cleanReply(rawPrompt);
     if (!prompt) return;
+    // Quem chegou aqui assume o envio (timer de voz, digitado ou fila):
+    // cancela timer de silêncio e comando pendente para nunca duplicar envio.
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
+    pendingVoiceCommandRef.current = "";
     if (CANCEL_COMMAND_RE.test(prompt)) {
       cancelCurrentRequest();
       return;
@@ -1435,6 +1449,9 @@ export default function VickDigitalPage() {
       transcriptSubmittedRef.current = false;
       wakeActiveRef.current = false;
       commandBufferRef.current = "";
+      pendingVoiceCommandRef.current = "";
+      if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
       setInput("");
       setStatus(WAKE_HINT);
       startRecognition();
@@ -1462,6 +1479,7 @@ export default function VickDigitalPage() {
       wakeActiveRef.current = false;
       transcriptSubmittedRef.current = false;
       commandBufferRef.current = "";
+      pendingVoiceCommandRef.current = "";
       setInput("");
       recognitionRef.current?.stop();
       setStatus("Teste de microfone ativo — comandos de voz pausados");

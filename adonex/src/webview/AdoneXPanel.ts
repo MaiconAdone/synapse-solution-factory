@@ -1,7 +1,13 @@
 import * as vscode from "vscode";
 import { AgentOrchestrator } from "../agent/agentOrchestrator";
 import { ComposerSession } from "../composer/composerSession";
-import { buildRepairInput, selectValidationCommands } from "../composer/validationLoop";
+import {
+  buildRepairInput,
+  diffDiagnosticsErrors,
+  formatDiagnosticsAsFailure,
+  selectValidationCommands,
+  type DiagnosticSnapshotEntry
+} from "../composer/validationLoop";
 import { CommandRunner } from "../execution/commandRunner";
 import type {
   AgentAction,
@@ -359,7 +365,11 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     view: { summary: string; files: unknown[]; commands: string[] };
     responseText: string;
     model: string;
+    warnings?: string[];
   }): void {
+    for (const warning of result.warnings ?? []) {
+      this.post({ type: "status", text: `Aviso: ${warning}` });
+    }
     this.post({
       type: "composerProposal",
       summary: result.view.summary,
@@ -378,14 +388,49 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postRuntimeState("editing", "Composer: aplicando arquivos selecionados...");
     // O clique em "Aplicar" na revisao ja e a aprovacao humana explicita; os
     // guards de secrets e de caminho no PatchEngine seguem ativos.
+    const diagnosticsBefore = this.captureErrorDiagnostics(this.composer.selectedPaths());
     const result = await this.composer.apply(false);
     this.post({
       type: "composerApplied",
       appliedPaths: result.appliedPaths,
       commands: result.commands
     });
+    // Validacao estrutural gratuita: erros novos de linguagem (tsc, eslint etc.)
+    // detectados pelo editor, independente dos comandos propostos pelo modelo.
+    const newErrors = await this.reportNewDiagnostics(diagnosticsBefore, result.appliedPaths);
     const commands = selectValidationCommands(result.commands);
     if (!commands.length) {
+      if (newErrors.length) {
+        // Sem comando de validacao, os diagnostics viram a falha que alimenta
+        // o mesmo ciclo governado de correcao do Composer.
+        await this.handleComposerValidationFailure(
+          {
+            command: "vscode diagnostics (language server)",
+            exitCode: 1,
+            stdout: formatDiagnosticsAsFailure(newErrors),
+            stderr: "",
+            durationMs: 0,
+            timedOut: false
+          },
+          true,
+          async () => {
+            // Revalidacao do modo autonomo: compara de novo os diagnostics
+            // contra o estado anterior ao patch (nao executa shell).
+            await new Promise((resolve) => setTimeout(resolve, 1_500));
+            const stillFailing = diffDiagnosticsErrors(
+              diagnosticsBefore,
+              this.captureErrorDiagnostics(this.composer.selectedPaths())
+            );
+            this.postRuntimeState(
+              "idle",
+              stillFailing.length
+                ? `Diagnostics ainda reportam ${stillFailing.length} erro(s) novo(s) apos a correcao. Revise manualmente.`
+                : "Composer validado: diagnostics limpos apos a correcao."
+            );
+          }
+        );
+        return;
+      }
       this.postRuntimeState(
         "idle",
         `Composer aplicou ${result.appliedPaths.length} arquivo(s). Nenhum comando de validacao foi proposto.`
@@ -436,6 +481,19 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.postRuntimeState("idle", `Composer validado: ${commands.join("; ")}.`);
       return;
     }
+    await this.handleComposerValidationFailure(failed, allowRepair);
+  }
+
+  /**
+   * Trata uma falha de validacao do Composer (comando ou diagnostics do
+   * editor): diagnostica, notifica e gera uma unica correcao governada.
+   * A correcao volta para revisao humana, exceto no modo autonomo Synapse.
+   */
+  private async handleComposerValidationFailure(
+    failed: CommandResult,
+    allowRepair: boolean,
+    revalidate?: () => Promise<void>
+  ): Promise<void> {
     const diagnosis = diagnoseCommandFailure(failed);
     this.post({
       type: "testFailure",
@@ -470,7 +528,11 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
         appliedPaths: applied.appliedPaths,
         commands: applied.commands
       });
-      // Revalida somente o comando que falhou; sem nova rodada de correcao.
+      // Revalida somente o que falhou; sem nova rodada de correcao.
+      if (revalidate) {
+        await revalidate();
+        return;
+      }
       await this.composerValidate([failed.command], false);
       return;
     }
@@ -479,6 +541,53 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       "awaiting_confirmation",
       "Correcao proposta a partir da falha capturada. Revise e aplique para revalidar."
     );
+  }
+
+  /**
+   * Snapshot dos erros de linguagem (severity Error) dos arquivos informados,
+   * via language servers ja ativos no editor. Custo zero e independente dos
+   * comandos de validacao propostos pelo modelo.
+   */
+  private captureErrorDiagnostics(
+    relativePaths: readonly string[]
+  ): DiagnosticSnapshotEntry[] {
+    const root =
+      this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) return [];
+    const entries: DiagnosticSnapshotEntry[] = [];
+    for (const relativePath of relativePaths) {
+      const uri = vscode.Uri.joinPath(vscode.Uri.file(root), relativePath);
+      for (const diagnostic of vscode.languages.getDiagnostics(uri)) {
+        if (diagnostic.severity !== vscode.DiagnosticSeverity.Error) continue;
+        entries.push({
+          path: relativePath,
+          message: diagnostic.message,
+          line: diagnostic.range.start.line + 1
+        });
+      }
+    }
+    return entries;
+  }
+
+  /**
+   * Compara diagnostics antes/depois do apply e reporta erros NOVOS no painel.
+   * Aguarda um curto intervalo para os language servers reprocessarem os
+   * arquivos recem-escritos. Retorna os erros novos para o chamador decidir
+   * se alimenta o ciclo de correcao.
+   */
+  private async reportNewDiagnostics(
+    before: readonly DiagnosticSnapshotEntry[],
+    relativePaths: readonly string[]
+  ): Promise<DiagnosticSnapshotEntry[]> {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    const fresh = diffDiagnosticsErrors(before, this.captureErrorDiagnostics(relativePaths));
+    if (fresh.length) {
+      this.post({
+        type: "status",
+        text: `Aviso: ${formatDiagnosticsAsFailure(fresh, 5)}`
+      });
+    }
+    return fresh;
   }
 
   private composerAutonomousSynapse(): boolean {
@@ -890,9 +999,15 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.patch = execution.proposal
       ? await this.patchEngine.generate(
           execution.proposal.changes,
-          execution.proposal.operations
+          execution.proposal.operations,
+          { droppedOperations: execution.proposal.droppedOperations }
         )
       : undefined;
+    // Nunca deixa proposta parcial passar em silencio: entradas malformadas
+    // descartadas pelo parser viram aviso explicito no painel.
+    for (const warning of this.patch?.warnings ?? []) {
+      this.post({ type: "status", text: `Aviso: ${warning}` });
+    }
     const patchSummary = this.patch ? summarizePatchForSpeech(this.patch) : undefined;
     const responseText = guardAgainstLocalHallucinations(
       sanitizeAdoneXResponse(execution.response.text),
@@ -964,10 +1079,19 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     }
     this.ensureNotCancelled();
     this.postRuntimeState("editing", `Applying ${this.patch.changes.length} file change(s) to the Synapse workspace...`);
+    const diagnosticsBefore = this.captureErrorDiagnostics(
+      this.patch.changes.map((change) => change.path)
+    );
     const receipt = await this.patchEngine.apply(
       this.patch,
       true,
       this.requiresWriteApproval()
+    );
+    // Reporta erros novos de linguagem introduzidos pelo patch (aviso; o ciclo
+    // de correcao governado segue disponivel via validacao de comandos).
+    await this.reportNewDiagnostics(
+      diagnosticsBefore,
+      this.patch.changes.map((change) => change.path)
     );
     if (this.taskRecord && this.taskStore) {
       this.taskRecord.status = "patch_applied";

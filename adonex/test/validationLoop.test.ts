@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildRepairInput,
+  diffDiagnosticsErrors,
+  formatDiagnosticsAsFailure,
   selectValidationCommands
 } from "../src/composer/validationLoop";
 import type { CommandResult } from "../src/llm/types";
@@ -55,4 +57,39 @@ test("buildRepairInput truncates long logs keeping the tail", () => {
 test("buildRepairInput handles empty captured output", () => {
   const silent: CommandResult = { ...failed, stdout: "", stderr: "" };
   assert.match(buildRepairInput(silent), /sem saida capturada/);
+});
+
+test("diffDiagnosticsErrors returns only new errors, deduplicated", () => {
+  const before = [{ path: "a.ts", message: "old error", line: 1 }];
+  const after = [
+    { path: "a.ts", message: "old error", line: 1 },
+    { path: "a.ts", message: "new error", line: 2 },
+    { path: "a.ts", message: "new error", line: 2 },
+    { path: "b.ts", message: "another", line: 5 }
+  ];
+  assert.deepEqual(diffDiagnosticsErrors(before, after), [
+    { path: "a.ts", message: "new error", line: 2 },
+    { path: "b.ts", message: "another", line: 5 }
+  ]);
+});
+
+test("diffDiagnosticsErrors treats missing line as part of the key", () => {
+  const after = [{ path: "a.ts", message: "err" }];
+  assert.deepEqual(diffDiagnosticsErrors([], after), after);
+  assert.deepEqual(
+    diffDiagnosticsErrors([{ path: "a.ts", message: "err", line: 3 }], after),
+    after
+  );
+});
+
+test("formatDiagnosticsAsFailure caps the list and mentions the overflow", () => {
+  const errors = Array.from({ length: 12 }, (_, index) => ({
+    path: "a.ts",
+    message: `e${index}`,
+    line: index + 1
+  }));
+  const text = formatDiagnosticsAsFailure(errors, 10);
+  assert.match(text, /12 erro\(s\) novo\(s\)/);
+  assert.match(text, /mais 2 erro\(s\)/);
+  assert.match(text, /a\.ts:1: e0/);
 });

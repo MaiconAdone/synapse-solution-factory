@@ -7,8 +7,10 @@ import { estimateCost, estimateTokenCost } from "../cost/costGuard";
 import { synapseSystemContext } from "../synapse/synapseProfile";
 import { buildRufloCouncilContext } from "../synapse/rufloCouncil";
 import {
+  generateWithTruncationBudget,
   OllamaClient,
   OllamaClientError,
+  OllamaTruncatedResponseError,
   type OllamaClientEvent
 } from "../llm/ollamaClient";
 import { SynapseGatewayClient, SynapseGatewayClientError } from "../llm/synapseGatewayClient";
@@ -405,24 +407,40 @@ export class AgentOrchestrator {
           }
         }
       };
-      try {
-        return await new OllamaClient(clientOptions).generate({
-          ...req,
-          maxOutputTokens: outputBudgetForTask(selectedProfile, action, task)
-        });
-      } catch (error) {
-        if (
-          selectedModel !== baseModel &&
-          error instanceof OllamaClientError &&
-          /not found|pull model|model/i.test(error.message)
-        ) {
-          return await new OllamaClient({
-            ...clientOptions,
-            model: baseModel
-          }).generate(req);
+      const runOllama = async (maxOutputTokens: number): Promise<LlmResponse> => {
+        try {
+          return await new OllamaClient(clientOptions).generate({
+            ...req,
+            maxOutputTokens
+          });
+        } catch (error) {
+          if (
+            selectedModel !== baseModel &&
+            error instanceof OllamaClientError &&
+            !(error instanceof OllamaTruncatedResponseError) &&
+            /not found|pull model|model/i.test(error.message)
+          ) {
+            return await new OllamaClient({
+              ...clientOptions,
+              model: baseModel
+            }).generate(req);
+          }
+          throw error;
         }
-        throw error;
-      }
+      };
+      // Se a proposta truncar por budget de saida, tenta UMA vez com
+      // num_predict dobrado (ate o teto interno); truncando de novo, o erro
+      // claro de budget excedido sobe para o painel.
+      return generateWithTruncationBudget(
+        runOllama,
+        outputBudgetForTask(selectedProfile, action, task),
+        {
+          onRetry: (budget) =>
+            progress(
+              `Saida truncada pelo limite de tokens; tentando de novo com budget maior (~${budget} tokens)...`
+            )
+        }
+      );
     };
 
     const response = await runModel(request);

@@ -4,6 +4,16 @@ import type { LlmRequest, LlmResponse } from "./types";
 
 export class OllamaClientError extends Error {}
 
+/**
+ * Erro especifico de truncamento por budget de saida: o Ollama encerrou a
+ * resposta com done_reason=length (ou com JSON claramente incompleto quando o
+ * done_reason nao veio). Lancado apenas em saidas estruturadas/JSON, onde um
+ * texto cortado e garantidamente corrupto; texto livre segue com o conteudo
+ * parcial e o flag `truncated` na resposta. Permite ao chamador distinguir
+ * truncamento de outros erros e reagir (ex.: refazer com budget maior).
+ */
+export class OllamaTruncatedResponseError extends OllamaClientError {}
+
 export interface OllamaClientEvent {
   type: "request" | "first_token" | "retry" | "success" | "error";
   attempt: number;
@@ -86,7 +96,10 @@ export class OllamaClient {
             `Ollama rejected the request (${response.status}): ${response.body.slice(0, 500)}`
           );
         }
-        const result = parseOllamaResponse(response.body);
+        const result = parseOllamaResponse(
+          response.body,
+          Boolean(request.jsonSchema ?? request.jsonMode)
+        );
         this.emitLog({
           type: "success",
           attempt,
@@ -101,7 +114,8 @@ export class OllamaClient {
           model: result.model ?? model,
           text: result.text.trim(),
           inputTokens: result.prompt_eval_count ?? 0,
-          outputTokens: result.eval_count ?? 0
+          outputTokens: result.eval_count ?? 0,
+          truncated: result.truncated
         };
       } catch (error) {
         lastError = error;
@@ -209,6 +223,9 @@ export class OllamaClient {
   }
 
   private shouldRetry(error: unknown): boolean {
+    // Truncamento por budget nao se resolve repetindo a mesma chamada; quem
+    // decide (budget maior ou erro) e o chamador.
+    if (error instanceof OllamaTruncatedResponseError) return false;
     return isRetryableError(error);
   }
 
@@ -340,11 +357,15 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function parseOllamaResponse(body: string): {
+function parseOllamaResponse(
+  body: string,
+  expectJson = false
+): {
   model?: string;
   text: string;
   prompt_eval_count?: number;
   eval_count?: number;
+  truncated?: boolean;
 } {
   const trimmed = body.trim();
   if (!trimmed) {
@@ -357,18 +378,25 @@ function parseOllamaResponse(body: string): {
       response?: string;
       prompt_eval_count?: number;
       eval_count?: number;
+      done?: boolean;
+      done_reason?: string;
     };
+    const text = result.message?.content ?? result.response ?? "";
+    const truncated = detectTruncation(result.done_reason, result.done, text, expectJson);
     return {
       model: result.model,
-      text: result.message?.content ?? result.response ?? "",
+      text,
       prompt_eval_count: result.prompt_eval_count,
-      eval_count: result.eval_count
+      eval_count: result.eval_count,
+      truncated
     };
   }
 
   let model: string | undefined;
   let promptEvalCount: number | undefined;
   let evalCount: number | undefined;
+  let doneReason: string | undefined;
+  let done = false;
   const parts: string[] = [];
   for (const line of trimmed.split(/\r?\n/)) {
     if (!line.trim()) continue;
@@ -378,19 +406,128 @@ function parseOllamaResponse(body: string): {
       response?: string;
       prompt_eval_count?: number;
       eval_count?: number;
+      done?: boolean;
+      done_reason?: string;
     };
     model = item.model ?? model;
     if (item.message?.content) parts.push(item.message.content);
     if (item.response) parts.push(item.response);
     promptEvalCount = item.prompt_eval_count ?? promptEvalCount;
     evalCount = item.eval_count ?? evalCount;
+    doneReason = item.done_reason ?? doneReason;
+    done = item.done ?? done;
   }
+  const text = parts.join("");
+  const truncated = detectTruncation(doneReason, done, text, expectJson);
   return {
     model,
-    text: parts.join(""),
+    text,
     prompt_eval_count: promptEvalCount,
-    eval_count: evalCount
+    eval_count: evalCount,
+    truncated
   };
+}
+
+/**
+ * Inspeciona done_reason/done do Ollama. Em saidas JSON (propostas de patch),
+ * truncamento e erro duro: JSON cortado nao tem recuperacao local. Em texto
+ * livre, apenas sinaliza via retorno para manter o comportamento atual de
+ * respostas parciais no chat/completion.
+ */
+function detectTruncation(
+  doneReason: string | undefined,
+  done: boolean | undefined,
+  text: string,
+  expectJson: boolean
+): boolean | undefined {
+  if (doneReason === "length") {
+    if (expectJson) {
+      throw new OllamaTruncatedResponseError(
+        "Ollama response truncated by the output token budget (done_reason=length)."
+      );
+    }
+    return true;
+  }
+  if (
+    done === true &&
+    doneReason === undefined &&
+    expectJson &&
+    looksLikeUnfinishedJson(text)
+  ) {
+    throw new OllamaTruncatedResponseError(
+      "Ollama response ended with clearly incomplete JSON; treating it as truncated by the output token budget."
+    );
+  }
+  return undefined;
+}
+
+/**
+ * Heuristica deterministica para "JSON claramente incompleto": o texto comeca
+ * como objeto/array JSON mas os delimitadores nao fecham (ou a string fica
+ * aberta) ao fim da resposta.
+ */
+function looksLikeUnfinishedJson(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return false;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = 0; index < trimmed.length; index += 1) {
+    const char = trimmed[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+    } else if (char === "{" || char === "[") {
+      depth += 1;
+    } else if (char === "}" || char === "]") {
+      depth -= 1;
+    }
+  }
+  return depth > 0 || inString;
+}
+
+/** Teto razoavel de num_predict para a re-geracao com budget dobrado. */
+export const MAX_OUTPUT_TOKEN_BUDGET = 4_096;
+
+/**
+ * Re-gera UMA vez com num_predict dobrado (ate o teto) quando a primeira
+ * tentativa morre por truncamento. Se truncar de novo (ou o budget ja estiver
+ * no teto), propaga um erro claro de budget excedido. Qualquer outro erro
+ * segue inalterado para o chamador.
+ */
+export async function generateWithTruncationBudget(
+  generate: (maxOutputTokens: number) => Promise<LlmResponse>,
+  initialBudget: number,
+  options: { maxBudget?: number; onRetry?: (budget: number) => void } = {}
+): Promise<LlmResponse> {
+  const maxBudget = options.maxBudget ?? MAX_OUTPUT_TOKEN_BUDGET;
+  try {
+    return await generate(initialBudget);
+  } catch (error) {
+    if (!(error instanceof OllamaTruncatedResponseError)) throw error;
+    const doubled = Math.min(initialBudget * 2, maxBudget);
+    if (doubled <= initialBudget) {
+      throw new Error(
+        `Model output exceeded the output token budget (${initialBudget} tokens, already at the ${maxBudget} ceiling); split the task into smaller edits.`
+      );
+    }
+    options.onRetry?.(doubled);
+    try {
+      return await generate(doubled);
+    } catch (retryError) {
+      if (retryError instanceof OllamaTruncatedResponseError) {
+        throw new Error(
+          `Model output exceeded the output token budget even after doubling to ${doubled} tokens; split the task into smaller edits.`
+        );
+      }
+      throw retryError;
+    }
+  }
 }
 
 function errorDetail(error: unknown): string {

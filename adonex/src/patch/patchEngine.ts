@@ -9,24 +9,56 @@ import type {
 } from "../llm/types";
 import { requestApproval } from "../security/approvalGate";
 import { isSensitivePath } from "../security/secretScanner";
-import { applyOperationsToContents, createSimpleDiff, resolveSafePath } from "./patchUtils";
+import {
+  applyOperationsToContents,
+  createSimpleDiff,
+  detectHighRiskRewrites,
+  resolveSafePath
+} from "./patchUtils";
+
+export interface PatchGenerateOptions {
+  /**
+   * Quantidade de changes/operations malformadas descartadas pelo parser da
+   * proposta. Vira warning no patch para o usuario saber que a proposta
+   * aplicada e parcial em relacao ao que o modelo tentou enviar.
+   */
+  droppedOperations?: number;
+}
 
 export class PatchEngine {
   public async generate(
     changes: ProposedFileChange[] = [],
-    operations: ProposedPatchOperation[] = []
+    operations: ProposedPatchOperation[] = [],
+    options: PatchGenerateOptions = {}
   ): Promise<GeneratedPatch> {
     const root = this.workspaceRoot();
     const resolved = await this.resolveOperations(root, operations);
     const allChanges = mergeChanges([...changes, ...resolved]);
     const diffs: string[] = [];
+    const currentByPath = new Map<string, string>();
     for (const change of allChanges) {
       assertPatchPathAllowed(change.path);
       const target = resolveSafePath(root, change.path);
       const before = await fs.readFile(target, "utf8").catch(() => "");
+      if (before) currentByPath.set(change.path, before);
       diffs.push(createSimpleDiff(change.path, before, change.content));
     }
-    return { changes: allChanges, operations, diff: diffs.join("\n\n") };
+    const warnings: string[] = [];
+    if (options.droppedOperations) {
+      warnings.push(
+        `${options.droppedOperations} entrada(s) malformada(s) do JSON do modelo foram descartadas; o patch aplica apenas as entradas validas.`
+      );
+    }
+    // Guarda contra rewrite alucinado: o modelo pode ter visto so um excerpt
+    // do arquivo e devolvido um "arquivo completo" que apaga codigo nunca visto.
+    const highRiskRewrites = detectHighRiskRewrites(allChanges, currentByPath);
+    return {
+      changes: allChanges,
+      operations,
+      diff: diffs.join("\n\n"),
+      ...(warnings.length ? { warnings } : {}),
+      ...(highRiskRewrites.length ? { highRiskRewrites } : {})
+    };
   }
 
   public async preview(patch: GeneratedPatch): Promise<string> {
@@ -61,11 +93,23 @@ export class PatchEngine {
   ): Promise<AppliedPatchReceipt> {
     const root = this.workspaceRoot();
     const paths = patch.changes.map((change) => change.path).join("\n");
+    const highRisk = patch.highRiskRewrites ?? [];
+    // Rewrites de alto risco nao sao bloqueados, mas exigem ciencia explicita:
+    // no fluxo interativo o aviso entra no prompt de aprovacao; no fluxo sem
+    // prompt (composer/autonomo) fica registrado no log do patch.
+    const riskNote = highRisk.length
+      ? `\n\nHIGH-RISK REWRITE: ${highRisk
+          .map(
+            (rewrite) =>
+              `${rewrite.path} removes ~${rewrite.removedPercent}% of the existing lines (${rewrite.beforeLines} -> ${rewrite.afterLines})`
+          )
+          .join("; ")}. Confirm only if the model saw the full file.`
+      : "";
     if (
       requireApproval &&
       !(await requestApproval(
         "Apply AdoneX patch?",
-        `The following files will be written:\n${paths}`,
+        `The following files will be written:\n${paths}${riskNote}`,
         "Apply Patch"
       ))
     ) {
@@ -82,6 +126,14 @@ export class PatchEngine {
     const backupRoot = path.join(root, ".adonex", "backups", timestamp);
     await fs.mkdir(logRoot, { recursive: true });
     const log: string[] = [`AdoneX patch ${new Date().toISOString()}`];
+    for (const warning of patch.warnings ?? []) {
+      log.push(`WARNING: ${warning}`);
+    }
+    for (const rewrite of highRisk) {
+      log.push(
+        `WARNING: high-risk rewrite applied to ${rewrite.path} (~${rewrite.removedPercent}% of existing lines removed).`
+      );
+    }
     const receipt: AppliedPatchReceipt = {
       appliedAt: new Date().toISOString(),
       entries: []
@@ -110,7 +162,7 @@ export class PatchEngine {
     }
     await fs.writeFile(
       path.join(logRoot, `${timestamp}.patch.log`),
-      [log[0], patch.diff].join("\n\n"),
+      [...log, patch.diff].join("\n\n"),
       "utf8"
     );
     return receipt;

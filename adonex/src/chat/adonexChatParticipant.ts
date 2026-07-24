@@ -19,6 +19,13 @@ import {
   routeChatCommand
 } from "./chatRouting";
 import { createLocalFallbackResponse } from "./fallbackResponse";
+import {
+  buildSolutionBriefing,
+  createSolutionProject,
+  hasSolutionFactory,
+  isBriefingCancellation,
+  renderProjectCreated
+} from "./solutionFactory";
 import { formatTaskResult } from "./taskResultFormatter";
 import { sanitizeAdoneXResponse } from "./responseSanitizer";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "./hallucinationGuard";
@@ -49,7 +56,13 @@ export function registerAdoneXChatParticipant(
     if (await handleMemoryCommand(parsed.command, parsed.prompt, stream)) {
       return { metadata: { action: parsed.command, memory: true } };
     }
-    const route = routeChatCommand(parsed.command, parsed.prompt);
+    let route = routeChatCommand(parsed.command, parsed.prompt);
+    // Briefing multi-turno da Solution Factory: respostas dadas em turnos
+    // seguintes continuam o fluxo de criacao, como no navegador da Vick.
+    const factoryDialog = solutionFactoryDialogState(chatContext.history);
+    if (factoryDialog.active && !isCreationRoute(route)) {
+      route = routeChatCommand("projeto");
+    }
     const rawPrompt = resolveChatPrompt(parsed.prompt, route);
     if (!rawPrompt) {
       stream.markdown(
@@ -67,7 +80,23 @@ export function registerAdoneXChatParticipant(
       `route=${route.action}`,
       `mode=${route.mode}`
     ]);
-    const briefingCheck = checkSolutionFactoryDialog(rawPrompt, route);
+    if (factoryDialog.active && isBriefingCancellation(rawPrompt)) {
+      await recordSharedChatMemory(rawPrompt, "briefing-cancelado", []);
+      stream.markdown("Briefing cancelado. Nenhum projeto foi criado.");
+      return {
+        metadata: {
+          action: route.action,
+          solutionFactoryCompleted: true,
+          cancelled: true
+        }
+      };
+    }
+
+    const creationFlow = isCreationRoute(route) || factoryDialog.active;
+    const briefingSource = creationFlow
+      ? [...factoryDialog.userTexts, rawPrompt].join("\n")
+      : rawPrompt;
+    const briefingCheck = checkSolutionFactoryDialog(briefingSource, route);
     if (briefingCheck.missingFields.length) {
       await recordSharedChatMemory(rawPrompt, "waiting-for-user", [
         `missing=${briefingCheck.missingFields.join(",")}`,
@@ -81,6 +110,53 @@ export function registerAdoneXChatParticipant(
           missingFields: briefingCheck.missingFields
         }
       };
+    }
+
+    // Briefing completo em fluxo de criacao: executa a mesma Solution Factory
+    // da Vick (gate do analisador + create_ai_project.ps1) em vez de responder
+    // com um passo a passo generico do modelo local.
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (
+      creationFlow &&
+      briefingCheck.applies &&
+      workspaceRoot &&
+      (await hasSolutionFactory(workspaceRoot))
+    ) {
+      try {
+        stream.progress("Executando a Solution Factory do Synapse...");
+        const briefing = buildSolutionBriefing(briefingSource);
+        const created = await createSolutionProject({
+          workspaceRoot,
+          briefing,
+          onProgress: (message) => stream.progress(message)
+        });
+        stream.markdown(renderProjectCreated(created));
+        await recordSharedChatMemory(rawPrompt, "project-created", [
+          `project=${created.projectName}`,
+          `universe=${created.selectedUniverse}`,
+          `tipo=${created.tipoProjeto}`
+        ]);
+        return {
+          metadata: {
+            action: route.action,
+            solutionFactoryCompleted: true,
+            project: created.projectName,
+            universe: created.selectedUniverse
+          }
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        await recordSharedChatMemory(rawPrompt, "project-creation-failed", [
+          message.slice(0, 300)
+        ]);
+        stream.markdown(
+          `Briefing completo, mas a criacao do projeto falhou: ${message}\n\nDiga "tente novamente" para repetir com o mesmo briefing ou "cancelar" para encerrar.`
+        );
+        return {
+          errorDetails: { message },
+          metadata: { action: route.action, solutionFactoryBriefing: true }
+        };
+      }
     }
 
     let currentPlan: TaskPlan | undefined;
@@ -231,6 +307,35 @@ export function registerAdoneXChatParticipant(
     }
   };
   context.subscriptions.push(participant);
+}
+
+interface SolutionFactoryDialogState {
+  active: boolean;
+  userTexts: string[];
+}
+
+// Reconstroi o estado do briefing da Solution Factory a partir do historico do
+// chat: turnos com metadata.solutionFactoryBriefing mantem o dialogo ativo e
+// metadata.solutionFactoryCompleted (criado ou cancelado) encerra o ciclo.
+function solutionFactoryDialogState(
+  history: vscode.ChatContext["history"]
+): SolutionFactoryDialogState {
+  let active = false;
+  const userTexts: string[] = [];
+  for (const turn of history) {
+    if (turn instanceof vscode.ChatResponseTurn) {
+      const metadata = (turn.result?.metadata ?? {}) as Record<string, unknown>;
+      if (metadata.solutionFactoryCompleted) {
+        active = false;
+        userTexts.length = 0;
+      } else if (metadata.solutionFactoryBriefing) {
+        active = true;
+      }
+    } else if ("prompt" in turn && typeof turn.prompt === "string") {
+      userTexts.push(turn.prompt.trim());
+    }
+  }
+  return { active, userTexts: userTexts.filter(Boolean).slice(-12) };
 }
 
 async function recordSharedChatMemory(
