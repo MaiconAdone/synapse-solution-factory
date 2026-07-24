@@ -409,3 +409,5 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - [vick] 2026-07-23T16:54:34.451Z analyzer-gate projeto=projeto-vick status=analyzed requisitado=ia recomendado=ml
 
 - 2026-07-24 | Codex | done | Corrigidos matching fuzzy ambiguo e anchors com divergencia de indentacao no PatchEngine do AdoneX; suite completa aprovada com 215/215 testes.
+
+- 2026-07-24 | Codex | done | Restaurada a hierarquia visual da caixa de texto do AdoneX: textarea em largura total e botoes de contexto/envio organizados abaixo; recursos preservados e suite 215/215 aprovada.

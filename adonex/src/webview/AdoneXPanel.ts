@@ -1625,10 +1625,14 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
   </section>
   <footer class="composer">
     <div class="composer-input-row">
+      <textarea id="prompt" rows="3" placeholder="Converse, peça alterações ou implemente recursos... use @ para citar arquivos"></textarea>
+    </div>
+    <div class="composer-action-row">
+      <div class="composer-context-actions">
       <button id="attach" class="icon-button" type="button" aria-label="Carregar arquivos e imagens" title="Carregar arquivos e imagens"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5 8.9 14.1a3 3 0 0 0 4.2 4.2l7.1-7.1a5 5 0 0 0-7.1-7.1L5.6 11.6a7 7 0 0 0 9.9 9.9l5.3-5.3"/></svg></button>
       <button id="mention" class="icon-button mention-button" type="button" aria-label="Adicionar contexto por mencao" title="Adicionar contexto: @arquivo, @selection, @file">@</button>
-      <textarea id="prompt" rows="3" placeholder="Converse, peça alterações ou implemente recursos... use @ para citar arquivos"></textarea>
       <button id="memory" class="icon-button" type="button" aria-label="Abrir memoria compartilhada" title="Memoria compartilhada: AdoneX, Claude Code e Codex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h11a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 8.5 4.8 4.8 0 0 0 7 18Z"/><path d="M9 13h6M12 10v6"/></svg></button>
+      </div>
       <button id="send" class="primary" type="button" aria-label="Enviar mensagem">Enviar</button>
     </div>
     <div id="attachments" class="attachment-strip" hidden></div>

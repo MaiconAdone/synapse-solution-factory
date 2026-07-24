@@ -485,17 +485,28 @@ h2 {
 }
 
 .composer-input-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  display: block;
 }
 
 .composer-input-row textarea {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: block;
+  width: 100%;
 }
 
-.composer-input-row #send {
+.composer-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.composer-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.composer-action-row #send {
   flex: 0 0 auto;
   min-width: 72px;
 }
