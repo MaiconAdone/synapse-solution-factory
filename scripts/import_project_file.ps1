@@ -5,10 +5,18 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$InputPath,
 
-    [string]$DestinoBase = "C:\Users\malves\Documents\Projetos"
+    [string]$DestinoBase = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($DestinoBase)) {
+    $DestinoBase = if ([string]::IsNullOrWhiteSpace($env:SYNAPSE_PROJECTS_DIR)) {
+        Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    } else {
+        $env:SYNAPSE_PROJECTS_DIR
+    }
+}
 
 function Convert-ToSafeFileName {
     param([string]$Name)

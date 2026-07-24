@@ -5,6 +5,33 @@ official dialog channels: VS Code Chat, AdoneX, Claude Code, and Codex.
 Synapse is the control plane and the only project factory. Experiment tracking
 uses the local model registry in `artifacts/models/`.
 
+## Instalação Em Outra Máquina
+
+Pré-requisitos: Git, PowerShell 7+, Python 3.12, Node.js 22, VS Code, Docker
+Desktop (opcional) e Ollama. Em Windows, clone o repositório e execute:
+
+```powershell
+Copy-Item .env.example .env
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -r backend\requirements.txt
+npm ci
+npm --prefix frontend ci
+npm --prefix adonex ci
+ollama pull qwen2.5-coder:3b
+npm run check
+```
+
+Depois, abra a pasta clonada no VS Code e use `Tasks: Run Task`. Para a
+interface web, execute `Synapse: Iniciar modo navegador independente`. O
+backend usa `http://127.0.0.1:8000` e a Vick usa
+`http://127.0.0.1:3000`.
+
+Segredos e configurações locais devem ficar apenas em `.env`,
+`frontend/.env.local` e `.claude/settings.local.json`; esses arquivos não são
+versionados. Para criar projetos fora da pasta pai do Synapse, defina
+`SYNAPSE_PROJECTS_DIR` ou informe `-DestinoBase` aos scripts. Consulte também
+`docs/GUIA_DE_USO_SYNAPSE_ADONEX_VICK.md`.
+
 ## Interfaces Oficiais
 
 O Synapse funciona de forma independente no navegador e no VS Code, com o
@@ -141,7 +168,7 @@ Vick, crie um projeto de ML para prever churn de clientes
 Com o briefing completo, o Synapse consulta o BusinessSolutionAnalyzer, gera
 `config/business_solution_analysis.json` e segue arquitetura, testes, evals,
 governanca e custo local-first. O projeto e criado localmente em
-`C:\Users\malves\Documents\Projetos`, com `data/`, experimentos, memoria,
+uma pasta irmã configurável pelo usuário, com `data/`, experimentos, memoria,
 evals, guardrails, contratos e documentacao aplicaveis ao tipo ML, IA ou
 hibrido.
 

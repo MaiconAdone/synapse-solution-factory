@@ -2,10 +2,17 @@
     [Parameter(Mandatory=$true)]
     [string]$ProjectName,
 
-    [string]$DestinoBase = "C:\Users\malves\Documents\Projetos"
+    [string]$DestinoBase = ""
 )
 
 $ErrorActionPreference = "Stop"
+if ([string]::IsNullOrWhiteSpace($DestinoBase)) {
+    $DestinoBase = if ([string]::IsNullOrWhiteSpace($env:SYNAPSE_PROJECTS_DIR)) {
+        Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    } else {
+        $env:SYNAPSE_PROJECTS_DIR
+    }
+}
 $ProjectRoot = Join-Path $DestinoBase $ProjectName
 $Checks = New-Object System.Collections.Generic.List[object]
 

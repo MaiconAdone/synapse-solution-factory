@@ -12,6 +12,8 @@ AdoneX neste workspace Synapse.
 
 ## Recent Dialog Context
 
+- 2026-07-24 | User/Codex | done | Projeto `TalentOS` criado em `C:\Users\malves\Documents\Projetos\TalentOS` como solucao hibrida de recrutamento (ML + IA), risco alto. Analise oficial corrigida para classificacao/scoring/priorizacao + RAG/agentes, com LGPD, explicabilidade, auditoria e decisao humana. Scaffold validado; 11/11 testes passaram; Ruflo nao foi ativado.
+
 - 2026-07-23 | Codex | done | Respostas institucionais da Vick sobre Synapse, AdoneX e Vick passaram a ser determinísticas, detalhadas e separadas por intenção; pedidos combinados e perguntas sobre o que pode ser solicitado retornam também um catálogo de exemplos. Endpoint real validado em quatro formulações e TypeScript focado passou; lint global segue bloqueado por referência preexistente da pasta `.next` à rota removida `app/mlflow/page`.
 
 - 2026-07-22 | Codex | done | AdoneX 0.7.14 unificou Chat e Composer em uma unica caixa de dialogo. O roteador identifica pedidos de implementacao e aciona o Composer internamente; a revisao aparece apenas quando existe proposta, mantendo selecao de arquivos, refinamento, aplicacao e undo. Perguntas seguem no chat local e escrita continua sob confirmacao humana. Suite 177/177 passou.
@@ -411,3 +413,24 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - 2026-07-24 | Codex | done | Corrigidos matching fuzzy ambiguo e anchors com divergencia de indentacao no PatchEngine do AdoneX; suite completa aprovada com 215/215 testes.
 
 - 2026-07-24 | Codex | done | Restaurada a hierarquia visual da caixa de texto do AdoneX: textarea em largura total e botoes de contexto/envio organizados abaixo; recursos preservados e suite 215/215 aprovada.
+- 2026-07-24 | Codex | release | Auditoria final para publicação no GitLab: removidos defaults presos ao usuário local, documentada instalação reproduzível em outra máquina e ignorados logs/configuração local. Validações: enterprise stack aprovado, backend 105/105, factory 7/7, frontend lint/build e AdoneX 215/215.
+- [vick] 2026-07-24T13:07:14.406Z sentimento=neutro confianca=low prompt="WhatsApp"
+- [vick] 2026-07-24T13:44:26.738Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+- [vick] 2026-07-24T13:44:42.105Z sentimento=neutro confianca=low prompt="problema de classificação"
+- [vick] 2026-07-24T13:44:56.642Z sentimento=neutro confianca=low prompt="o universo atendido a ml"
+- [vick] 2026-07-24T13:45:13.097Z sentimento=neutro confianca=low prompt="em classificar se houve perda ou não de clientes"
+- [vick] 2026-07-24T13:45:30.755Z sentimento=neutro confianca=low prompt="os dados eu vou colocar quando for criado os projetos"
+- [vick] 2026-07-24T13:45:43.284Z sentimento=neutro confianca=low prompt="alto"
+- [vick] 2026-07-24T13:45:48.075Z analyzer-gate projeto=projeto-vick status=analyzed requisitado=ia recomendado=ml
+- [vick] 2026-07-24T14:46:54.086Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste para classificação"
+- [vick] 2026-07-24T14:47:08.815Z sentimento=neutro confianca=low prompt="é"
+- [vick] 2026-07-24T14:47:43.320Z sentimento=neutro confianca=low prompt="teste"
+- [vick] 2026-07-24T14:48:05.712Z sentimento=neutro confianca=low prompt="Vamos criar um projeto de teste"
+- [vick] 2026-07-24T14:48:19.997Z sentimento=neutro confianca=low prompt="agentes de a"
+- [vick] 2026-07-24T14:48:33.548Z sentimento=neutro confianca=low prompt="o universo atendido é iar"
+- [vick] 2026-07-24T14:48:50.574Z sentimento=neutro confianca=low prompt="em fazer uma validação"
+- [vick] 2026-07-24T14:49:05.800Z sentimento=neutro confianca=low prompt="os arquivos eu vou colocar na pasta quando o projeto é apropriado"
+- [vick] 2026-07-24T14:49:16.635Z sentimento=neutro confianca=low prompt="médio"
+- [vick] 2026-07-24T14:49:19.918Z analyzer-gate projeto=projeto-vick-2 status=analyzed requisitado=ia recomendado=ia
+- [vick] 2026-07-24T14:50:11.283Z sentimento=com_pressa confianca=medium prompt="aí espera aí que agora ela vai gravando"
+- [vick] 2026-07-24T14:50:51.745Z sentimento=neutro confianca=low prompt="podemos acessar o banco de dados"

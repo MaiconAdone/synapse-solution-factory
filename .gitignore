@@ -37,6 +37,8 @@ build/
 .adonex-backup/
 .vick-panel
 debug.log
+*.log
 scratch_*.log
 *.bak
 mlruns/
+.claude/settings.local.json

@@ -76,7 +76,8 @@ O fluxo recomendado e:
 2. Rodar `SYNAPSE: Preparar runtime VS Code sem navegador`.
 3. Rodar `AI Factory: Menu interativo`.
 4. Escolher criar projeto; o padrao ativa um subconjunto economico dos core agents e mantem o pool de 60 disponivel.
-5. Abrir a pasta gerada com `code C:\Users\malves\Documents\Projetos\nome_do_projeto`.
+5. Abrir a pasta gerada com `code ..\nome_do_projeto` (ou o caminho definido
+   em `SYNAPSE_PROJECTS_DIR`/`-DestinoBase`).
 
 ## Criar Via Terminal Integrado
 

@@ -4,7 +4,7 @@
 
     [string]$TipoProjeto = "b2b2c-ai-ml-agentic-saas",
     [string]$Template = "",
-    [string]$DestinoBase = "C:\Users\malves\Documents\Projetos",
+    [string]$DestinoBase = "",
     [string]$ProjectGoal = "",
     [string]$BusinessProblem = "",
     [string]$SolutionFocus = "",
@@ -17,6 +17,14 @@
     [switch]$ActivateRuflo,
     [switch]$LocalMemoryOnly
 )
+
+if ([string]::IsNullOrWhiteSpace($DestinoBase)) {
+    $DestinoBase = if ([string]::IsNullOrWhiteSpace($env:SYNAPSE_PROJECTS_DIR)) {
+        Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    } else {
+        $env:SYNAPSE_PROJECTS_DIR
+    }
+}
 
 $Destino = Join-Path $DestinoBase $NomeProjeto
 # Record whether the destination pre-existed so rollback never deletes a project
