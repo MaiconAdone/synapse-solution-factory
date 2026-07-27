@@ -767,11 +767,6 @@ de pedir novamente informacoes ja fornecidas pelo usuario.
   "adonex.synapse.peerMessaging.dbPath": "./artifacts/peers/synapse-peers.db",
   "adonex.synapse.peerMessaging.maxMessageChars": 1200,
   "adonex.synapse.peerMessaging.maxSummaryChars": 360,
-  "adonex.voice.enabled": true,
-  "adonex.voice.startWithVSCode": true,
-  "adonex.voice.autoOpenCockpit": true,
-  "adonex.voice.wakeWord": "Vick",
-  "adonex.voice.engine": "simulated",
   "adonex.security.requireApprovalBeforeWrite": true,
   "adonex.security.requireApprovalBeforeCommand": true,
   "task.allowAutomaticTasks": "on"
@@ -1051,14 +1046,6 @@ if __name__ == "__main__":
                     "ruflo_selective_council"
                 )
             }
-            vick = [ordered]@{
-                enabled = $true
-                browser_assistant = "scripts/start_vick.py"
-                wake_word = "Vick"
-                auto_open_task = ".vscode/tasks.json"
-                startup = "VS Code folderOpen task"
-                purpose = "Interacao inicial em navegador para briefing de solucoes corporativas, herdando AdoneX e Solution Factory."
-            }
             peer_messaging = [ordered]@{
                 server = "synapse-peers"
                 script = "scripts/synapse_solution_peers_mcp.py"
@@ -1089,7 +1076,6 @@ if __name__ == "__main__":
             "docs/specifications/llm_solution_factory_governance.md",
             "docs/runbooks/adonex.md",
             "docs/runbooks/peer_messaging.md",
-            "scripts/start_vick.py",
             "scripts/synapse_solution_peers_mcp.py",
             ".vscode/settings.json",
             ".vscode/extensions.json",
@@ -2583,7 +2569,13 @@ function Finalize-SynapseSolutionProject {
         "scripts\validate_enterprise_stack.ps1",
         "scripts\synapse_ollama_mcp.py",
         "scripts\synapse_peers_mcp.py",
-        "scripts\test_local_llm.py"
+        "scripts\test_local_llm.py",
+        "scripts\start_vick.py",
+        "scripts\toggle_vick_autostart.py",
+        "scripts\vick_voice_service.py",
+        "config\voice_agent_quality_gates.json",
+        "docs\specifications\voice_agentic_coding.md",
+        "evals\voice_agent_cases.jsonl"
     )) {
         $Path = Join-Path $Destino $RelativePath
         if (Test-Path $Path) {
@@ -2720,7 +2712,6 @@ function Run-ProjectValidation {
         "tests\test_evals_contract.py",
         "tests\test_data_contract.py",
         "scripts\treat_dataset.py"
-        "scripts\start_vick.py"
         "prompts\master_data_treatment.md"
         "scripts\start_ruflo_swarm.ps1"
         "agents\definitions\enterprise_agents.yaml"
@@ -2759,7 +2750,17 @@ function Run-ProjectValidation {
             throw "Artefato obrigatorio ausente no projeto gerado: $RelativePath"
         }
     }
-    foreach ($ForbiddenPath in @("backend", "frontend", "scripts\create_ai_project.ps1")) {
+    foreach ($ForbiddenPath in @(
+        "backend",
+        "frontend",
+        "scripts\create_ai_project.ps1",
+        "scripts\start_vick.py",
+        "scripts\toggle_vick_autostart.py",
+        "scripts\vick_voice_service.py",
+        "config\voice_agent_quality_gates.json",
+        "docs\specifications\voice_agentic_coding.md",
+        "evals\voice_agent_cases.jsonl"
+    )) {
         if (Test-Path (Join-Path $Destino $ForbiddenPath)) {
             Write-Host "ERRO: componente exclusivo do Synapse copiado: $ForbiddenPath" -ForegroundColor Red
             throw "Componente exclusivo do Synapse copiado para o projeto: $ForbiddenPath"
@@ -2825,43 +2826,6 @@ function Configure-SolutionVsCodeTasks {
     }
   ],
   "tasks": [
-    {
-      "label": "Vick: Abrir assistente web automaticamente",
-      "detail": "Sobe a Vick local em http://127.0.0.1:8765 e abre o navegador quando este projeto Synapse e carregado no VS Code.",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "`${workspaceFolder}\\scripts\\start_vick.py",
-        "--workspace",
-        "`${workspaceFolder}",
-        "--port",
-        "8765",
-        "--wake-word",
-        "Vick",
-        "--open-browser"
-      ],
-      "isBackground": true,
-      "runOptions": {
-        "runOn": "folderOpen"
-      },
-      "problemMatcher": {
-        "owner": "vick",
-        "pattern": {
-          "regexp": "^$"
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "Vick running at",
-          "endsPattern": "Vick running at"
-        }
-      },
-      "presentation": {
-        "reveal": "silent",
-        "panel": "dedicated",
-        "clear": false,
-        "focus": false
-      }
-    },
     {
       "label": "Synapse: Ollama offline",
       "detail": "Executa um dos perfis locais do Synapse sem navegador e sem API paga.",

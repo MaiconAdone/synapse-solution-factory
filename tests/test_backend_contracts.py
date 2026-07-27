@@ -1864,7 +1864,9 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert (project / "docs" / "runbooks" / "adonex.md").exists()
     assert (project / "docs" / "runbooks" / "peer_messaging.md").exists()
     assert (project / "scripts" / "synapse_solution_peers_mcp.py").exists()
-    assert (project / "scripts" / "start_vick.py").exists()
+    assert not (project / "scripts" / "start_vick.py").exists()
+    assert not (project / "scripts" / "toggle_vick_autostart.py").exists()
+    assert not (project / "scripts" / "vick_voice_service.py").exists()
     assert not (project / "scripts" / "synapse_peers_mcp.py").exists()
     assert (project / "tests" / "test_project_contract.py").exists()
     assert (project / "tests" / "test_evals_contract.py").exists()
@@ -1873,9 +1875,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert (project / ".vscode" / "extensions.json").exists()
     tasks = json.loads((project / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     assert any(task["label"] == "Synapse: Rodar testes do projeto" for task in tasks["tasks"])
-    vick_task = next(task for task in tasks["tasks"] if task["label"] == "Vick: Abrir assistente web automaticamente")
-    assert vick_task["runOptions"]["runOn"] == "folderOpen"
-    assert "--open-browser" in vick_task["args"]
+    assert not any("Vick" in task["label"] for task in tasks["tasks"])
     env_example = (project / ".env.example").read_text(encoding="utf-8-sig")
     assert "PROJECT_DEFAULT_ACTIVE_AGENTS=1" in env_example
     assert "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8" in env_example
@@ -1896,9 +1896,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert settings["adonex.synapse.rufloCouncil.maxChars"] == 8000
     assert settings["adonex.synapse.llmGateway.enabled"] is True
     assert settings["adonex.synapse.llmGateway.projectId"] == project_name
-    assert settings["adonex.voice.startWithVSCode"] is True
-    assert settings["adonex.voice.autoOpenCockpit"] is True
-    assert settings["adonex.voice.wakeWord"] == "Vick"
+    assert not any(key.startswith("adonex.voice.") for key in settings)
     assert (project / "adonex" / "package.json").exists()
     assert (project / "adonex" / "src" / "extension.ts").exists()
     assert (project / "adonex" / "src" / "agent" / "agentOrchestrator.ts").exists()
@@ -2034,18 +2032,15 @@ def test_generated_solution_project_matches_selected_universe(
     assert (project / "docs" / "runbooks" / "adonex.md").exists()
     assert (project / "docs" / "runbooks" / "peer_messaging.md").exists()
     assert (project / "scripts" / "synapse_solution_peers_mcp.py").exists()
-    assert (project / "scripts" / "start_vick.py").exists()
+    assert not (project / "scripts" / "start_vick.py").exists()
+    assert not (project / "scripts" / "toggle_vick_autostart.py").exists()
+    assert not (project / "scripts" / "vick_voice_service.py").exists()
     assert not (project / "scripts" / "synapse_peers_mcp.py").exists()
     assert (project / ".vscode" / "settings.json").exists()
     assert (project / ".vscode" / "extensions.json").exists()
     tasks = json.loads((project / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     assert any(task["label"] == "Synapse: Rodar testes do projeto" for task in tasks["tasks"])
-    assert any(
-        task["label"] == "Vick: Abrir assistente web automaticamente"
-        and task["runOptions"]["runOn"] == "folderOpen"
-        and "--open-browser" in task["args"]
-        for task in tasks["tasks"]
-    )
+    assert not any("Vick" in task["label"] for task in tasks["tasks"])
     env_example = (project / ".env.example").read_text(encoding="utf-8-sig")
     assert "PROJECT_DEFAULT_ACTIVE_AGENTS=1" in env_example
     assert "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8" in env_example
@@ -2068,11 +2063,9 @@ def test_generated_solution_project_matches_selected_universe(
     assert runtime["assistant_inheritance"]["shared_dialog_memory"]["enabled"] is True
     assert runtime["assistant_inheritance"]["shared_dialog_memory"]["persistent_context"] == ".adonex/memory/SHARED_DIALOG_MEMORY.md"
     assert runtime["assistant_inheritance"]["shared_dialog_memory"]["chat_tasks"] == ".adonex/memory/CHAT_TASKS.md"
-    assert runtime["assistant_inheritance"]["vick"]["enabled"] is True
-    assert runtime["assistant_inheritance"]["vick"]["browser_assistant"] == "scripts/start_vick.py"
-    assert runtime["assistant_inheritance"]["vick"]["wake_word"] == "Vick"
+    assert "vick" not in runtime["assistant_inheritance"]
     assert "config/business_solution_analysis.json" in runtime["validation"]["required_practice_paths"]
-    assert "scripts/start_vick.py" in runtime["validation"]["required_practice_paths"]
+    assert "scripts/start_vick.py" not in runtime["validation"]["required_practice_paths"]
     assert ".adonex/memory/SHARED_DIALOG_MEMORY.md" in runtime["validation"]["required_practice_paths"]
     assert ".adonex/memory/CHAT_TASKS.md" in runtime["validation"]["required_practice_paths"]
     assert "config/llm_solution_factory_policy.json" in runtime["validation"]["required_practice_paths"]
@@ -2101,9 +2094,7 @@ def test_generated_solution_project_matches_selected_universe(
     assert settings["adonex.synapse.rufloCouncil.maxAgents"] == 8
     assert settings["adonex.synapse.llmGateway.enabled"] is True
     assert settings["adonex.synapse.llmGateway.projectId"] == project_name
-    assert settings["adonex.voice.startWithVSCode"] is True
-    assert settings["adonex.voice.autoOpenCockpit"] is True
-    assert settings["adonex.voice.wakeWord"] == "Vick"
+    assert not any(key.startswith("adonex.voice.") for key in settings)
     assert runtime["assistant_inheritance"]["adonex"]["complete_runtime"] is True
     assert runtime["assistant_inheritance"]["adonex"]["package"] == "adonex/package.json"
     assert "incremental_patch_operations" in runtime["assistant_inheritance"]["adonex"]["coding_capabilities"]
@@ -2187,9 +2178,7 @@ def test_managed_project_artifact_manifest_inherits_assistant_and_cost_contracts
     assert manifest["assistant_inheritance"]["adonex"]["source"] == "adonex/src"
     assert "workspace_conflict_detection" in manifest["assistant_inheritance"]["adonex"]["coding_capabilities"]
     assert "adonex/dist" in manifest["assistant_inheritance"]["adonex"]["excluded_runtime_paths"]
-    assert manifest["assistant_inheritance"]["vick"]["enabled"] is True
-    assert manifest["assistant_inheritance"]["vick"]["browser_assistant"] == "scripts/start_vick.py"
-    assert manifest["assistant_inheritance"]["vick"]["wake_word"] == "Vick"
+    assert "vick" not in manifest["assistant_inheritance"]
     assert manifest["assistant_inheritance"]["peer_messaging"]["script"] == "scripts/synapse_solution_peers_mcp.py"
     assert manifest["assistant_inheritance"]["shared_dialog_memory"]["enabled"] is True
     assert manifest["assistant_inheritance"]["shared_dialog_memory"]["persistent_context"] == ".adonex/memory/SHARED_DIALOG_MEMORY.md"
@@ -2214,7 +2203,7 @@ def test_managed_project_artifact_manifest_inherits_assistant_and_cost_contracts
     assert "adonex/test" in manifest["required_paths"]
     assert "docs/runbooks/peer_messaging.md" in manifest["required_paths"]
     assert ".vscode/tasks.json" in manifest["required_paths"]
-    assert "scripts/start_vick.py" in manifest["required_paths"]
+    assert "scripts/start_vick.py" not in manifest["required_paths"]
     assert ".adonex/memory/SHARED_DIALOG_MEMORY.md" in manifest["required_paths"]
     assert ".adonex/memory/CHAT_TASKS.md" in manifest["required_paths"]
     assert "config/agentic_architectural_patterns.json" in manifest["required_paths"]

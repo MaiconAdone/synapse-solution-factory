@@ -1,395 +1,321 @@
-# Guia de Uso: Synapse, AdoneX e Vick
+# Instalação do Synapse do zero no Windows com VS Code
 
-Este guia explica como iniciar e usar os três componentes:
+Este é o guia oficial para preparar uma máquina nova e executar o Synapse pelo
+VS Code. A Vick pertence exclusivamente ao Synapse e é usada apenas na
+interface web da plataforma. Projetos criados pela Solution Factory não herdam
+a Vick.
 
-- **Synapse:** plataforma central e fábrica de soluções de IA e ML.
-- **AdoneX:** agente local de programação integrado ao VS Code.
-- **Vick:** interface web de voz e texto do Synapse.
+## 1. Requisitos
 
-## 1. Pré-requisitos
+Instale:
 
-Antes de começar, instale:
-
+- Windows 10 ou 11 de 64 bits;
 - Git;
-- Visual Studio Code;
+- Visual Studio Code 1.96 ou superior;
 - PowerShell 7 ou superior;
-- Python 3.12;
-- Node.js 22 e npm;
+- Python 3.12 de 64 bits;
+- Node.js 22 LTS e npm;
 - Ollama;
-- modelos locais usados pelo AdoneX.
+- Docker Desktop apenas se algum fluxo específico exigir contêineres.
 
-O modelo local padrão é:
+Durante as instalações, permita que Git, Python, Node.js, PowerShell e Ollama
+sejam adicionados ao `PATH`.
+
+Feche e abra novamente o terminal após instalar os programas. Confirme:
 
 ```powershell
-ollama pull qwen2.5-coder:3b
+git --version
+code --version
+pwsh --version
+python --version
+node --version
+npm --version
+ollama --version
 ```
 
-Mantenha o Ollama aberto durante o uso do AdoneX e das funções locais da Vick.
+O Python deve ser 3.12 e o Node.js deve ser 22.x.
 
-## 2. Abrir o projeto
+## 2. Obter o repositório
 
-Clone e prepare o projeto:
+O repositório oficial é privado. A conta usada no Git deve ter acesso.
+
+Pelo GitHub:
+
+```powershell
+Set-Location $HOME\Documents
+New-Item -ItemType Directory -Force Projetos | Out-Null
+Set-Location Projetos
+git clone https://github.com/MaiconAdone/synapse.git
+Set-Location synapse
+```
+
+Se a empresa usar o GitLab interno:
 
 ```powershell
 git clone https://glp.netmoderna.com.br/projetos-bi/machine-learning/synapse.git
 Set-Location synapse
+```
+
+Quando solicitado, autentique pelo navegador ou pelo Git Credential Manager.
+Não coloque tokens diretamente no comando ou em arquivos versionados.
+
+## 3. Abrir o workspace correto
+
+Ainda no diretório `synapse`:
+
+```powershell
+code .
+```
+
+No VS Code, confirme que a pasta raiz aberta contém `README.md`, `backend`,
+`frontend`, `adonex`, `scripts` e `.vscode`.
+
+Se o VS Code perguntar se você confia nos autores do workspace, confirme
+somente depois de verificar que o repositório clonado é o oficial.
+
+## 4. Criar o ambiente local
+
+Abra um terminal PowerShell no VS Code:
+
+```text
+Terminal → New Terminal
+```
+
+Execute:
+
+```powershell
 Copy-Item .env.example .env
 python -m venv .venv
+.\.venv\Scripts\python -m pip install --upgrade pip
 .\.venv\Scripts\python -m pip install -r backend\requirements.txt
 npm ci
 npm --prefix frontend ci
 npm --prefix adonex ci
+```
+
+Selecione o interpretador Python do workspace:
+
+```text
+Ctrl+Shift+P → Python: Select Interpreter
+```
+
+Escolha:
+
+```text
+.\.venv\Scripts\python.exe
+```
+
+O arquivo `.env` é local e não deve ser enviado ao Git. Credenciais também
+devem ficar apenas em mecanismos locais seguros, nunca em código-fonte.
+
+## 5. Preparar o Ollama
+
+Abra o Ollama e instale o modelo local mínimo:
+
+```powershell
 ollama pull qwen2.5-coder:3b
-npm run check
-```
-
-Abra no VS Code a pasta clonada, sem depender de um caminho absoluto.
-
-As tarefas descritas neste guia ficam disponíveis em:
-
-```text
-Terminal → Run Task
-```
-
-Também é possível abrir a paleta de comandos com `Ctrl+Shift+P` e procurar por:
-
-```text
-Tasks: Run Task
-```
-
-## 3. Como usar o Synapse
-
-O Synapse é o núcleo da plataforma. Ele administra projetos, agentes, memória,
-dados, testes, avaliações e governança.
-
-### Usar com navegador
-
-No VS Code:
-
-1. Abra `Tasks: Run Task`.
-2. Execute `Synapse: Iniciar modo navegador independente`.
-3. Aguarde o backend e o frontend iniciarem.
-4. Acesse `http://127.0.0.1:3000`.
-
-O backend do Synapse fica disponível em:
-
-```text
-http://127.0.0.1:8000
-```
-
-### Usar somente no VS Code
-
-Para trabalhar sem abrir o navegador:
-
-1. Abra `Tasks: Run Task`.
-2. Execute `Synapse: Preparar runtime VS Code sem navegador`.
-3. Use o Codex, Claude Code, VS Code Chat ou AdoneX para conversar com o projeto.
-
-Exemplos de pedidos:
-
-```text
-Analise a arquitetura do Synapse.
-```
-
-```text
-Verifique os testes e a documentação deste projeto.
-```
-
-```text
-Trate o arquivo data/raw/clientes.csv.
-```
-
-### Criar uma solução pelo diálogo
-
-O caminho recomendado é pedir a criação pelo chat:
-
-```text
-Crie um projeto de ML para prever cancelamento de clientes.
-```
-
-Ou pelo AdoneX:
-
-```text
-@adonex /projeto crie uma solução de IA/RAG para atendimento ao cliente
-```
-
-Antes de criar o projeto, o Synapse solicitará:
-
-- objetivo;
-- problema de negócio;
-- universo: ML, IA ou híbrido;
-- métrica ou critério de sucesso;
-- dados e fontes disponíveis;
-- nível de risco.
-
-Os projetos são criados, por padrão, ao lado da pasta clonada do Synapse.
-Defina `SYNAPSE_PROJECTS_DIR` ou use `-DestinoBase` para escolher outro local.
-
-### Validar o Synapse
-
-No terminal integrado:
-
-```powershell
-npm run check:enterprise
-```
-
-Para executar a validação completa:
-
-```powershell
-npm run check
-```
-
-## 4. Como usar o AdoneX
-
-O AdoneX é o agente local de programação do Synapse. Ele utiliza exclusivamente
-modelos instalados no Ollama.
-
-### Verificar o Ollama
-
-Confirme que o serviço está funcionando:
-
-```powershell
 ollama list
 ```
 
-Na paleta de comandos do VS Code, execute:
-
-```text
-AdoneX: Test Ollama Connection
-```
-
-### Abrir o AdoneX
-
-Há três formas principais:
-
-1. Abra o Chat do VS Code e digite `@adonex`.
-2. Execute `AdoneX: Open Chat` na paleta de comandos.
-3. Abra o ícone do AdoneX na barra lateral.
-
-### Comandos de chat
-
-Planejar uma alteração:
-
-```text
-@adonex /plan planeje a criação de observabilidade para o backend
-```
-
-Implementar:
-
-```text
-@adonex /implement adicione um health check ao backend
-```
-
-Revisar código:
-
-```text
-@adonex /review revise o pipeline RAG
-```
-
-Pesquisar no projeto:
-
-```text
-@adonex /search localize onde a autenticação é validada
-```
-
-Melhorar uma implementação:
-
-```text
-@adonex /improve melhore o tratamento de erros desta função
-```
-
-Criar um agente:
-
-```text
-@adonex /agent crie um agente para avaliar respostas
-```
-
-Criar uma ferramenta MCP:
-
-```text
-@adonex /mcp crie uma ferramenta MCP somente leitura
-```
-
-### Editar código
-
-Para editar uma seleção:
-
-1. Selecione o código no editor.
-2. Pressione `Ctrl+Alt+K`.
-3. Descreva a alteração.
-4. Revise a proposta.
-5. Confirme a aplicação.
-
-Para editar vários arquivos:
-
-1. Execute `AdoneX: Open Composer`.
-2. Descreva a tarefa.
-3. Revise o plano e os arquivos selecionados.
-4. Confira o diff.
-5. Aprove as alterações desejadas.
-
-Por padrão, o AdoneX prepara as mudanças e solicita aprovação antes de escrever
-arquivos ou executar comandos.
-
-### Testar o AdoneX
-
-No terminal:
+Teste o serviço:
 
 ```powershell
-cd adonex
-npm install
-npm test
+ollama run qwen2.5-coder:3b "Responda apenas: Ollama funcionando"
 ```
 
-Para gerar o pacote da extensão:
+Os modelos maiores são opcionais e devem ser instalados somente quando a
+máquina tiver memória suficiente.
+
+## 6. Instalar o AdoneX no VS Code
+
+Compile, teste e gere o pacote da extensão:
 
 ```powershell
-npm run package
+npm --prefix adonex run package
 ```
 
-## 5. Como usar a Vick
+Instale o VSIX gerado:
 
-A Vick é a interface do Synapse no navegador. Ela aceita texto e voz.
+```powershell
+$vsix = Get-ChildItem .\adonex\*.vsix |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1
+code --install-extension $vsix.FullName --force
+```
 
-### Iniciar a Vick
+Recarregue o VS Code:
+
+```text
+Ctrl+Shift+P → Developer: Reload Window
+```
+
+O AdoneX usa Ollama local. Codex usa o provedor OpenAI configurado na extensão
+do Codex, e Claude Code usa Anthropic diretamente. Um assistente não deve
+redirecionar geração para o provedor do outro.
+
+## 7. Validar a instalação
+
+Execute a verificação completa:
+
+```powershell
+npm run check
+```
+
+Ela valida a stack corporativa, os contratos do backend e o frontend.
+
+Para uma verificação mais rápida do ambiente:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\bootstrap_enterprise_stack.ps1 `
+  -SkipRuflo
+
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File .\scripts\validate_enterprise_stack.ps1
+```
+
+A instalação só deve ser considerada concluída quando os comandos terminarem
+sem falhas.
+
+## 8. Executar somente no VS Code
+
+Abra a paleta:
+
+```text
+Ctrl+Shift+P → Tasks: Run Task
+```
+
+Execute:
+
+```text
+Synapse: Preparar runtime VS Code sem navegador
+```
+
+Depois use um dos canais oficiais:
+
+- Codex;
+- Claude Code;
+- VS Code Chat;
+- `@adonex` no Chat do VS Code.
+
+Todos compartilham a Solution Factory, a governança e a memória local do
+workspace.
+
+## 9. Executar a interface web do Synapse
 
 No VS Code:
 
-1. Abra `Tasks: Run Task`.
-2. Execute `Vick: Abrir assistente web automaticamente`.
-3. Aguarde a inicialização.
-4. Acesse `http://127.0.0.1:3000`.
-
-Essa tarefa também inicia o backend e o frontend necessários.
-
-### Ativar o serviço de voz
-
-No VS Code:
-
-1. Abra `Tasks: Run Task`.
-2. Execute `Vick: Serviço local de voz`.
-3. Permita o acesso ao microfone quando solicitado.
-
-O serviço local de voz usa:
-
 ```text
-http://127.0.0.1:8765
+Ctrl+Shift+P → Tasks: Run Task
 ```
 
-### Conversar com a Vick
-
-Você pode digitar na caixa de diálogo ou falar a palavra de ativação:
+Execute:
 
 ```text
-Vick
+Synapse: Iniciar modo navegador independente
 ```
 
-Depois, diga o comando. Exemplos:
+Endereços locais:
+
+- interface web e Vick: `http://127.0.0.1:3000`;
+- backend FastAPI: `http://127.0.0.1:8000`.
+
+A Vick é parte da interface do Synapse. Ela não é copiada para os projetos
+criados.
+
+## 10. Criar um projeto
+
+O caminho principal é conversar com Codex, Claude Code, VS Code Chat ou AdoneX:
 
 ```text
-Vick, quais projetos existem?
+Crie um projeto de IA para gerar relatórios a partir de um SQL Server.
 ```
 
-```text
-Vick, abra o projeto chamado replicar.
+Antes da criação, informe:
+
+1. objetivo;
+2. problema de negócio;
+3. universo: ML, IA, Chatbolt ou híbrido;
+4. métrica ou critério de aceite;
+5. dados e fontes disponíveis;
+6. risco: baixo, médio, alto ou crítico.
+
+Por padrão, os projetos são criados na pasta irmã do Synapse. Para escolher
+outra pasta, configure `PROJECT_FACTORY_BASE_PATH` no `.env` ou use
+`-DestinoBase` no script da fábrica.
+
+## 11. Atualizar uma instalação existente
+
+Preserve alterações locais antes de atualizar:
+
+```powershell
+git status
+git pull --ff-only
+.\.venv\Scripts\python -m pip install -r backend\requirements.txt
+npm ci
+npm --prefix frontend ci
+npm --prefix adonex ci
+npm run check
 ```
 
-```text
-Vick, analise o projeto chamado replicar.
+Nunca substitua `.env` durante uma atualização.
+
+## 12. Solução de problemas
+
+### `python` não é reconhecido
+
+Reinstale o Python 3.12 marcando a opção para adicioná-lo ao `PATH`, ou use o
+Python Launcher:
+
+```powershell
+py -3.12 -m venv .venv
 ```
 
-```text
-Vick, crie um projeto de machine learning para detectar fraude.
+### PowerShell bloqueia scripts
+
+Use o processo atual, sem alterar a política global:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
 ```
 
-Ao criar um projeto, responda às perguntas de briefing feitas pela Vick.
+### Ollama não responde
 
-### Editar projetos pela Vick
+Abra o aplicativo Ollama e verifique:
 
-A Vick pode preparar alterações por meio da ponte local do AdoneX. Para isso:
-
-- o VS Code deve estar aberto;
-- o AdoneX deve estar ativo;
-- a ponte HTTP local deve estar habilitada;
-- o mesmo token deve estar configurado no AdoneX e no frontend;
-- alterações devem ser revisadas e confirmadas.
-
-Configurações relacionadas:
-
-```text
-adonex.bridge.enabled
-adonex.bridge.port
-adonex.bridge.token
-adonex.voice.requireConfirmationForPatch
-adonex.patch.applyMode
+```powershell
+ollama list
+Invoke-RestMethod http://127.0.0.1:11434/api/tags
 ```
 
-A ponte deve escutar somente em `127.0.0.1`. Não exponha essa porta na rede.
+### Porta 3000 ou 8000 ocupada
 
-### Abertura automática
+Identifique o processo:
 
-Para abrir a Vick sempre que o projeto for iniciado:
-
-```text
-Tasks: Run Task → Vick: Ativar abertura automática
+```powershell
+Get-NetTCPConnection -LocalPort 3000,8000 -ErrorAction SilentlyContinue
 ```
 
-Para desativar:
+Encerre somente o processo conhecido que estiver usando a porta ou ajuste a
+configuração local.
 
-```text
-Tasks: Run Task → Vick: Desativar abertura automática
+### Dependências inconsistentes
+
+Restaure usando os arquivos de lock:
+
+```powershell
+npm ci
+npm --prefix frontend ci
+npm --prefix adonex ci
 ```
 
-## 6. Fluxo recomendado
+## Checklist final
 
-Para uso diário:
-
-1. Abra o projeto Synapse no VS Code.
-2. Confirme que o Ollama está em execução.
-3. Inicie `Synapse: Iniciar modo navegador independente`.
-4. Inicie `Vick: Serviço local de voz` se quiser usar o microfone.
-5. Use a Vick para interação por voz ou texto.
-6. Use o AdoneX para programação local e alterações governadas.
-7. Use o Synapse para criar e administrar soluções de IA e ML.
-
-## 7. Solução de problemas
-
-### A Vick não abre
-
-- Confirme se a porta `3000` está livre.
-- Verifique os terminais do backend e frontend no VS Code.
-- Tente abrir manualmente `http://127.0.0.1:3000`.
-
-### A Vick não escuta
-
-- Execute `Vick: Serviço local de voz`.
-- Verifique a permissão do microfone.
-- Confirme se o serviço está usando a porta `8765`.
-- Verifique se `adonex.voice.engine` está definido como `local_service`.
-
-### O AdoneX não responde
-
-- Confirme que o Ollama está aberto.
-- Execute `ollama list`.
-- Confirme que `qwen2.5-coder:3b` está instalado.
-- Execute `AdoneX: Test Ollama Connection`.
-
-### O AdoneX não altera arquivos
-
-Isso pode ser o comportamento esperado. O projeto exige aprovação antes da
-escrita. Abra o painel do AdoneX, revise o diff e confirme a aplicação.
-
-### O backend não inicia
-
-- Verifique as dependências de `backend/requirements.txt`.
-- Confira as configurações locais baseadas em `.env.example`.
-- Execute `npm run check:enterprise` para localizar inconsistências.
-
-## 8. Documentação complementar
-
-- `README.md`: visão geral do Synapse.
-- `adonex/README.md`: recursos detalhados do AdoneX.
-- `docs/vscode-workflow.md`: fluxo de trabalho pelo VS Code.
-- `docs/dual-interface-contract.md`: diferenças entre navegador e VS Code.
-- `adonex/docs/CHAT_INTEGRATION.md`: integração com o Chat do VS Code.
-- `adonex/docs/SYNAPSE_INTEGRATION.md`: integração entre AdoneX e Synapse.
+- Repositório oficial aberto no VS Code.
+- `.venv` criado com Python 3.12.
+- Dependências Python e Node instaladas.
+- Ollama ativo com `qwen2.5-coder:3b`.
+- AdoneX instalado no VS Code.
+- `npm run check` concluído sem falhas.
+- Runtime do VS Code ou interface web iniciando corretamente.
+- Segredos mantidos fora do Git.

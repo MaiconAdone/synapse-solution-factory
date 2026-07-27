@@ -7,12 +7,16 @@ uses the local model registry in `artifacts/models/`.
 
 ## Instalação Em Outra Máquina
 
-Pré-requisitos: Git, PowerShell 7+, Python 3.12, Node.js 22, VS Code, Docker
-Desktop (opcional) e Ollama. Em Windows, clone o repositório e execute:
+O passo a passo oficial para instalar o Synapse do zero no Windows com VS Code
+está em [`docs/GUIA_DE_USO_SYNAPSE_ADONEX_VICK.md`](docs/GUIA_DE_USO_SYNAPSE_ADONEX_VICK.md).
+
+Resumo: instale Git, PowerShell 7+, Python 3.12, Node.js 22, VS Code e Ollama.
+Docker Desktop é opcional. Depois de clonar o repositório privado, execute:
 
 ```powershell
 Copy-Item .env.example .env
 python -m venv .venv
+.\.venv\Scripts\python -m pip install --upgrade pip
 .\.venv\Scripts\python -m pip install -r backend\requirements.txt
 npm ci
 npm --prefix frontend ci
@@ -28,9 +32,9 @@ backend usa `http://127.0.0.1:8000` e a Vick usa
 
 Segredos e configurações locais devem ficar apenas em `.env`,
 `frontend/.env.local` e `.claude/settings.local.json`; esses arquivos não são
-versionados. Para criar projetos fora da pasta pai do Synapse, defina
-`SYNAPSE_PROJECTS_DIR` ou informe `-DestinoBase` aos scripts. Consulte também
-`docs/GUIA_DE_USO_SYNAPSE_ADONEX_VICK.md`.
+versionados. Para escolher outra pasta de projetos, configure
+`PROJECT_FACTORY_BASE_PATH` no `.env` ou informe `-DestinoBase` ao script da
+fábrica.
 
 ## Interfaces Oficiais
 

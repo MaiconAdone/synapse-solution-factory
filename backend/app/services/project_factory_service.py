@@ -684,7 +684,6 @@ class ProjectFactoryService:
             "prompts/master_data_treatment.md",
             "prompts/codex_data_treatment_dialog.md",
             "scripts/synapse_solution_peers_mcp.py",
-            "scripts/start_vick.py",
             "scripts/start_ruflo_swarm.ps1",
             "scripts/treat_dataset.py",
             "tests/test_project_contract.py",
@@ -774,17 +773,6 @@ class ProjectFactoryService:
                         "local_model_profiles",
                         "ruflo_selective_council",
                     ],
-                },
-                "vick": {
-                    "enabled": True,
-                    "browser_assistant": "scripts/start_vick.py",
-                    "wake_word": "Vick",
-                    "auto_open_task": ".vscode/tasks.json",
-                    "startup": "VS Code folderOpen task",
-                    "purpose": (
-                        "Initial browser interaction for corporate-solution briefing, inheriting "
-                        "AdoneX and Synapse Solution Factory governance."
-                    ),
                 },
                 "peer_messaging": {
                     "server": "synapse-peers",

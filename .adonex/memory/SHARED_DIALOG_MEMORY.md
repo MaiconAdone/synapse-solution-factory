@@ -12,6 +12,12 @@ AdoneX neste workspace Synapse.
 
 ## Recent Dialog Context
 
+- 2026-07-27 | User/Codex | done | Guia oficial de instalacao do Synapse reescrito em UTF-8 para Windows + VS Code do zero: requisitos, clone GitHub/GitLab privado, Python 3.12, Node 22, Ollama, AdoneX/VSIX, validacao, modos VS Code/web, atualizacao e troubleshooting. README passou a apontar ao guia e usar `PROJECT_FACTORY_BASE_PATH`.
+
+- 2026-07-27 | User/Codex | done | Solution Factory ajustada para manter a Vick exclusiva do Synapse: novos projetos nao recebem scripts, autostart/task, configuracoes de voz, manifesto, quality gate, spec ou evals da Vick. Validacao da fabrica agora bloqueia vazamento desses artefatos; 5/5 testes focados passaram.
+
+- 2026-07-27 | User/Codex | done | Projeto `especialista_banco` criado em `C:\Users\malves\Documents\Projetos\especialista_banco`, universo IA e risco alto, para agentes especialistas em tabelas corporativas SQL Server e relatorios automaticos. Inclui analise oficial, um agente inicial sem Ruflo/cloud, policy SQL somente leitura, aprovacao humana, bloqueio deterministico de mutacoes e auditoria JSONL; 16/16 testes passaram. Conexao real aguarda servidor/base e credenciais via secret store.
+
 - 2026-07-24 | User/Codex | done | Projeto `TalentOS` criado em `C:\Users\malves\Documents\Projetos\TalentOS` como solucao hibrida de recrutamento (ML + IA), risco alto. Analise oficial corrigida para classificacao/scoring/priorizacao + RAG/agentes, com LGPD, explicabilidade, auditoria e decisao humana. Scaffold validado; 11/11 testes passaram; Ruflo nao foi ativado.
 
 - 2026-07-23 | Codex | done | Respostas institucionais da Vick sobre Synapse, AdoneX e Vick passaram a ser determinísticas, detalhadas e separadas por intenção; pedidos combinados e perguntas sobre o que pode ser solicitado retornam também um catálogo de exemplos. Endpoint real validado em quatro formulações e TypeScript focado passou; lint global segue bloqueado por referência preexistente da pasta `.next` à rota removida `app/mlflow/page`.
@@ -434,3 +440,16 @@ Result: Codex edita via OpenAI sem Ollama; Claude Code edita via Anthropic sem O
 - [vick] 2026-07-24T14:49:19.918Z analyzer-gate projeto=projeto-vick-2 status=analyzed requisitado=ia recomendado=ia
 - [vick] 2026-07-24T14:50:11.283Z sentimento=com_pressa confianca=medium prompt="aí espera aí que agora ela vai gravando"
 - [vick] 2026-07-24T14:50:51.745Z sentimento=neutro confianca=low prompt="podemos acessar o banco de dados"
+- [vick] 2026-07-26T00:37:33.433Z sentimento=confuso confianca=medium prompt="vi que me explica o projeto Synapse"
+- [vick] 2026-07-26T00:38:06.585Z sentimento=neutro confianca=low prompt="estamos usando o modelo local para ter interação de voz"
+- [vick] 2026-07-26T00:38:20.527Z sentimento=neutro confianca=low prompt="voz com a v"
+- [vick] 2026-07-26T00:38:44.321Z sentimento=neutro confianca=low prompt="a v"
+- [vick] 2026-07-26T00:45:32.138Z sentimento=neutro confianca=low prompt="gostaria de saber se o modelo baixado está tendo interação de voz"
+- [vick] 2026-07-26T00:51:07.255Z sentimento=neutro confianca=low prompt="na viking"
+- [vick] 2026-07-26T01:02:40.668Z sentimento=neutro confianca=low prompt="ponto"
+- [vick] 2026-07-26T01:03:33.223Z sentimento=neutro confianca=low prompt="se multiplica"
+- [vick] 2026-07-26T01:08:28.155Z sentimento=neutro confianca=low prompt="estamos usando o modelo shafterbox"
+
+- 2026-07-27 | User/Codex | briefing | Solicitada criacao do projeto `Previsao de Compradores` no universo ML, com risco alto, para prever compradores de kits escolares. Aguardando problema de negocio, metrica de sucesso e dados/fontes disponiveis antes da analise e implementacao.
+
+- 2026-07-27 | User/Codex | done | Projeto `Previsao de Compradores` criado em `C:\Users\malves\Documents\Projetos\Previsao de Compradores` para estimar compradores e demanda de kits escolares. Universo ML e risco alto; aceite de recall minimo de 80%; dados serao inseridos em `data/`. Analise oficial corrigida para remover falso positivo de chatbot. Scaffold validado e 9/9 testes passaram; ativacao automatica e Ruflo permaneceram desativados.
