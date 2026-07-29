@@ -41,6 +41,10 @@ ARM_TIMEOUT_SECONDS = 9.0
 HAS_LETTER = re.compile(r"[^\W\d_]", re.UNICODE)
 
 
+def is_client_disconnect(error: BaseException) -> bool:
+    return isinstance(error, (BrokenPipeError, ConnectionAbortedError, ConnectionResetError))
+
+
 class VoiceState:
     def __init__(self, wake_word: str) -> None:
         self.wake_word = wake_word
@@ -213,6 +217,14 @@ def microphone_loop(state: VoiceState, model_name: str, seconds: float, command_
 class Handler(BaseHTTPRequestHandler):
     state: VoiceState
 
+    def handle_one_request(self) -> None:
+        try:
+            super().handle_one_request()
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+            # The browser/front-end polling loop can close a local request while
+            # Python is still reading it. That is a normal client disconnect.
+            return
+
     def _allowed_origin(self) -> str:
         # Reflete a origem quando for local (localhost OU 127.0.0.1, qualquer porta).
         # Antes fixava 127.0.0.1:3000, entao abrir por "localhost:3000" era
@@ -233,9 +245,11 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(body)
-        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError):
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError) as exc:
             # Polling clients can close or replace /events requests before the
             # response is written. This is a normal disconnect, not a service failure.
+            if not is_client_disconnect(exc):
+                raise
             return
 
     def do_GET(self) -> None:  # noqa: N802
