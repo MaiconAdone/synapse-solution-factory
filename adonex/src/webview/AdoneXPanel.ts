@@ -15,6 +15,7 @@ import type {
   CommandResult,
   GeneratedPatch,
   ImplementationProposal,
+  LlmResponse,
   TaskRecord,
   TaskPlan,
   WorkspaceSnapshot
@@ -37,6 +38,7 @@ import {
 } from "../tasks/taskLifecycle";
 import { TaskStore } from "../tasks/taskStore";
 import { resolveChatPrompt, routeChatCommand, shouldUseComposer } from "../chat/chatRouting";
+import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
@@ -297,10 +299,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       }
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      const aborted =
-        this.abortController?.signal.aborted === true ||
-        (error instanceof Error && error.name === "AbortError") ||
-        /\b(abort|cancel|interromp|exceeded)/i.test(detail);
+      const aborted = isUserCancellation(error, this.abortController?.signal);
       if (aborted) {
         if (this.taskRecord && this.taskStore) {
           this.taskRecord.status = "cancelled";
@@ -657,39 +656,51 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postStep(`Gerando resposta com ${model}...`);
     const chatStartedAt = Date.now();
     let chatTokensReported = 0;
-    const response = await new OllamaClient({
-      baseUrl,
-      model,
-      apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
-      timeoutMs: config.get<number>("ollama.timeoutSeconds", 120) * 1000,
-      keepAlive: config.get<string>("ollama.keepAlive", "10m"),
-      numCtx: profile.numCtx,
-      temperature: profile.temperature,
-      topP: profile.topP,
-      repeatPenalty: profile.repeatPenalty,
-      maxRetries: config.get<number>("ollama.maxRetries", 2),
-      retryDelayMs: config.get<number>("ollama.retryDelayMs", 250),
-      logger: (event) => {
-        if (event.type === "first_token") {
-          this.postStep(
-            `Primeiro token apos ${Math.round((event.durationMs ?? 0) / 1000)}s; escrevendo...`
-          );
+    let response: LlmResponse;
+    try {
+      response = await new OllamaClient({
+        baseUrl,
+        model,
+        apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
+        timeoutMs: config.get<number>("ollama.timeoutSeconds", 120) * 1000,
+        keepAlive: config.get<string>("ollama.keepAlive", "10m"),
+        numCtx: profile.numCtx,
+        temperature: profile.temperature,
+        topP: profile.topP,
+        repeatPenalty: profile.repeatPenalty,
+        maxRetries: config.get<number>("ollama.maxRetries", 2),
+        retryDelayMs: config.get<number>("ollama.retryDelayMs", 250),
+        logger: (event) => {
+          if (event.type === "first_token") {
+            this.postStep(
+              `Primeiro token apos ${Math.round((event.durationMs ?? 0) / 1000)}s; escrevendo...`
+            );
+          }
+        },
+        onToken: (tokens) => {
+          if (tokens - chatTokensReported >= 48) {
+            chatTokensReported = tokens;
+            const elapsed = Math.round((Date.now() - chatStartedAt) / 1000);
+            this.postStep(`Gerando... ~${tokens} tokens (${elapsed}s)`);
+          }
         }
-      },
-      onToken: (tokens) => {
-        if (tokens - chatTokensReported >= 48) {
-          chatTokensReported = tokens;
-          const elapsed = Math.round((Date.now() - chatStartedAt) / 1000);
-          this.postStep(`Gerando... ~${tokens} tokens (${elapsed}s)`);
-        }
-      }
-    }).generate({
-      systemPrompt: SYNAPSE_SPECIALIST_SYSTEM,
-      userPrompt: safePrompt,
-      workspaceContext: dynamicContext || undefined,
-      maxOutputTokens: config.get<number>("chat.maxTokens", profile.maxOutputTokens),
-      signal: this.abortController.signal
-    });
+      }).generate({
+        systemPrompt: SYNAPSE_SPECIALIST_SYSTEM,
+        userPrompt: safePrompt,
+        workspaceContext: dynamicContext || undefined,
+        maxOutputTokens: config.get<number>("chat.maxTokens", profile.maxOutputTokens),
+        signal: this.abortController.signal
+      });
+    } catch (error) {
+      if (isUserCancellation(error, this.abortController.signal)) throw error;
+      const detail = error instanceof Error ? error.message : String(error);
+      const fallback = createLocalChatFailureResponse(safePrompt, model, detail);
+      this.rememberLocalChat(safePrompt, fallback);
+      this.selectedAttachments = [];
+      this.postAttachmentState();
+      this.post({ type: "chatResponse", text: fallback, provider: "ollama", model });
+      return;
+    }
     const answer = guardAgainstLocalHallucinations(sanitizeAdoneXResponse(response.text));
     this.rememberLocalChat(safePrompt, answer);
     this.selectedAttachments = [];
@@ -1642,6 +1653,11 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
 </body>
 </html>`;
   }
+}
+
+function isUserCancellation(error: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted) return true;
+  return error instanceof Error && error.name === "AbortError";
 }
 
 function getNonce(): string {
