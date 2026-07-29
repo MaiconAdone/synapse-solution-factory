@@ -40,6 +40,7 @@ import { TaskStore } from "../tasks/taskStore";
 import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
 import { resolveChatPrompt, routeChatCommand, shouldUseComposer } from "../chat/chatRouting";
 import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
+import { answerLocalRuntimeQuestion } from "../chat/localRuntimeAnswers";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
@@ -634,6 +635,18 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.abortController = new AbortController();
     const safePrompt = scanAndRedactSecrets(prompt).redacted;
     const baseUrl = normalizeOllamaBaseUrl(config.get<string>("ollama.baseUrl", "http://127.0.0.1:11434"));
+    const fastModel = config.get<string>("ollama.model", ADONEX_FAST_LOCAL_MODEL);
+    const runtimeAnswer = answerLocalRuntimeQuestion(safePrompt, {
+      model: fastModel,
+      timeoutSeconds: config.get<number>("ollama.timeoutSeconds", 120)
+    });
+    if (runtimeAnswer) {
+      this.rememberLocalChat(safePrompt, runtimeAnswer);
+      this.selectedAttachments = [];
+      this.postAttachmentState();
+      this.post({ type: "chatResponse", text: runtimeAnswer, provider: "adonex", model: "runtime-local" });
+      return;
+    }
     const inventory = await this.answerLocalModelInventory(safePrompt, baseUrl);
     if (inventory) {
       this.rememberLocalChat(safePrompt, inventory);
