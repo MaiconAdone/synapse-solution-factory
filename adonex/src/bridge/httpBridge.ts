@@ -1,5 +1,6 @@
 import * as http from "node:http";
 import * as vscode from "vscode";
+import { isAddressInUseError } from "./listenErrors";
 
 /**
  * Ponte HTTP local do AdoneX.
@@ -71,13 +72,28 @@ export class AdoneXHttpBridge implements vscode.Disposable {
     const server = http.createServer((request, response) => {
       void this.handle(request, response, token);
     });
-    server.on("error", (error) => {
-      this.output.appendLine(`Bridge falhou na porta ${port}: ${String(error)}`);
-      void vscode.window.showErrorMessage(`AdoneX Bridge: ${String(error)}`);
+    const status = await new Promise<"listening" | "in-use" | "failed">((resolve) => {
+      const onError = (error: NodeJS.ErrnoException): void => {
+        closeServerQuietly(server);
+        if (isAddressInUseError(error)) {
+          this.output.appendLine(
+            `Bridge nao iniciada: a porta 127.0.0.1:${port} ja esta em uso. ` +
+              "Provavelmente outra janela do VS Code/AdoneX ja esta atendendo a Vick web."
+          );
+          resolve("in-use");
+          return;
+        }
+        this.output.appendLine(`Bridge falhou na porta ${port}: ${String(error)}`);
+        void vscode.window.showErrorMessage(`AdoneX Bridge: ${String(error)}`);
+        resolve("failed");
+      };
+      server.once("error", onError);
+      server.listen(port, "127.0.0.1", () => {
+        server.off("error", onError);
+        resolve("listening");
+      });
     });
-    await new Promise<void>((resolve) => {
-      server.listen(port, "127.0.0.1", () => resolve());
-    });
+    if (status !== "listening") return;
     this.server = server;
     this.output.appendLine(`Bridge ouvindo em http://127.0.0.1:${port} (token exigido).`);
   }
@@ -185,5 +201,13 @@ export class AdoneXHttpBridge implements vscode.Disposable {
   public dispose(): void {
     this.stop();
     this.output.dispose();
+  }
+}
+
+function closeServerQuietly(server: http.Server): void {
+  try {
+    server.close();
+  } catch {
+    // The server may fail before Node marks it as listening.
   }
 }
