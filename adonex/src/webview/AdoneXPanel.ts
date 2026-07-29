@@ -40,7 +40,11 @@ import { TaskStore } from "../tasks/taskStore";
 import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
 import { resolveChatPrompt, routeChatCommand, shouldUseComposer } from "../chat/chatRouting";
 import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
-import { answerLocalRuntimeQuestion } from "../chat/localRuntimeAnswers";
+import {
+  buildLocalChatContext,
+  localChatOutputBudget,
+  localChatSystemPrompt
+} from "../chat/localChatPolicy";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
@@ -635,18 +639,6 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.abortController = new AbortController();
     const safePrompt = scanAndRedactSecrets(prompt).redacted;
     const baseUrl = normalizeOllamaBaseUrl(config.get<string>("ollama.baseUrl", "http://127.0.0.1:11434"));
-    const fastModel = config.get<string>("ollama.model", ADONEX_FAST_LOCAL_MODEL);
-    const runtimeAnswer = answerLocalRuntimeQuestion(safePrompt, {
-      model: fastModel,
-      timeoutSeconds: config.get<number>("ollama.timeoutSeconds", 120)
-    });
-    if (runtimeAnswer) {
-      this.rememberLocalChat(safePrompt, runtimeAnswer);
-      this.selectedAttachments = [];
-      this.postAttachmentState();
-      this.post({ type: "chatResponse", text: runtimeAnswer, provider: "adonex", model: "runtime-local" });
-      return;
-    }
     const inventory = await this.answerLocalModelInventory(safePrompt, baseUrl);
     if (inventory) {
       this.rememberLocalChat(safePrompt, inventory);
@@ -670,12 +662,13 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const recentHistory = this.localChatHistory.slice(-4)
       .map((item) => `${item.role === "user" ? "Usuario" : "AdoneX"}: ${item.text}`)
       .join("\n");
-    const dynamicContext = [
-      recentHistory ? `Conversa recente:\n${recentHistory}` : "",
-      memoryContext ? `Memoria compartilhada (trecho):\n${memoryContext}` : "",
+    const dynamicContext = buildLocalChatContext({
+      prompt: safePrompt,
+      recentHistory: recentHistory ? `Conversa recente:\n${recentHistory}` : "",
+      memoryContext: memoryContext ? `Memoria compartilhada (trecho):\n${memoryContext}` : "",
       mentionContext,
       attachmentContext
-    ].filter(Boolean).join("\n\n");
+    });
     const model = profile.model;
     this.postStep(`Gerando resposta com ${model}...`);
     const chatStartedAt = Date.now();
@@ -709,10 +702,14 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
           }
         }
       }).generate({
-        systemPrompt: SYNAPSE_SPECIALIST_SYSTEM,
+        systemPrompt: localChatSystemPrompt(SYNAPSE_SPECIALIST_SYSTEM, safePrompt),
         userPrompt: safePrompt,
-        workspaceContext: dynamicContext || undefined,
-        maxOutputTokens: config.get<number>("chat.maxTokens", profile.maxOutputTokens),
+        workspaceContext: dynamicContext,
+        maxOutputTokens: localChatOutputBudget(
+          safePrompt,
+          profile,
+          config.get<number>("chat.maxTokens", profile.maxOutputTokens)
+        ),
         signal: this.abortController.signal
       });
     } catch (error) {
