@@ -10,6 +10,7 @@ import {
   ensureSynapsePeersMcp,
   peerMessagingDocsPath
 } from "./synapse/peerMessagingConfig";
+import { normalizeConfiguredAgentMode } from "./chat/agentModeSelector";
 import { registerMemoryCommands } from "./memory/memoryCommands";
 import { AdoneXHttpBridge } from "./bridge/httpBridge";
 import { AdoneXPanel } from "./webview/AdoneXPanel";
@@ -312,9 +313,9 @@ function registerTaskCommand(
       ignoreFocusOut: true
     });
     if (!task?.trim()) return;
-    const mode = vscode.workspace
+    const mode = normalizeConfiguredAgentMode(vscode.workspace
       .getConfiguration("adonex")
-      .get<AgentMode>("agent.defaultMode", "local");
+      .get<string>("agent.defaultMode", "auto"));
     await panel.queueTask(task.trim(), action, mode);
   });
 }

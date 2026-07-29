@@ -1,5 +1,5 @@
 export type AgentMode =
-  | "economic"
+  | "auto"
   | "balanced"
   | "strong"
   | "local"

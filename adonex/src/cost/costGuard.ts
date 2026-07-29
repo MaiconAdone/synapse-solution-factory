@@ -32,9 +32,9 @@ export interface BudgetStatus {
 }
 
 const MODE_PRICES: Record<AgentMode, { input: number; output: number }> = {
-  economic: { input: 0.05, output: 0.4 },
-  balanced: { input: 0.25, output: 2.0 },
-  strong: { input: 1.25, output: 10.0 },
+  auto: { input: 0, output: 0 },
+  balanced: { input: 0, output: 0 },
+  strong: { input: 0, output: 0 },
   local: { input: 0, output: 0 },
   synapse: { input: 0, output: 0 }
 };

@@ -37,6 +37,7 @@ import {
   updateTaskLifecycle
 } from "../tasks/taskLifecycle";
 import { TaskStore } from "../tasks/taskStore";
+import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
 import { resolveChatPrompt, routeChatCommand, shouldUseComposer } from "../chat/chatRouting";
 import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
@@ -139,7 +140,12 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     await this.createPlan(
       task,
       action,
-      mode ?? this.defaultMode(),
+      this.resolveMode(
+        task,
+        action,
+        { mode: mode ?? "auto", governed: isGovernedAction(action) },
+        mode ?? this.defaultMode()
+      ),
       options.applyMode
     );
     if (this.isAutonomousSynapse()) {
@@ -329,8 +335,13 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.post({ type: "focusPrompt" });
   }
 
-  private composerMode(requested?: AgentMode): AgentMode {
-    return requested ?? this.defaultMode();
+  private composerMode(task: string, requested?: AgentMode): Exclude<AgentMode, "auto"> {
+    return this.resolveMode(
+      task,
+      "implement",
+      { mode: "local", governed: true },
+      requested ?? this.defaultMode()
+    );
   }
 
   private async composerGenerate(task: string, mode?: AgentMode): Promise<void> {
@@ -340,7 +351,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postRuntimeState("thinking", "Composer: gerando proposta multi-arquivo...");
     const result = await this.composer.generate(
       task,
-      this.composerMode(mode),
+      this.composerMode(task, mode),
       this.abortController.signal,
       (text) => this.postStep(text)
     );
@@ -353,7 +364,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.post({ type: "composerState", state: "planning", text: "Refinando a proposta..." });
     const result = await this.composer.refine(
       instruction,
-      this.composerMode(mode),
+      this.composerMode(instruction, mode),
       this.abortController.signal,
       (text) => this.postStep(text)
     );
@@ -606,7 +617,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const route = routeChatCommand(undefined, prompt);
     const resolved = resolveChatPrompt(prompt, route);
     if (!resolved) return;
-    const mode = requestedMode ?? route.mode;
+    const mode = this.resolveMode(resolved, route.action, route, requestedMode ?? this.defaultMode());
     if (shouldUseComposer(route)) {
       await this.composerGenerate(resolved, mode);
       return;
@@ -912,6 +923,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     applyMode?: "prepare" | "apply"
   ): Promise<void> {
     const safeTask = scanAndRedactSecrets(task).redacted;
+    mode = this.resolveMode(safeTask, action, { mode, governed: isGovernedAction(action) }, mode);
     this.applyMode = applyMode ?? this.patchApplyMode();
     this.abortController?.abort();
     this.abortController = new AbortController();
@@ -1488,9 +1500,19 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
   }
 
   private defaultMode(): AgentMode {
-    return vscode.workspace
+    const configured = vscode.workspace
       .getConfiguration("adonex")
-      .get<AgentMode>("agent.defaultMode", "local");
+      .get<string>("agent.defaultMode", "auto");
+    return normalizeConfiguredAgentMode(configured);
+  }
+
+  private resolveMode(
+    prompt: string,
+    action: AgentAction,
+    route: { mode: AgentMode; governed: boolean },
+    requestedMode?: AgentMode
+  ): Exclude<AgentMode, "auto"> {
+    return resolveAgentMode(prompt, action, route, requestedMode);
   }
 
   private patchApplyMode(): "prepare" | "apply" {
@@ -1576,7 +1598,7 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
     <div class="toolbar">
 
       <select id="mode" aria-label="Agent mode">
-        <option value="economic"${selected("economic")}>Economic</option>
+        <option value="auto"${selected("auto")}>Auto</option>
         <option value="balanced"${selected("balanced")}>Local Balanced</option>
         <option value="strong"${selected("strong")}>Local Strong</option>
         <option value="local"${selected("local")}>Local / Ollama</option>
@@ -1658,6 +1680,10 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
 function isUserCancellation(error: unknown, signal?: AbortSignal): boolean {
   if (signal?.aborted) return true;
   return error instanceof Error && error.name === "AbortError";
+}
+
+function isGovernedAction(action: AgentAction): boolean {
+  return ["implement", "fix", "test", "synapse_agent", "synapse_mcp"].includes(action);
 }
 
 function getNonce(): string {

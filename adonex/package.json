@@ -645,14 +645,14 @@
         "adonex.agent.defaultMode": {
           "type": "string",
           "enum": [
-            "economic",
+            "auto",
             "balanced",
             "strong",
             "local",
             "synapse"
           ],
-          "default": "local",
-          "markdownDescription": "Modo local do AdoneX. Balanced e Strong selecionam perfis Ollama locais mais capazes; nenhum modo envia dados para LLMs externos."
+          "default": "auto",
+          "markdownDescription": "Modo do AdoneX. Auto classifica a solicitacao e escolhe Local, Balanced, Strong ou Synapse; todos os modos usam somente Ollama/local e nao enviam dados para LLMs externos."
         },
         "adonex.security.requireApprovalBeforeWrite": {
           "type": "boolean",
