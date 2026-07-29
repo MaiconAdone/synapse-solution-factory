@@ -1,4 +1,4 @@
-﻿# synapse-ai
+﻿# synapse-solution-factory
 
 Enterprise AI/ML solution factory with Ruflo as the multi-agent core and four
 official dialog channels: VS Code Chat, AdoneX, Claude Code, and Codex.
