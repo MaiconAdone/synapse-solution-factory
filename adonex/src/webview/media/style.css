@@ -1,5 +1,11 @@
 :root {
   color-scheme: light dark;
+  --adonex-black: #050607;
+  --adonex-surface: #090a0d;
+  --adonex-outline: #292c33;
+  --adonex-muted: #9a9faa;
+  --adonex-blue: #2f81f7;
+  --adonex-green: #00d69a;
 }
 
 * {
@@ -17,7 +23,7 @@ body {
   flex-direction: column;
   height: 100vh;
   color: var(--vscode-foreground);
-  background: var(--vscode-editor-background, var(--vscode-sideBar-background));
+  background: var(--adonex-black);
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
 }
@@ -29,8 +35,8 @@ header {
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-sideBar-background);
+  border-bottom: 0;
+  background: var(--adonex-black);
 }
 
 .titlebar {
@@ -127,8 +133,8 @@ header {
   align-items: center;
   gap: 10px;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-sideBar-background);
+  border-bottom: 0;
+  background: var(--adonex-black);
 }
 
 .vick-meter {
@@ -246,8 +252,8 @@ main {
 .message {
   padding: 8px 10px;
   border-radius: 6px;
-  border: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-editor-inactiveSelectionBackground);
+  border: 0;
+  background: transparent;
 }
 
 .message strong {
@@ -260,8 +266,7 @@ main {
 }
 
 .message.user {
-  background: color-mix(in srgb, var(--vscode-textLink-foreground) 12%, transparent);
-  border-color: color-mix(in srgb, var(--vscode-textLink-foreground) 35%, transparent);
+  background: color-mix(in srgb, var(--vscode-textLink-foreground) 9%, var(--adonex-black));
 }
 
 .message.error {
@@ -270,83 +275,143 @@ main {
 
 /* ---------- Thinking / progress indicator ---------- */
 .message.thinking {
-  border-style: dashed;
-  border-color: var(--vscode-textLink-foreground);
+  position: relative;
+  padding: 0 0 2px 30px;
+  background: transparent;
 }
 
-.thinking-row {
+.message.thinking::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  bottom: 20px;
+  left: 11px;
+  width: 1px;
+  background: #20242b;
+}
+
+.thinking-header {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--adonex-outline);
+  border-radius: 8px;
+  background: var(--adonex-surface);
 }
 
-.thinking-label {
-  color: var(--vscode-descriptionForeground);
+.thinking-header strong {
+  display: inline;
+  margin: 0;
+  color: #f3f4f6;
   font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 1;
 }
 
-.dots {
-  display: inline-flex;
-  gap: 4px;
+.thinking-bulb {
+  color: var(--adonex-muted);
+  font-size: 16px;
 }
 
-.dots i {
-  width: 6px;
-  height: 6px;
+.thinking-spinner,
+.processing-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #343842;
+  border-top-color: var(--adonex-muted);
   border-radius: 50%;
-  background: var(--vscode-textLink-foreground);
-  opacity: 0.4;
-  animation: adonex-blink 1.2s ease-in-out infinite both;
+  animation: adonex-spin 0.9s linear infinite;
 }
 
-.dots i:nth-child(2) { animation-delay: 0.2s; }
-.dots i:nth-child(3) { animation-delay: 0.4s; }
+.thinking-spinner { margin-left: 1px; }
 
-@keyframes adonex-blink {
-  0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1); }
+@keyframes adonex-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ---------- Modo pensativo: lista viva de passos ---------- */
 .thinking-steps {
   list-style: none;
-  margin: 6px 0 0;
+  margin: 8px 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .thinking-steps .step {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--adonex-outline);
+  border-radius: 8px;
+  background: var(--adonex-surface);
   font-size: 12px;
-  color: var(--vscode-descriptionForeground);
+  color: #d8dbe2;
+}
+
+.thinking-steps .step::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #58a6ff;
 }
 
 .thinking-steps .step.current .step-text {
-  color: var(--vscode-foreground);
+  color: #fff;
 }
 
-.thinking-steps .step.done::before {
-  content: "\2713";
-  color: var(--vscode-testing-iconPassed, #4caf50);
-  font-size: 11px;
-  width: 14px;
+.step-status {
+  width: 8px;
+  height: 8px;
   flex: none;
+  border-radius: 50%;
+  background: var(--adonex-green);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--adonex-green) 45%, transparent);
+}
+
+.step-tool {
+  width: 15px;
+  flex: none;
+  color: var(--adonex-muted);
   text-align: center;
 }
 
-.thinking-steps .step.current .dots {
-  width: 14px;
-  flex: none;
-  justify-content: center;
+.thinking-steps .step.current .step-status {
+  animation: adonex-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes adonex-pulse {
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+.processing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  color: var(--adonex-blue);
+  font-size: 12px;
+}
+
+.processing-spinner {
+  border-color: color-mix(in srgb, var(--adonex-blue) 28%, transparent);
+  border-top-color: var(--adonex-blue);
 }
 
 /* Bloco compacto que preserva os passos no historico apos concluir */
 .message.steps-log {
-  border-style: dashed;
+  border: 1px solid var(--adonex-outline);
+  background: var(--adonex-surface);
   opacity: 0.85;
 }
 
@@ -475,8 +540,8 @@ h2 {
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid var(--vscode-panel-border);
-  background: var(--vscode-sideBar-background);
+  border-top: 0;
+  background: var(--adonex-black);
 }
 
 #estimate {

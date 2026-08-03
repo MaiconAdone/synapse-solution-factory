@@ -39,7 +39,13 @@ import {
 import { TaskStore } from "../tasks/taskStore";
 import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
 import { formatCatalogAnswer, LocalAnswerCatalog } from "../chat/localAnswerCatalog";
-import { resolveChatPrompt, routeChatCommand, shouldUseComposer } from "../chat/chatRouting";
+import {
+  checkSolutionFactoryDialog,
+  renderSolutionFactoryMissingInfo,
+  resolveChatPrompt,
+  routeChatCommand,
+  shouldUseComposer
+} from "../chat/chatRouting";
 import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
 import {
   buildLocalChatContext,
@@ -623,6 +629,20 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const route = routeChatCommand(undefined, prompt);
     const resolved = resolveChatPrompt(prompt, route);
     if (!resolved) return;
+    const solutionFactory = checkSolutionFactoryDialog(resolved, route);
+    if (solutionFactory.applies) {
+      if (solutionFactory.missingFields.length) {
+        const response = renderSolutionFactoryMissingInfo(solutionFactory);
+        this.rememberLocalChat(resolved, response);
+        this.post({ type: "chatResponse", text: response, provider: "adonex", model: "solution-factory" });
+        return;
+      }
+      await this.createPlan(resolved, route.action, "synapse");
+      if (this.isAutonomousSynapse()) {
+        await this.runAutonomousSynapse();
+      }
+      return;
+    }
     const mode = this.resolveMode(resolved, route.action, route, requestedMode ?? this.defaultMode());
     if (shouldUseComposer(route)) {
       await this.composerGenerate(resolved, mode);

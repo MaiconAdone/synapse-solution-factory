@@ -291,7 +291,7 @@ function asksProjectCreation(normalized: string): boolean {
   // Mesmo gatilho da Vick (frontend/app/api/vick/chat/route.ts), com o alvo
   // proximo do verbo para nao capturar edicoes como "adicione um endpoint novo".
   const asksToBuild =
-    /\b(crie|criar|monte|montar|gere|gerar|inicie|iniciar|comece|comecar|construa|construir)\b[^.!?\n]{0,60}\b(projeto|solucao|aplicacao)\b/.test(
+    /\b(crie|criar|monte|montar|gere|gerar|inicie|iniciar|comece|comecar|construa|construir|vamos\s+criar)\b[^.!?\n]{0,60}\b(projeto|solucao|aplicacao)\b/.test(
       normalized
     );
   const asksNewProject = /\b(novo|nova)\s+(projeto|solucao|aplicacao)\b/.test(

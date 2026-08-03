@@ -33,7 +33,10 @@ export function selectAutomaticAgentMode(
 ): Exclude<AgentMode, "auto"> {
   const text = stripAccents(prompt.toLowerCase());
   if (route.mode === "synapse" || action.startsWith("synapse_")) return "synapse";
-  if (/\b(solution factory|projeto synapse|mcp|rag|multiagente|ruflo|agentes?)\b/.test(text)) {
+  if (
+    /\b(solution factory|projeto synapse|mcp|rag|multiagente|ruflo|agentes?)\b/.test(text) ||
+    asksProjectCreation(text)
+  ) {
     return "synapse";
   }
 
@@ -60,4 +63,13 @@ export function selectAutomaticAgentMode(
 
 function stripAccents(value: string): string {
   return value.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+}
+
+function asksProjectCreation(normalized: string): boolean {
+  const asksToBuild =
+    /\b(crie|criar|monte|montar|gere|gerar|inicie|iniciar|comece|comecar|construa|construir|vamos\s+criar)\b[^.!?\n]{0,60}\b(projeto|solucao|aplicacao)\b/.test(
+      normalized
+    );
+  const asksNewProject = /\b(novo|nova)\s+(projeto|solucao|aplicacao)\b/.test(normalized);
+  return asksToBuild || asksNewProject;
 }

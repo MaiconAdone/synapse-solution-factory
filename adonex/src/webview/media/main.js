@@ -174,7 +174,7 @@ function setChatBusy(busy) {
   sendButton.textContent = busy ? "Parar" : "Enviar";
   sendButton.classList.toggle("stop", busy);
   sendButton.setAttribute("aria-label", busy ? "Parar processo" : "Enviar mensagem");
-  showThinking(busy, "Pensando...");
+  showThinking(busy, "Preparando a tarefa...");
 }
 
 // Modo pensativo: a bolha "pensando" vira uma lista viva de passos do pipeline
@@ -186,11 +186,29 @@ function ensureThinking() {
     el = document.createElement("article");
     el.id = "thinking";
     el.className = "message assistant thinking";
-    const strong = document.createElement("strong");
-    strong.textContent = "AdoneX";
+    const header = document.createElement("div");
+    header.className = "thinking-header";
+    const bulb = document.createElement("span");
+    bulb.className = "thinking-bulb";
+    bulb.setAttribute("aria-hidden", "true");
+    bulb.textContent = "☼";
+    const title = document.createElement("strong");
+    title.textContent = "Thinking";
+    const spinner = document.createElement("span");
+    spinner.className = "thinking-spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    header.append(bulb, title, spinner);
     const steps = document.createElement("ul");
     steps.className = "thinking-steps";
-    el.append(strong, steps);
+    const processing = document.createElement("div");
+    processing.className = "processing-row";
+    const processingIcon = document.createElement("span");
+    processingIcon.className = "processing-spinner";
+    processingIcon.setAttribute("aria-hidden", "true");
+    const processingLabel = document.createElement("span");
+    processingLabel.textContent = "Processing...";
+    processing.append(processingIcon, processingLabel);
+    el.append(header, steps, processing);
     history.appendChild(el);
   }
   return el;
@@ -204,17 +222,20 @@ function addThinkingStep(text) {
     if ((current.querySelector(".step-text")?.textContent || "") === text) return;
     current.classList.remove("current");
     current.classList.add("done");
-    current.querySelector(".dots")?.remove();
   }
   const li = document.createElement("li");
   li.className = "step current";
-  const dots = document.createElement("span");
-  dots.className = "dots";
-  dots.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
+  const status = document.createElement("span");
+  status.className = "step-status";
+  status.setAttribute("aria-hidden", "true");
+  const tool = document.createElement("span");
+  tool.className = "step-tool";
+  tool.setAttribute("aria-hidden", "true");
+  tool.textContent = "⌘";
   const label = document.createElement("span");
   label.className = "step-text";
   label.textContent = text;
-  li.append(dots, label);
+  li.append(status, tool, label);
   steps.appendChild(li);
   el.scrollIntoView({ behavior: "smooth", block: "end" });
 }
