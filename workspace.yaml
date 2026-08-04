@@ -1,0 +1,7 @@
+name: synapse
+
+include:
+  - docker/compose.dev.yml
+  - docker/compose.ai.yml
+  - docker/compose.database.yml
+  - docker/compose.base.yml

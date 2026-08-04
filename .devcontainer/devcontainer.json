@@ -1,0 +1,23 @@
+{
+  "name": "synapse-backend",
+  "dockerComposeFile": [
+    "../docker/compose.base.yml",
+    "../docker/compose.database.yml",
+    "../docker/compose.ai.yml",
+    "../docker/compose.dev.yml"
+  ],
+  "service": "backend",
+  "workspaceFolder": "/app",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [8000, 3000, 5432, 11434],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff"
+      ]
+    }
+  },
+  "remoteUser": "Synapse"
+}

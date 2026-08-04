@@ -42,3 +42,27 @@ scratch_*.log
 *.bak
 mlruns/
 .claude/settings.local.json
+
+# Synapse local runtime
+.adonex/cache/
+.adonex/memory/archive/
+
+# Claude and Codex runtime
+.claude/projects/
+.claude/logs/
+.claude/cache/
+.codex/cache/
+.codex/sessions/
+.codex/logs/
+
+# Local data and runtime
+logs/*
+!logs/.gitkeep
+data/postgres/*
+data/redis/*
+!data/postgres/.gitkeep
+!data/redis/.gitkeep
+
+# Local models
+models/*
+!models/.gitkeep
