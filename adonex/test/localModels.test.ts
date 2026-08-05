@@ -62,8 +62,29 @@ test("local model selector keeps routine work on the fast local model", () => {
     "qwen2.5-coder:3b"
   );
   assert.equal(
-    selectLocalModelForTask("implement", "adicione um endpoint"),
+    selectLocalModelForTask("chat", "qual a estrutura deste projeto?"),
     "qwen2.5-coder:3b"
+  );
+});
+
+test("local model selector routes real code generation to the local code model", () => {
+  // Calibracao CPU-only: 3b triagem/chat; geracao de codigo vai para o lite MoE.
+  assert.equal(
+    selectLocalModelForTask("implement", "adicione um endpoint"),
+    "deepseek-coder-v2:lite"
+  );
+  assert.equal(
+    selectLocalModelForTask("fix", "corrija o teste que quebrou"),
+    "deepseek-coder-v2:lite"
+  );
+  assert.equal(
+    selectLocalModelProfileForTask("implement", "adicione um endpoint").profile,
+    "code_review"
+  );
+  // Analises Synapse longas usam o modelo de raciocinio, nao o 3b.
+  assert.equal(
+    selectLocalModelProfileForTask("synapse_architecture", "avalie a arquitetura").profile,
+    "balanced"
   );
 });
 

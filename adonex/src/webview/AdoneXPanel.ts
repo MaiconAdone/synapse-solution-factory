@@ -1,6 +1,13 @@
 import * as vscode from "vscode";
 import { AgentOrchestrator } from "../agent/agentOrchestrator";
 import { ComposerSession } from "../composer/composerSession";
+import {
+  buildRepairInput,
+  diffDiagnosticsErrors,
+  formatDiagnosticsAsFailure,
+  selectValidationCommands,
+  type DiagnosticSnapshotEntry
+} from "../composer/validationLoop";
 import { CommandRunner } from "../execution/commandRunner";
 import type {
   AgentAction,
@@ -8,6 +15,7 @@ import type {
   CommandResult,
   GeneratedPatch,
   ImplementationProposal,
+  LlmResponse,
   TaskRecord,
   TaskPlan,
   WorkspaceSnapshot
@@ -29,7 +37,21 @@ import {
   updateTaskLifecycle
 } from "../tasks/taskLifecycle";
 import { TaskStore } from "../tasks/taskStore";
-import { resolveChatPrompt, routeChatCommand } from "../chat/chatRouting";
+import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
+import { formatCatalogAnswer, LocalAnswerCatalog } from "../chat/localAnswerCatalog";
+import {
+  checkSolutionFactoryDialog,
+  renderSolutionFactoryMissingInfo,
+  resolveChatPrompt,
+  routeChatCommand,
+  shouldUseComposer
+} from "../chat/chatRouting";
+import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
+import {
+  buildLocalChatContext,
+  localChatOutputBudget,
+  localChatSystemPrompt
+} from "../chat/localChatPolicy";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
@@ -130,7 +152,12 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     await this.createPlan(
       task,
       action,
-      mode ?? this.defaultMode(),
+      this.resolveMode(
+        task,
+        action,
+        { mode: mode ?? "auto", governed: isGovernedAction(action) },
+        mode ?? this.defaultMode()
+      ),
       options.applyMode
     );
     if (this.isAutonomousSynapse()) {
@@ -242,7 +269,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       } else if (message.type === "plan" && message.task && message.action && message.mode) {
         await this.createPlan(message.task, message.action, message.mode);
       } else if (message.type === "send" && message.task) {
-        await this.sendLocalChat(message.task);
+        await this.handleUnifiedRequest(message.task, message.mode);
       } else if (message.type === "mentionPick") {
         await this.pickMention();
       } else if (message.type === "selectAttachments") {
@@ -290,10 +317,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       }
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      const aborted =
-        this.abortController?.signal.aborted === true ||
-        (error instanceof Error && error.name === "AbortError") ||
-        /\b(abort|cancel|interromp|exceeded)/i.test(detail);
+      const aborted = isUserCancellation(error, this.abortController?.signal);
       if (aborted) {
         if (this.taskRecord && this.taskStore) {
           this.taskRecord.status = "cancelled";
@@ -317,14 +341,19 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postVickStatus(this.vick.setState("asleep", "Vick voltou ao repouso."));
   }
 
-  /** Revela o painel e coloca a UI no modo Composer multi-arquivo. */
+  /** Compatibilidade: o antigo comando Composer agora foca o chat unificado. */
   public async openComposer(): Promise<void> {
     await this.reveal();
-    this.post({ type: "setView", view: "composer" });
+    this.post({ type: "focusPrompt" });
   }
 
-  private composerMode(requested?: AgentMode): AgentMode {
-    return requested ?? this.defaultMode();
+  private composerMode(task: string, requested?: AgentMode): Exclude<AgentMode, "auto"> {
+    return this.resolveMode(
+      task,
+      "implement",
+      { mode: "local", governed: true },
+      requested ?? this.defaultMode()
+    );
   }
 
   private async composerGenerate(task: string, mode?: AgentMode): Promise<void> {
@@ -334,8 +363,9 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postRuntimeState("thinking", "Composer: gerando proposta multi-arquivo...");
     const result = await this.composer.generate(
       task,
-      this.composerMode(mode),
-      this.abortController.signal
+      this.composerMode(task, mode),
+      this.abortController.signal,
+      (text) => this.postStep(text)
     );
     this.postComposerProposal(result);
   }
@@ -346,8 +376,9 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.post({ type: "composerState", state: "planning", text: "Refinando a proposta..." });
     const result = await this.composer.refine(
       instruction,
-      this.composerMode(mode),
-      this.abortController.signal
+      this.composerMode(instruction, mode),
+      this.abortController.signal,
+      (text) => this.postStep(text)
     );
     this.postComposerProposal(result);
   }
@@ -356,7 +387,11 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     view: { summary: string; files: unknown[]; commands: string[] };
     responseText: string;
     model: string;
+    warnings?: string[];
   }): void {
+    for (const warning of result.warnings ?? []) {
+      this.post({ type: "status", text: `Aviso: ${warning}` });
+    }
     this.post({
       type: "composerProposal",
       summary: result.view.summary,
@@ -375,15 +410,212 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postRuntimeState("editing", "Composer: aplicando arquivos selecionados...");
     // O clique em "Aplicar" na revisao ja e a aprovacao humana explicita; os
     // guards de secrets e de caminho no PatchEngine seguem ativos.
+    const diagnosticsBefore = this.captureErrorDiagnostics(this.composer.selectedPaths());
     const result = await this.composer.apply(false);
     this.post({
       type: "composerApplied",
       appliedPaths: result.appliedPaths,
       commands: result.commands
     });
+    // Validacao estrutural gratuita: erros novos de linguagem (tsc, eslint etc.)
+    // detectados pelo editor, independente dos comandos propostos pelo modelo.
+    const newErrors = await this.reportNewDiagnostics(diagnosticsBefore, result.appliedPaths);
+    const commands = selectValidationCommands(result.commands);
+    if (!commands.length) {
+      if (newErrors.length) {
+        // Sem comando de validacao, os diagnostics viram a falha que alimenta
+        // o mesmo ciclo governado de correcao do Composer.
+        await this.handleComposerValidationFailure(
+          {
+            command: "vscode diagnostics (language server)",
+            exitCode: 1,
+            stdout: formatDiagnosticsAsFailure(newErrors),
+            stderr: "",
+            durationMs: 0,
+            timedOut: false
+          },
+          true,
+          async () => {
+            // Revalidacao do modo autonomo: compara de novo os diagnostics
+            // contra o estado anterior ao patch (nao executa shell).
+            await new Promise((resolve) => setTimeout(resolve, 1_500));
+            const stillFailing = diffDiagnosticsErrors(
+              diagnosticsBefore,
+              this.captureErrorDiagnostics(this.composer.selectedPaths())
+            );
+            this.postRuntimeState(
+              "idle",
+              stillFailing.length
+                ? `Diagnostics ainda reportam ${stillFailing.length} erro(s) novo(s) apos a correcao. Revise manualmente.`
+                : "Composer validado: diagnostics limpos apos a correcao."
+            );
+          }
+        );
+        return;
+      }
+      this.postRuntimeState(
+        "idle",
+        `Composer aplicou ${result.appliedPaths.length} arquivo(s). Nenhum comando de validacao foi proposto.`
+      );
+      return;
+    }
+    // Ciclo editar -> validar -> corrigir: valida automaticamente e tenta uma
+    // unica correcao governada, como o fluxo autonomo do Synapse Mode.
+    await this.composerValidate(commands, true);
+  }
+
+  /**
+   * Roda os comandos de validacao propostos apos a aplicacao do Composer.
+   * Em caso de falha, gera uma unica correcao a partir da saida capturada;
+   * a correcao volta para revisao humana, exceto no modo autonomo Synapse,
+   * em que e aplicada e revalidada uma vez (sem nova rodada de correcao).
+   */
+  private async composerValidate(commands: string[], allowRepair: boolean): Promise<void> {
+    const root =
+      this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) {
+      this.postRuntimeState("idle", "Sem workspace para validar. Rode os comandos manualmente.");
+      return;
+    }
+    const requireApproval = this.requiresCommandApproval();
+    let failed: CommandResult | undefined;
+    for (const command of commands) {
+      this.post({ type: "composerState", state: "validating", text: `Validando: ${command}` });
+      this.postRuntimeState(
+        "validating",
+        requireApproval
+          ? `Aguardando aprovacao para validar: ${command}`
+          : `Composer validando: ${command}`
+      );
+      const result = await this.commandRunner.runCaptured(command, root, 600_000, requireApproval);
+      this.post({ type: "testResult", result });
+      if (result.exitCode !== 0) {
+        failed = result;
+        break;
+      }
+    }
+    if (!failed) {
+      this.post({
+        type: "composerState",
+        state: "idle",
+        text: `Validacao passou (${commands.length} comando(s)).`
+      });
+      this.postRuntimeState("idle", `Composer validado: ${commands.join("; ")}.`);
+      return;
+    }
+    await this.handleComposerValidationFailure(failed, allowRepair);
+  }
+
+  /**
+   * Trata uma falha de validacao do Composer (comando ou diagnostics do
+   * editor): diagnostica, notifica e gera uma unica correcao governada.
+   * A correcao volta para revisao humana, exceto no modo autonomo Synapse.
+   */
+  private async handleComposerValidationFailure(
+    failed: CommandResult,
+    allowRepair: boolean,
+    revalidate?: () => Promise<void>
+  ): Promise<void> {
+    const diagnosis = diagnoseCommandFailure(failed);
+    this.post({
+      type: "testFailure",
+      text: [failed.stdout, failed.stderr].filter(Boolean).join("\n"),
+      command: failed.command,
+      diagnosis
+    });
+    if (!allowRepair) {
+      this.postRuntimeState(
+        "idle",
+        `Validacao falhou apos a correcao automatica: ${failed.command}. Revise manualmente ou refine no Composer.`
+      );
+      return;
+    }
+    this.post({
+      type: "status",
+      text: "Validacao falhou. Gerando uma unica correcao automatica a partir da saida capturada."
+    });
+    const repaired = await this.composer.repair(
+      buildRepairInput(failed),
+      this.abortController?.signal,
+      (text) => this.postStep(text)
+    );
+    if (this.composerAutonomousSynapse()) {
+      this.post({
+        type: "status",
+        text: `Modo autonomo Synapse: aplicando correcao (${repaired.view.files.length} arquivo(s)) e revalidando.`
+      });
+      const applied = await this.composer.apply(false);
+      this.post({
+        type: "composerApplied",
+        appliedPaths: applied.appliedPaths,
+        commands: applied.commands
+      });
+      // Revalida somente o que falhou; sem nova rodada de correcao.
+      if (revalidate) {
+        await revalidate();
+        return;
+      }
+      await this.composerValidate([failed.command], false);
+      return;
+    }
+    this.postComposerProposal(repaired);
     this.postRuntimeState(
-      "idle",
-      `Composer aplicou ${result.appliedPaths.length} arquivo(s). Valide com os comandos sugeridos.`
+      "awaiting_confirmation",
+      "Correcao proposta a partir da falha capturada. Revise e aplique para revalidar."
+    );
+  }
+
+  /**
+   * Snapshot dos erros de linguagem (severity Error) dos arquivos informados,
+   * via language servers ja ativos no editor. Custo zero e independente dos
+   * comandos de validacao propostos pelo modelo.
+   */
+  private captureErrorDiagnostics(
+    relativePaths: readonly string[]
+  ): DiagnosticSnapshotEntry[] {
+    const root =
+      this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) return [];
+    const entries: DiagnosticSnapshotEntry[] = [];
+    for (const relativePath of relativePaths) {
+      const uri = vscode.Uri.joinPath(vscode.Uri.file(root), relativePath);
+      for (const diagnostic of vscode.languages.getDiagnostics(uri)) {
+        if (diagnostic.severity !== vscode.DiagnosticSeverity.Error) continue;
+        entries.push({
+          path: relativePath,
+          message: diagnostic.message,
+          line: diagnostic.range.start.line + 1
+        });
+      }
+    }
+    return entries;
+  }
+
+  /**
+   * Compara diagnostics antes/depois do apply e reporta erros NOVOS no painel.
+   * Aguarda um curto intervalo para os language servers reprocessarem os
+   * arquivos recem-escritos. Retorna os erros novos para o chamador decidir
+   * se alimenta o ciclo de correcao.
+   */
+  private async reportNewDiagnostics(
+    before: readonly DiagnosticSnapshotEntry[],
+    relativePaths: readonly string[]
+  ): Promise<DiagnosticSnapshotEntry[]> {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    const fresh = diffDiagnosticsErrors(before, this.captureErrorDiagnostics(relativePaths));
+    if (fresh.length) {
+      this.post({
+        type: "status",
+        text: `Aviso: ${formatDiagnosticsAsFailure(fresh, 5)}`
+      });
+    }
+    return fresh;
+  }
+
+  private composerAutonomousSynapse(): boolean {
+    return Boolean(
+      this.composer.isSynapseWorkspace() &&
+      vscode.workspace.getConfiguration("adonex").get<boolean>("synapse.autonomous", false)
     );
   }
 
@@ -393,6 +625,32 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postRuntimeState("idle", "Composer: ultima aplicacao revertida.");
   }
 
+  private async handleUnifiedRequest(prompt: string, requestedMode?: AgentMode): Promise<void> {
+    const route = routeChatCommand(undefined, prompt);
+    const resolved = resolveChatPrompt(prompt, route);
+    if (!resolved) return;
+    const solutionFactory = checkSolutionFactoryDialog(resolved, route);
+    if (solutionFactory.applies) {
+      if (solutionFactory.missingFields.length) {
+        const response = renderSolutionFactoryMissingInfo(solutionFactory);
+        this.rememberLocalChat(resolved, response);
+        this.post({ type: "chatResponse", text: response, provider: "adonex", model: "solution-factory" });
+        return;
+      }
+      await this.createPlan(resolved, route.action, "synapse");
+      if (this.isAutonomousSynapse()) {
+        await this.runAutonomousSynapse();
+      }
+      return;
+    }
+    const mode = this.resolveMode(resolved, route.action, route, requestedMode ?? this.defaultMode());
+    if (shouldUseComposer(route)) {
+      await this.composerGenerate(resolved, mode);
+      return;
+    }
+    await this.sendLocalChat(resolved);
+
+  }
   private async sendLocalChat(prompt: string): Promise<void> {
     const config = vscode.workspace.getConfiguration("adonex");
     if (!config.get<boolean>("ollama.enabled", true)) {
@@ -417,6 +675,22 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     );
     const attachmentContext = await this.readAttachmentContext();
     const mentionContext = await this.readMentionContext(safePrompt);
+    if (!attachmentContext && !mentionContext) {
+      const catalogMatch = await this.localAnswerCatalog()?.find(safePrompt);
+      if (catalogMatch) {
+        const catalogAnswer = formatCatalogAnswer(catalogMatch);
+        this.rememberLocalChat(safePrompt, catalogAnswer);
+        this.selectedAttachments = [];
+        this.postAttachmentState();
+        this.post({
+          type: "chatResponse",
+          text: catalogAnswer,
+          provider: "catalog",
+          model: catalogMatch.entry.model
+        });
+        return;
+      }
+    }
     // Memoria e historico entram como contexto DINAMICO (workspaceContext), nunca
     // no system prompt, para nao quebrar o prefix cache do Ollama.
     const memoryContext = (mentionContext || attachmentContext)
@@ -425,34 +699,68 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const recentHistory = this.localChatHistory.slice(-4)
       .map((item) => `${item.role === "user" ? "Usuario" : "AdoneX"}: ${item.text}`)
       .join("\n");
-    const dynamicContext = [
-      recentHistory ? `Conversa recente:\n${recentHistory}` : "",
-      memoryContext ? `Memoria compartilhada (trecho):\n${memoryContext}` : "",
+    const dynamicContext = buildLocalChatContext({
+      prompt: safePrompt,
+      recentHistory: recentHistory ? `Conversa recente:\n${recentHistory}` : "",
+      memoryContext: memoryContext ? `Memoria compartilhada (trecho):\n${memoryContext}` : "",
       mentionContext,
       attachmentContext
-    ].filter(Boolean).join("\n\n");
-    const model = profile.model;
-    this.post({ type: "status", text: `Gerando resposta com ${model}...` });
-    const response = await new OllamaClient({
-      baseUrl,
-      model,
-      apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
-      timeoutMs: config.get<number>("ollama.timeoutSeconds", 120) * 1000,
-      keepAlive: config.get<string>("ollama.keepAlive", "10m"),
-      numCtx: profile.numCtx,
-      temperature: profile.temperature,
-      topP: profile.topP,
-      repeatPenalty: profile.repeatPenalty,
-      maxRetries: config.get<number>("ollama.maxRetries", 2),
-      retryDelayMs: config.get<number>("ollama.retryDelayMs", 250)
-    }).generate({
-      systemPrompt: SYNAPSE_SPECIALIST_SYSTEM,
-      userPrompt: safePrompt,
-      workspaceContext: dynamicContext || undefined,
-      maxOutputTokens: config.get<number>("chat.maxTokens", profile.maxOutputTokens),
-      signal: this.abortController.signal
     });
+    const model = profile.model;
+    this.postStep(`Gerando resposta com ${model}...`);
+    const chatStartedAt = Date.now();
+    let chatTokensReported = 0;
+    let response: LlmResponse;
+    try {
+      response = await new OllamaClient({
+        baseUrl,
+        model,
+        apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
+        timeoutMs: config.get<number>("ollama.timeoutSeconds", 120) * 1000,
+        keepAlive: config.get<string>("ollama.keepAlive", "10m"),
+        numCtx: profile.numCtx,
+        temperature: profile.temperature,
+        topP: profile.topP,
+        repeatPenalty: profile.repeatPenalty,
+        maxRetries: config.get<number>("ollama.maxRetries", 2),
+        retryDelayMs: config.get<number>("ollama.retryDelayMs", 250),
+        logger: (event) => {
+          if (event.type === "first_token") {
+            this.postStep(
+              `Primeiro token apos ${Math.round((event.durationMs ?? 0) / 1000)}s; escrevendo...`
+            );
+          }
+        },
+        onToken: (tokens) => {
+          if (tokens - chatTokensReported >= 48) {
+            chatTokensReported = tokens;
+            const elapsed = Math.round((Date.now() - chatStartedAt) / 1000);
+            this.postStep(`Gerando... ~${tokens} tokens (${elapsed}s)`);
+          }
+        }
+      }).generate({
+        systemPrompt: localChatSystemPrompt(SYNAPSE_SPECIALIST_SYSTEM, safePrompt),
+        userPrompt: safePrompt,
+        workspaceContext: dynamicContext,
+        maxOutputTokens: localChatOutputBudget(
+          safePrompt,
+          profile,
+          config.get<number>("chat.maxTokens", profile.maxOutputTokens)
+        ),
+        signal: this.abortController.signal
+      });
+    } catch (error) {
+      if (isUserCancellation(error, this.abortController.signal)) throw error;
+      const detail = error instanceof Error ? error.message : String(error);
+      const fallback = createLocalChatFailureResponse(safePrompt, model, detail);
+      this.rememberLocalChat(safePrompt, fallback);
+      this.selectedAttachments = [];
+      this.postAttachmentState();
+      this.post({ type: "chatResponse", text: fallback, provider: "ollama", model });
+      return;
+    }
     const answer = guardAgainstLocalHallucinations(sanitizeAdoneXResponse(response.text));
+    await this.localAnswerCatalog()?.record(safePrompt, answer, response.provider, response.model);
     this.rememberLocalChat(safePrompt, answer);
     this.selectedAttachments = [];
     this.postAttachmentState();
@@ -656,6 +964,12 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.localChatHistory.push({ role: "user", text: user }, { role: "assistant", text: assistant });
     if (this.localChatHistory.length > 12) this.localChatHistory.splice(0, this.localChatHistory.length - 12);
   }
+
+  private localAnswerCatalog(): LocalAnswerCatalog | undefined {
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    return root ? new LocalAnswerCatalog(root) : undefined;
+  }
+
   private async createPlan(
     task: string,
     action: AgentAction,
@@ -663,6 +977,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     applyMode?: "prepare" | "apply"
   ): Promise<void> {
     const safeTask = scanAndRedactSecrets(task).redacted;
+    mode = this.resolveMode(safeTask, action, { mode, governed: isGovernedAction(action) }, mode);
     this.applyMode = applyMode ?? this.patchApplyMode();
     this.abortController?.abort();
     this.abortController = new AbortController();
@@ -746,7 +1061,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.pending.mode,
       this.pending.plan,
       this.pending.snapshot,
-      { signal: this.abortController?.signal }
+      {
+        signal: this.abortController?.signal,
+        onProgress: (text) => this.postStep(text)
+      }
     );
     this.ensureNotCancelled();
     this.proposal = execution.proposal;
@@ -758,9 +1076,15 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.patch = execution.proposal
       ? await this.patchEngine.generate(
           execution.proposal.changes,
-          execution.proposal.operations
+          execution.proposal.operations,
+          { droppedOperations: execution.proposal.droppedOperations }
         )
       : undefined;
+    // Nunca deixa proposta parcial passar em silencio: entradas malformadas
+    // descartadas pelo parser viram aviso explicito no painel.
+    for (const warning of this.patch?.warnings ?? []) {
+      this.post({ type: "status", text: `Aviso: ${warning}` });
+    }
     const patchSummary = this.patch ? summarizePatchForSpeech(this.patch) : undefined;
     const responseText = guardAgainstLocalHallucinations(
       sanitizeAdoneXResponse(execution.response.text),
@@ -832,10 +1156,19 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     }
     this.ensureNotCancelled();
     this.postRuntimeState("editing", `Applying ${this.patch.changes.length} file change(s) to the Synapse workspace...`);
+    const diagnosticsBefore = this.captureErrorDiagnostics(
+      this.patch.changes.map((change) => change.path)
+    );
     const receipt = await this.patchEngine.apply(
       this.patch,
       true,
       this.requiresWriteApproval()
+    );
+    // Reporta erros novos de linguagem introduzidos pelo patch (aviso; o ciclo
+    // de correcao governado segue disponivel via validacao de comandos).
+    await this.reportNewDiagnostics(
+      diagnosticsBefore,
+      this.patch.changes.map((change) => change.path)
     );
     if (this.taskRecord && this.taskStore) {
       this.taskRecord.status = "patch_applied";
@@ -885,13 +1218,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     if (!this.pending || !this.taskRecord || !this.taskStore) {
       throw new Error("No persistent task is ready for validation.");
     }
-    const commands = [
+    const commands = selectValidationCommands([
       ...(this.proposal?.commands ?? []),
       ...this.pending.plan.commands
-    ].filter(
-      (command, index, all) =>
-        !command.startsWith("Review") && all.indexOf(command) === index
-    );
+    ]);
     if (!commands.length) throw new Error("No test command was proposed.");
 
     const results: CommandResult[] = [];
@@ -978,7 +1308,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.pending.mode,
       this.pending.plan,
       refreshedSnapshot,
-      { signal: this.abortController?.signal }
+      {
+        signal: this.abortController?.signal,
+        onProgress: (text) => this.postStep(text)
+      }
     );
     if (!execution.proposal?.changes.length) {
       throw new Error("AdoneX did not produce a correction patch.");
@@ -1099,6 +1432,14 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     void this.view?.webview.postMessage(message);
   }
 
+  /**
+   * Modo pensativo: cada passo do pipeline vira uma linha na bolha "pensando"
+   * do chat (ou no status do Composer). Narracao gerada pelo host, custo zero.
+   */
+  private postStep(text: string): void {
+    this.post({ type: "step", text });
+  }
+
   private postVickStatus(status: {
     state: VickVoiceState;
     text: string;
@@ -1213,9 +1554,19 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
   }
 
   private defaultMode(): AgentMode {
-    return vscode.workspace
+    const configured = vscode.workspace
       .getConfiguration("adonex")
-      .get<AgentMode>("agent.defaultMode", "local");
+      .get<string>("agent.defaultMode", "auto");
+    return normalizeConfiguredAgentMode(configured);
+  }
+
+  private resolveMode(
+    prompt: string,
+    action: AgentAction,
+    route: { mode: AgentMode; governed: boolean },
+    requestedMode?: AgentMode
+  ): Exclude<AgentMode, "auto"> {
+    return resolveAgentMode(prompt, action, route, requestedMode);
   }
 
   private patchApplyMode(): "prepare" | "apply" {
@@ -1299,12 +1650,9 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
       </div>
     </div>
     <div class="toolbar">
-      <div class="view-toggle" role="tablist" aria-label="Modo do painel">
-        <button id="viewChat" class="view-tab active" type="button" role="tab" aria-selected="true">Chat</button>
-        <button id="viewComposer" class="view-tab" type="button" role="tab" aria-selected="false">Composer</button>
-      </div>
+
       <select id="mode" aria-label="Agent mode">
-        <option value="economic"${selected("economic")}>Economic</option>
+        <option value="auto"${selected("auto")}>Auto</option>
         <option value="balanced"${selected("balanced")}>Local Balanced</option>
         <option value="strong"${selected("strong")}>Local Strong</option>
         <option value="local"${selected("local")}>Local / Ollama</option>
@@ -1320,12 +1668,12 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
       </div>
     </section>
     <section id="composerView" class="composer-view" hidden aria-label="Composer multi-arquivo">
-      <div class="composer-intro">
+      <div class="composer-intro" hidden>
         <strong>Composer multi-arquivo</strong>
         <p>Descreva a solucao ou feature. O AdoneX planeja, gera e deixa voce revisar e aplicar as mudancas arquivo a arquivo, 100% local.</p>
       </div>
-      <textarea id="composerGoal" rows="4" placeholder="Ex.: crie um endpoint FastAPI /health com teste e registre no roteador principal..."></textarea>
-      <div class="composer-actions">
+      <textarea id="composerGoal" hidden rows="4" placeholder="Ex.: crie um endpoint FastAPI /health com teste e registre no roteador principal..."></textarea>
+      <div class="composer-actions" hidden>
         <button id="composerGenerate" class="primary" type="button">Gerar proposta</button>
         <button id="composerCancel" class="ghost" type="button" hidden>Cancelar</button>
       </div>
@@ -1364,10 +1712,14 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
   </section>
   <footer class="composer">
     <div class="composer-input-row">
+      <textarea id="prompt" rows="3" placeholder="Converse, peça alterações ou implemente recursos... use @ para citar arquivos"></textarea>
+    </div>
+    <div class="composer-action-row">
+      <div class="composer-context-actions">
       <button id="attach" class="icon-button" type="button" aria-label="Carregar arquivos e imagens" title="Carregar arquivos e imagens"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5 8.9 14.1a3 3 0 0 0 4.2 4.2l7.1-7.1a5 5 0 0 0-7.1-7.1L5.6 11.6a7 7 0 0 0 9.9 9.9l5.3-5.3"/></svg></button>
       <button id="mention" class="icon-button mention-button" type="button" aria-label="Adicionar contexto por mencao" title="Adicionar contexto: @arquivo, @selection, @file">@</button>
-      <textarea id="prompt" rows="3" placeholder="Digite sua mensagem... use @ para citar arquivos"></textarea>
       <button id="memory" class="icon-button" type="button" aria-label="Abrir memoria compartilhada" title="Memoria compartilhada: AdoneX, Claude Code e Codex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h11a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 8.5 4.8 4.8 0 0 0 7 18Z"/><path d="M9 13h6M12 10v6"/></svg></button>
+      </div>
       <button id="send" class="primary" type="button" aria-label="Enviar mensagem">Enviar</button>
     </div>
     <div id="attachments" class="attachment-strip" hidden></div>
@@ -1377,6 +1729,15 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
 </body>
 </html>`;
   }
+}
+
+function isUserCancellation(error: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted) return true;
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function isGovernedAction(action: AgentAction): boolean {
+  return ["implement", "fix", "test", "synapse_agent", "synapse_mcp"].includes(action);
 }
 
 function getNonce(): string {

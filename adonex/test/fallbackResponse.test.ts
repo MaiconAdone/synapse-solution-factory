@@ -2,6 +2,7 @@
 import test from "node:test";
 import {
   createSynapseExplanationResponse,
+  createLocalChatFailureResponse,
   createLocalFallbackResponse
 } from "../src/chat/fallbackResponse";
 import type { TaskPlan, WorkspaceSnapshot } from "../src/llm/types";
@@ -45,6 +46,21 @@ test("Synapse fallback analyzes the question when Ollama times out", () => {
   assert.match(text, /request exceeded 90 seconds/);
   assert.doesNotMatch(text, /Resposta deterministica de emergencia/i);
   assert.doesNotMatch(text, /Explicacao Executiva do Projeto Synapse/);
+});
+
+test("local chat timeout fallback is not rendered as user cancellation", () => {
+  const text = createLocalChatFailureResponse(
+    "qual o tempo medio de resposta do modelo local em uma solicitacao simples?",
+    "qwen2.5-coder:3b",
+    "request exceeded 120 seconds"
+  );
+
+  assert.match(text, /Ollama local nao concluiu a resposta/);
+  assert.match(text, /qwen2\.5-coder:3b/);
+  assert.match(text, /inventario-ou-roteamento-de-modelos/);
+  assert.match(text, /pergunta-aberta/);
+  assert.match(text, /nao tratou isso como cancelamento do usuario/);
+  assert.doesNotMatch(text, /Processo interrompido/);
 });
 
 test("static Synapse fallback explanation does not mention an Ollama failure", () => {

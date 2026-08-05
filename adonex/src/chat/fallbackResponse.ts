@@ -36,6 +36,49 @@ export function createLocalFallbackResponse(
   return createAnalyzedSynapseFallback(prompt, snapshot, plan, errorMessage, analysis);
 }
 
+export function createLocalChatFailureResponse(
+  prompt: string,
+  model: string,
+  errorMessage: string
+): string {
+  const analysis = analyzePromptForFallback(prompt, {
+    action: "chat",
+    mode: "local",
+    objective: prompt,
+    commands: [],
+    filesToChange: [],
+    filesToRead: [],
+    id: "local-chat-fallback",
+    recommendedExecution: "adonex-local",
+    risks: [],
+    estimatedInputTokens: 0,
+    estimatedOutputTokens: 0,
+    estimatedCostUsd: 0,
+    requiresApproval: false
+  });
+  return [
+    "## Ollama local nao concluiu a resposta",
+    "",
+    `Tentei responder com o modelo local \`${model}\`, mas a chamada nao terminou corretamente.`,
+    "",
+    "### Analise da pergunta",
+    "",
+    `- Pergunta recebida: ${prompt.trim() || "(vazia)"}`,
+    `- Intencao: ${analysis.intent}`,
+    `- Tipo de solicitacao: ${analysis.requestType}`,
+    "",
+    "### Diagnostico",
+    "",
+    `- Falha: ${errorMessage}`,
+    "- O AdoneX nao tratou isso como cancelamento do usuario.",
+    "- Nenhuma resposta de cloud foi usada.",
+    "",
+    "### Proximo passo",
+    "",
+    "- Tente novamente com uma pergunta menor, ou aumente `adonex.ollama.timeoutSeconds` se o modelo estiver carregando em CPU/RAM."
+  ].join("\n");
+}
+
 export function createSynapseExplanationResponse(
   snapshot: WorkspaceSnapshot,
   plan: TaskPlan

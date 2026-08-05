@@ -8,7 +8,9 @@ import type {
   AgentMode,
   AppliedPatchReceipt,
   GeneratedPatch,
-  ImplementationProposal
+  ImplementationProposal,
+  TaskPlan,
+  WorkspaceSnapshot
 } from "../llm/types";
 import {
   buildComposerFiles,
@@ -20,6 +22,8 @@ export interface ComposerGenerateResult {
   view: ComposerProposalView;
   responseText: string;
   model: string;
+  /** Avisos nao fatais da geracao (ex.: entradas malformadas descartadas no parse). */
+  warnings?: string[];
 }
 
 export interface ComposerApplyResult {
@@ -40,6 +44,11 @@ export class ComposerSession {
   private selection = new Set<string>();
   private root?: string;
   private lastReceipt?: AppliedPatchReceipt;
+  // Contexto da ultima geracao, para o ciclo validar -> corrigir reutilizar o
+  // mesmo plano/snapshot sem recoletar workspace inteiro.
+  private lastMode?: AgentMode;
+  private lastPlan?: TaskPlan;
+  private lastSnapshot?: WorkspaceSnapshot;
 
   public constructor(
     private readonly orchestrator: AgentOrchestrator,
@@ -56,26 +65,39 @@ export class ComposerSession {
     this.patch = undefined;
     this.selection = new Set();
     this.lastReceipt = undefined;
+    this.lastMode = undefined;
+    this.lastPlan = undefined;
+    this.lastSnapshot = undefined;
+  }
+
+  public getRoot(): string | undefined {
+    return this.root;
+  }
+
+  public isSynapseWorkspace(): boolean {
+    return Boolean(this.lastSnapshot?.synapseDetected);
   }
 
   public async generate(
     task: string,
     mode: AgentMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
   ): Promise<ComposerGenerateResult> {
     const safeTask = scanAndRedactSecrets(task).redacted.trim();
     if (!safeTask) throw new Error("Descreva a solucao ou feature antes de gerar.");
     this.history = [safeTask];
-    return this.runGeneration(safeTask, mode, signal);
+    return this.runGeneration(safeTask, mode, signal, onProgress);
   }
 
   public async refine(
     instruction: string,
     mode: AgentMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
   ): Promise<ComposerGenerateResult> {
     if (!this.history.length) {
-      return this.generate(instruction, mode, signal);
+      return this.generate(instruction, mode, signal, onProgress);
     }
     const safe = scanAndRedactSecrets(instruction).redacted.trim();
     if (!safe) throw new Error("Descreva o ajuste antes de refinar a proposta.");
@@ -89,28 +111,33 @@ export class ComposerSession {
       "",
       "Gere a proposta multi-arquivo consolidada considerando todos os ajustes."
     ].join("\n");
-    return this.runGeneration(combined, mode, signal);
+    return this.runGeneration(combined, mode, signal, onProgress);
   }
 
   private async runGeneration(
     task: string,
     mode: AgentMode,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
   ): Promise<ComposerGenerateResult> {
     const previousSelection = new Set(this.selection);
+    onProgress?.("Planejando a mudanca multi-arquivo...");
     const { plan, snapshot } = await this.orchestrator.createPlan(
       task,
       "implement",
       mode
     );
     this.root = snapshot.root;
+    this.lastMode = mode;
+    this.lastPlan = plan;
+    this.lastSnapshot = snapshot;
     const execution = await this.orchestrator.executeApproved(
       task,
       "implement",
       mode,
       plan,
       snapshot,
-      { signal }
+      { signal, onProgress }
     );
     if (!execution.proposal || !execution.proposal.changes.length) {
       this.proposal = execution.proposal;
@@ -122,7 +149,8 @@ export class ComposerSession {
     this.proposal = execution.proposal;
     this.patch = await this.patchEngine.generate(
       execution.proposal.changes,
-      execution.proposal.operations
+      execution.proposal.operations,
+      { droppedOperations: execution.proposal.droppedOperations }
     );
     const befores = await this.readBefores(this.patch);
     const files = buildComposerFiles(
@@ -139,7 +167,55 @@ export class ComposerSession {
         commands: execution.proposal.commands ?? []
       },
       responseText: execution.response.text,
-      model: `${execution.response.provider}/${execution.response.model}`
+      model: `${execution.response.provider}/${execution.response.model}`,
+      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {})
+    };
+  }
+
+  /**
+   * Ciclo editar -> validar -> corrigir: gera uma unica correcao governada a
+   * partir da saida capturada do comando que falhou, reutilizando o plano e o
+   * snapshot da geracao original. A aplicacao segue o mesmo fluxo de revisao.
+   */
+  public async repair(
+    capturedFailure: string,
+    signal?: AbortSignal,
+    onProgress?: (text: string) => void
+  ): Promise<ComposerGenerateResult> {
+    if (!this.history.length || !this.lastPlan || !this.lastSnapshot || !this.lastMode) {
+      throw new Error("Nao ha geracao do Composer para corrigir.");
+    }
+    onProgress?.("Gerando correcao a partir da falha capturada...");
+    const execution = await this.orchestrator.proposeFix(
+      this.history[0],
+      capturedFailure,
+      this.lastMode,
+      this.lastPlan,
+      this.lastSnapshot,
+      { signal, onProgress }
+    );
+    if (!execution.proposal || !execution.proposal.changes.length) {
+      throw new Error("O modelo local nao propos uma correcao para a falha capturada.");
+    }
+    this.proposal = execution.proposal;
+    this.patch = await this.patchEngine.generate(
+      execution.proposal.changes,
+      execution.proposal.operations,
+      { droppedOperations: execution.proposal.droppedOperations }
+    );
+    const befores = await this.readBefores(this.patch);
+    const files = buildComposerFiles(this.patch.changes, befores);
+    // Correcao e minima por contrato: todos os arquivos entram selecionados.
+    this.selection = new Set(files.map((file) => file.path));
+    return {
+      view: {
+        summary: execution.proposal.summary,
+        files,
+        commands: execution.proposal.commands ?? []
+      },
+      responseText: execution.response.text,
+      model: `${execution.response.provider}/${execution.response.model}`,
+      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {})
     };
   }
 
@@ -159,6 +235,11 @@ export class ComposerSession {
     return this.selection.size;
   }
 
+  /** Paths atualmente selecionados para aplicacao (usado no diff de diagnostics). */
+  public selectedPaths(): string[] {
+    return [...this.selection];
+  }
+
   public async openDiff(path: string): Promise<void> {
     const change = this.patch?.changes.find((item) => item.path === path);
     if (!change) throw new Error(`Sem mudanca proposta para ${path}.`);
@@ -169,7 +250,26 @@ export class ComposerSession {
     if (!this.patch?.changes.length) throw new Error("Nao ha proposta do Composer para aplicar.");
     const changes = selectedChanges(this.patch.changes, this.selection);
     if (!changes.length) throw new Error("Selecione ao menos um arquivo para aplicar.");
-    const subset: GeneratedPatch = { diff: this.patch.diff, changes, operations: [] };
+    // Preserva as operations incrementais dos arquivos selecionados: o motor de
+    // patch as reaplica contra o disco atual, protegendo edicoes simultaneas.
+    const operations = (this.patch.operations ?? []).filter((operation) =>
+      this.selection.has(operation.path)
+    );
+    const subset: GeneratedPatch = {
+      diff: this.patch.diff,
+      changes,
+      operations,
+      // Propaga avisos e rewrites de alto risco (dos arquivos selecionados)
+      // para o apply sinalizar no prompt de aprovacao e no log.
+      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {}),
+      ...(this.patch.highRiskRewrites?.length
+        ? {
+            highRiskRewrites: this.patch.highRiskRewrites.filter((rewrite) =>
+              this.selection.has(rewrite.path)
+            )
+          }
+        : {})
+    };
     const receipt = await this.patchEngine.apply(subset, true, requireApproval);
     this.lastReceipt = receipt;
     return {

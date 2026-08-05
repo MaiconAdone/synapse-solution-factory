@@ -4,6 +4,7 @@ import {
   compilePrompt,
   inferIntent
 } from "../src/agent/promptCompiler";
+import { STATIC_POLICY_PROMPT } from "../src/agent/prompts";
 import type { WorkspaceSnapshot } from "../src/llm/types";
 
 const snapshot: WorkspaceSnapshot = {
@@ -51,16 +52,25 @@ test("prompt compiler creates a structured optimized prompt", () => {
   assert.match(compiled.systemAddendum, /PROMPT ENGINEERING ACTIVE/);
   assert.match(compiled.optimizedPrompt, /PROMPT OTIMIZADO PELO ADONEX PROMPT COMPILER/);
   assert.match(compiled.optimizedPrompt, /Objetivo do usuario/);
-  assert.match(compiled.optimizedPrompt, /Politicas obrigatorias/);
-  assert.match(compiled.optimizedPrompt, /baixo custo/i);
-  assert.match(compiled.optimizedPrompt, /analisar o pedido atual/i);
-  assert.match(compiled.optimizedPrompt, /Nao usar resposta deterministica pronta/i);
-  assert.match(compiled.optimizedPrompt, /Padrao GPT\/Claude para modelo local/);
-  assert.match(compiled.optimizedPrompt, /Nao revelar chain-of-thought/);
-  assert.match(compiled.optimizedPrompt, /Anti-alucinacao/);
-  assert.match(compiled.optimizedPrompt, /nao tenho evidencia no contexto fornecido/i);
-  assert.match(compiled.optimizedPrompt, /Nao expor secrets/i);
-  assert.match(compiled.optimizedPrompt, /Ruflo, MCP, Ollama/);
+  // Politicas estaticas nao podem voltar ao user prompt: elas vivem no system
+  // prompt (STATIC_POLICY_PROMPT) para preservar o prefix cache do Ollama.
+  assert.doesNotMatch(compiled.optimizedPrompt, /Politicas obrigatorias/);
+});
+
+test("static policy prompt keeps mandatory policies for the system prompt", () => {
+  assert.match(STATIC_POLICY_PROMPT, /Politicas obrigatorias/);
+  assert.match(STATIC_POLICY_PROMPT, /baixo custo/i);
+  assert.match(STATIC_POLICY_PROMPT, /analisar o pedido atual/i);
+  assert.match(STATIC_POLICY_PROMPT, /Nao usar resposta deterministica pronta/i);
+  assert.match(STATIC_POLICY_PROMPT, /Padrao GPT\/Claude para modelo local/);
+  assert.match(STATIC_POLICY_PROMPT, /Nao revelar chain-of-thought/);
+  assert.match(STATIC_POLICY_PROMPT, /Anti-alucinacao/);
+  assert.match(STATIC_POLICY_PROMPT, /nao tenho evidencia no contexto fornecido/i);
+  assert.match(STATIC_POLICY_PROMPT, /Nao expor secrets/i);
+  assert.match(STATIC_POLICY_PROMPT, /Ruflo, MCP, Ollama/);
+  assert.match(STATIC_POLICY_PROMPT, /agentic coding profissional/);
+  assert.match(STATIC_POLICY_PROMPT, /AdoneX usa somente modelos locais/);
+  assert.match(STATIC_POLICY_PROMPT, /Nao encaminhar prompts para LLMs externos/);
 });
 
 test("prompt compiler blocks external LLM execution even in strong mode", () => {
@@ -73,9 +83,7 @@ test("prompt compiler blocks external LLM execution even in strong mode", () => 
   );
 
   assert.equal(inferIntent(compiled.originalPrompt, "implement"), "implementacao-governada");
-  assert.match(compiled.optimizedPrompt, /agentic coding profissional/);
-  assert.match(compiled.optimizedPrompt, /AdoneX usa somente modelos locais/);
-  assert.match(compiled.optimizedPrompt, /Nao encaminhar prompts para LLMs externos/);
+  assert.match(compiled.optimizedPrompt, /engenheiro senior do Synapse/);
 });
 
 test("prompt compiler can be disabled", () => {

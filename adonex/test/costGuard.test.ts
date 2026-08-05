@@ -5,12 +5,13 @@ import path from "node:path";
 import test from "node:test";
 import { CostGuard, estimateCost, estimateTokens } from "../src/cost/costGuard";
 
-test("cost guard estimates tokens and blocks projected budget overflow", async () => {
+test("cost guard estimates tokens and keeps local modes at zero cloud cost", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "adonex-cost-"));
   const guard = new CostGuard(root, 0.0001, 1);
   const estimate = estimateCost("x".repeat(4000), "strong", 1000);
   assert.equal(estimateTokens("12345678"), 2);
-  assert.equal((await guard.check(estimate)).allowed, false);
+  assert.equal(estimate.estimatedCostUsd, 0);
+  assert.equal((await guard.check(estimate)).allowed, true);
 });
 
 test("cost guard records and resets usage", async () => {

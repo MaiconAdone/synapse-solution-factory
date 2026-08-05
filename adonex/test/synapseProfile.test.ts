@@ -41,3 +41,13 @@ test("Synapse system prompt activates senior AI architecture policy", () => {
   assert.match(prompt, /Ruflo 60-agent council/);
   assert.match(prompt, /Ollama/);
 });
+
+test("Synapse system prompt stays byte-stable across confidence jitter", () => {
+  // Mesma faixa de confianca => mesmo texto, preservando o prefix cache.
+  const a = synapseSystemContext(true, false, 0.94, ["runtime-manifest"]);
+  const b = synapseSystemContext(true, false, 0.81, ["runtime-manifest"]);
+  assert.equal(a, b);
+  assert.doesNotMatch(a, /0\.94/);
+  // Linha volatil de deteccao fica no final do bloco.
+  assert.match(a.trim().split("\n").at(-1) ?? "", /automatically detected/);
+});

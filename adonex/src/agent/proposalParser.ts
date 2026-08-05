@@ -196,42 +196,65 @@ function normalizeProposal(value: unknown): ImplementationProposal {
     throw new ProposalParseError("A proposta nao e um objeto JSON.");
   }
   const record = value as Record<string, unknown>;
-  const changes = normalizeChanges(record.changes);
-  const operations = normalizeOperations(record.operations);
+  const changesResult = normalizeChanges(record.changes);
+  const operationsResult = normalizeOperations(record.operations);
+  const changes = changesResult.items;
+  const operations = operationsResult.items;
   if (!changes.length && !operations.length) {
     throw new ProposalParseError(
       "A proposta nao contem nenhuma mudanca de arquivo (changes) nem operacao (operations)."
     );
   }
+  const dropped = changesResult.dropped + operationsResult.dropped;
   return {
     summary: typeof record.summary === "string" ? record.summary : "",
     changes,
     operations,
-    commands: normalizeStringArray(record.commands)
+    commands: normalizeStringArray(record.commands),
+    // Expoe o descarte silencioso de entradas malformadas para o chamador
+    // sinalizar no summary/log em vez de falhar parcialmente sem aviso.
+    ...(dropped > 0 ? { droppedOperations: dropped } : {})
   };
 }
 
-function normalizeChanges(value: unknown): ProposedFileChange[] {
-  if (!Array.isArray(value)) return [];
-  const changes: ProposedFileChange[] = [];
-  for (const item of value) {
-    if (!item || typeof item !== "object") continue;
-    const record = item as Record<string, unknown>;
-    if (typeof record.path !== "string" || typeof record.content !== "string") continue;
-    if (!record.path.trim()) continue;
-    changes.push({ path: record.path, content: record.content });
-  }
-  return changes;
+interface NormalizedList<T> {
+  items: T[];
+  dropped: number;
 }
 
-function normalizeOperations(value: unknown): ProposedPatchOperation[] {
-  if (!Array.isArray(value)) return [];
+function normalizeChanges(value: unknown): NormalizedList<ProposedFileChange> {
+  if (!Array.isArray(value)) return { items: [], dropped: 0 };
+  const changes: ProposedFileChange[] = [];
+  let dropped = 0;
+  for (const item of value) {
+    if (!item || typeof item !== "object") {
+      dropped += 1;
+      continue;
+    }
+    const record = item as Record<string, unknown>;
+    if (typeof record.path !== "string" || typeof record.content !== "string") {
+      dropped += 1;
+      continue;
+    }
+    if (!record.path.trim()) {
+      dropped += 1;
+      continue;
+    }
+    changes.push({ path: record.path, content: record.content });
+  }
+  return { items: changes, dropped };
+}
+
+function normalizeOperations(value: unknown): NormalizedList<ProposedPatchOperation> {
+  if (!Array.isArray(value)) return { items: [], dropped: 0 };
   const operations: ProposedPatchOperation[] = [];
+  let dropped = 0;
   for (const item of value) {
     const operation = normalizeOperation(item);
     if (operation) operations.push(operation);
+    else dropped += 1;
   }
-  return operations;
+  return { items: operations, dropped };
 }
 
 function normalizeOperation(value: unknown): ProposedPatchOperation | undefined {

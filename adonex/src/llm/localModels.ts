@@ -224,7 +224,15 @@ export function selectLocalModelProfileForTask(
   if (explicitSlowModelSignal && planningSignal) return ADONEX_LOCAL_MODEL_PROFILES.planning_strong;
   if (explicitSlowModelSignal && codeStrongSignal && heavyAction) return ADONEX_LOCAL_MODEL_PROFILES.code_strong;
   if (explicitSlowModelSignal && (heavyAction || heavySignal)) return withModel("code_review", reasoning);
-  if (heavyAction || heavySignal) return withModel("fast", fast);
+  // Calibracao CPU-only: geracao de codigo real vai para o modelo de codigo
+  // (lite MoE via role reasoning); o 3b fica para triagem, chat e resumos.
+  if (["implement", "fix", "synapse_agent", "synapse_mcp"].includes(action)) {
+    return withModel("code_review", reasoning);
+  }
+  // Analises Synapse longas (arquitetura, pipeline, roadmap) tambem rendem mais
+  // no modelo de raciocinio do que no 3b.
+  if (heavyAction) return withModel("balanced", reasoning);
+  if (heavySignal) return withModel("fast", fast);
   if (/\b(explique|explica|documente|docs|readme|como funciona)\b/i.test(text)) {
     return withModel("fast", fast);
   }

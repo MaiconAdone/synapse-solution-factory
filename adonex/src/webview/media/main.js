@@ -15,8 +15,6 @@ const resumeTask = document.getElementById("resumeTask");
 const mode = document.getElementById("mode");
 let selectedSharedTask = "";
 
-const viewChatTab = document.getElementById("viewChat");
-const viewComposerTab = document.getElementById("viewComposer");
 const chatView = document.getElementById("history");
 const composerView = document.getElementById("composerView");
 const composerGoal = document.getElementById("composerGoal");
@@ -39,20 +37,14 @@ const chatComposer = document.querySelector(".composer");
 
 const kindLabel = { create: "novo", modify: "alterado", delete: "removido" };
 
-function setView(view) {
-  const composer = view === "composer";
-  viewChatTab.classList.toggle("active", !composer);
-  viewComposerTab.classList.toggle("active", composer);
-  viewChatTab.setAttribute("aria-selected", String(!composer));
-  viewComposerTab.setAttribute("aria-selected", String(composer));
-  chatView.hidden = composer;
-  composerView.hidden = !composer;
-  if (chatComposer) chatComposer.hidden = composer;
-  if (composer) composerGoal.focus();
+function showComposerReview(show) {
+  composerView.hidden = !show;
+  if (show) composerView.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-viewChatTab.addEventListener("click", () => setView("chat"));
-viewComposerTab.addEventListener("click", () => setView("composer"));
+function setView() {
+  prompt.focus();
+}
 
 function composerBusy(busy) {
   composerGenerateBtn.disabled = busy;
@@ -101,6 +93,7 @@ composerDiscardBtn.addEventListener("click", () => {
   vscode.postMessage({ type: "composerDiscard" });
   composerResult.hidden = true;
   composerFiles.replaceChildren();
+  showComposerReview(false);
 });
 
 composerSelectAll.addEventListener("change", () => {
@@ -181,36 +174,107 @@ function setChatBusy(busy) {
   sendButton.textContent = busy ? "Parar" : "Enviar";
   sendButton.classList.toggle("stop", busy);
   sendButton.setAttribute("aria-label", busy ? "Parar processo" : "Enviar mensagem");
-  showThinking(busy, "Pensando...");
+  showThinking(busy, "Preparando a tarefa...");
+}
+
+// Modo pensativo: a bolha "pensando" vira uma lista viva de passos do pipeline
+// (narrada pelo host). O passo atual tem pontos animados; os anteriores ganham ✓.
+function ensureThinking() {
+  let el = document.getElementById("thinking");
+  if (!el) {
+    history.querySelector(".empty-state")?.remove();
+    el = document.createElement("article");
+    el.id = "thinking";
+    el.className = "message assistant thinking";
+    const header = document.createElement("div");
+    header.className = "thinking-header";
+    const bulb = document.createElement("span");
+    bulb.className = "thinking-bulb";
+    bulb.setAttribute("aria-hidden", "true");
+    bulb.textContent = "☼";
+    const title = document.createElement("strong");
+    title.textContent = "Thinking";
+    const spinner = document.createElement("span");
+    spinner.className = "thinking-spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    header.append(bulb, title, spinner);
+    const steps = document.createElement("ul");
+    steps.className = "thinking-steps";
+    const processing = document.createElement("div");
+    processing.className = "processing-row";
+    const processingIcon = document.createElement("span");
+    processingIcon.className = "processing-spinner";
+    processingIcon.setAttribute("aria-hidden", "true");
+    const processingLabel = document.createElement("span");
+    processingLabel.textContent = "Processing...";
+    processing.append(processingIcon, processingLabel);
+    el.append(header, steps, processing);
+    history.appendChild(el);
+  }
+  return el;
+}
+
+function addThinkingStep(text) {
+  const el = ensureThinking();
+  const steps = el.querySelector(".thinking-steps");
+  const current = steps.querySelector(".step.current");
+  if (current) {
+    if ((current.querySelector(".step-text")?.textContent || "") === text) return;
+    current.classList.remove("current");
+    current.classList.add("done");
+  }
+  const li = document.createElement("li");
+  li.className = "step current";
+  const status = document.createElement("span");
+  status.className = "step-status";
+  status.setAttribute("aria-hidden", "true");
+  const tool = document.createElement("span");
+  tool.className = "step-tool";
+  tool.setAttribute("aria-hidden", "true");
+  tool.textContent = "⌘";
+  const label = document.createElement("span");
+  label.className = "step-text";
+  label.textContent = text;
+  li.append(status, tool, label);
+  steps.appendChild(li);
+  el.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+function updateThinkingStep(text) {
+  const el = document.getElementById("thinking");
+  const current = el?.querySelector(".step.current .step-text");
+  if (current) current.textContent = text;
+  else addThinkingStep(text);
 }
 
 function showThinking(show, label) {
-  let el = document.getElementById("thinking");
+  const el = document.getElementById("thinking");
   if (show) {
-    if (!el) {
-      history.querySelector(".empty-state")?.remove();
-      el = document.createElement("article");
-      el.id = "thinking";
-      el.className = "message assistant thinking";
-      const strong = document.createElement("strong");
-      strong.textContent = "AdoneX";
-      const row = document.createElement("div");
-      row.className = "thinking-row";
-      const dots = document.createElement("span");
-      dots.className = "dots";
-      dots.append(document.createElement("i"), document.createElement("i"), document.createElement("i"));
-      const text = document.createElement("span");
-      text.className = "thinking-label";
-      text.textContent = label || "Pensando...";
-      row.append(dots, text);
-      el.append(strong, row);
-      history.appendChild(el);
-      el.scrollIntoView({ behavior: "smooth", block: "end" });
-    } else if (label) {
-      const text = el.querySelector(".thinking-label");
-      if (text) text.textContent = label;
+    ensureThinking();
+    if (label && !document.getElementById("thinking").querySelector(".step")) {
+      addThinkingStep(label);
     }
   } else if (el) {
+    // Preserva o raciocinio no historico: passos viram um bloco compacto.
+    const doneSteps = [...el.querySelectorAll(".step")].map(
+      (item) => item.querySelector(".step-text")?.textContent || ""
+    ).filter(Boolean);
+    if (doneSteps.length > 1) {
+      const log = document.createElement("article");
+      log.className = "message assistant steps-log";
+      const details = document.createElement("details");
+      const summary = document.createElement("summary");
+      summary.textContent = `Passos executados (${doneSteps.length})`;
+      const list = document.createElement("ul");
+      for (const stepText of doneSteps) {
+        const li = document.createElement("li");
+        li.textContent = stepText;
+        list.appendChild(li);
+      }
+      details.append(summary, list);
+      log.appendChild(details);
+      history.appendChild(log);
+    }
     el.remove();
   }
 }
@@ -220,7 +284,7 @@ function sendMessage() {
   const task = prompt.value.trim();
   if (!task) return;
   addMessage("user", task);
-  vscode.postMessage({ type: "send", task, mode: "local" });
+  vscode.postMessage({ type: "send", task, mode: mode.value });
   prompt.value = "";
   estimate.textContent = "Entrada estimada: 0 tokens";
   setChatBusy(true);
@@ -261,7 +325,10 @@ window.addEventListener("message", ({ data }) => {
     if (!composerView.hidden) showComposerStatus(data.text || "Processo interrompido.", "");
     addMessage("assistant", data.text || "Processo interrompido.");
   } else if (data.type === "status") {
-    if (chatBusy) showThinking(true, data.text);
+    if (chatBusy) updateThinkingStep(data.text);
+  } else if (data.type === "step") {
+    if (!composerView.hidden) showComposerStatus(data.text, "");
+    else if (chatBusy) addThinkingStep(data.text);
   } else if (data.type === "error") {
     setChatBusy(false);
     composerBusy(false);
@@ -273,17 +340,20 @@ window.addEventListener("message", ({ data }) => {
     renderSharedHistory(Array.isArray(data.entries) ? data.entries : []);
   } else if (data.type === "insertMention") {
     insertAtPrompt(data.token || "");
-  } else if (data.type === "setView") {
-    setView(data.view);
+  } else if (data.type === "setView" || data.type === "focusPrompt") {
+    setView();
   } else if (data.type === "composerState") {
     if (data.state !== "planning" && data.state !== "applying") composerBusy(false);
     showComposerStatus(data.text, data.state === "error" ? "error" : "");
     if (data.state === "idle") {
       composerResult.hidden = true;
       composerFiles.replaceChildren();
+      showComposerReview(false);
     }
   } else if (data.type === "composerProposal") {
+    setChatBusy(false);
     composerBusy(false);
+    showComposerReview(true);
     renderComposerProposal(data);
   } else if (data.type === "composerApplied") {
     composerBusy(false);

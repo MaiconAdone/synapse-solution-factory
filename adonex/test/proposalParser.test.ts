@@ -82,6 +82,8 @@ test("drops malformed operations instead of failing the whole proposal", () => {
   assert.equal(proposal.operations?.length, 2);
   assert.equal(proposal.operations?.[0].type, "replace");
   assert.equal(proposal.operations?.[1].type, "append");
+  // O descarte silencioso fica exposto para o chamador sinalizar no painel/log.
+  assert.equal(proposal.droppedOperations, 2);
 });
 
 test("normalizes missing arrays and non-string commands", () => {

@@ -1,5 +1,5 @@
-﻿export type AgentMode =
-  | "economic"
+export type AgentMode =
+  | "auto"
   | "balanced"
   | "strong"
   | "local"
@@ -44,6 +44,8 @@ export interface LlmResponse {
   text: string;
   inputTokens: number;
   outputTokens: number;
+  /** True quando o provedor encerrou por limite de tokens (done_reason=length) em saida de texto livre. */
+  truncated?: boolean;
 }
 
 export interface ProposedFileChange {
@@ -75,10 +77,21 @@ export type ProposedPatchOperation =
       expected: string;
     };
 
+export interface HighRiskRewrite {
+  path: string;
+  beforeLines: number;
+  afterLines: number;
+  removedPercent: number;
+}
+
 export interface GeneratedPatch {
   diff: string;
   changes: ProposedFileChange[];
   operations?: ProposedPatchOperation[];
+  /** Avisos nao fatais da geracao (ex.: operacoes descartadas no parse). */
+  warnings?: string[];
+  /** Rewrites whole-file que removem a maior parte do arquivo existente. */
+  highRiskRewrites?: HighRiskRewrite[];
 }
 
 export interface AppliedPatchEntry {
@@ -130,6 +143,8 @@ export interface ImplementationProposal {
   changes: ProposedFileChange[];
   operations?: ProposedPatchOperation[];
   commands: string[];
+  /** Quantidade de changes/operations malformadas descartadas durante o parse. */
+  droppedOperations?: number;
 }
 
 export interface TaskCost {
