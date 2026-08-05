@@ -39,7 +39,6 @@ import {
 } from "../tasks/taskLifecycle";
 import { TaskStore } from "../tasks/taskStore";
 import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
-import { formatCatalogAnswer, LocalAnswerCatalog } from "../chat/localAnswerCatalog";
 import {
   checkSolutionFactoryDialog,
   renderSolutionFactoryMissingInfo,
@@ -693,22 +692,6 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     );
     const attachmentContext = await this.readAttachmentContext();
     const mentionContext = await this.readMentionContext(safePrompt);
-    if (!attachmentContext && !mentionContext) {
-      const catalogMatch = await this.localAnswerCatalog()?.find(safePrompt);
-      if (catalogMatch) {
-        const catalogAnswer = formatCatalogAnswer(catalogMatch);
-        this.rememberLocalChat(safePrompt, catalogAnswer);
-        this.selectedAttachments = [];
-        this.postAttachmentState();
-        this.post({
-          type: "chatResponse",
-          text: catalogAnswer,
-          provider: "catalog",
-          model: catalogMatch.entry.model
-        });
-        return;
-      }
-    }
     // Memoria e historico entram como contexto DINAMICO (workspaceContext), nunca
     // no system prompt, para nao quebrar o prefix cache do Ollama.
     const memoryContext = (mentionContext || attachmentContext)
@@ -798,7 +781,6 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       return;
     }
     const answer = guardAgainstLocalHallucinations(sanitizeAdoneXResponse(response.text));
-    await this.localAnswerCatalog()?.record(safePrompt, answer, response.provider, response.model);
     this.rememberLocalChat(safePrompt, answer);
     this.selectedAttachments = [];
     this.postAttachmentState();
@@ -1047,11 +1029,6 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   private rememberLocalChat(user: string, assistant: string): void {
     this.localChatHistory.push({ role: "user", text: user }, { role: "assistant", text: assistant });
     if (this.localChatHistory.length > 12) this.localChatHistory.splice(0, this.localChatHistory.length - 12);
-  }
-
-  private localAnswerCatalog(): LocalAnswerCatalog | undefined {
-    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    return root ? new LocalAnswerCatalog(root) : undefined;
   }
 
   private async createPlan(
