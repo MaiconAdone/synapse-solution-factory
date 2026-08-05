@@ -214,14 +214,22 @@ export function rankPathForTask(
   // Solution Factory ou nao) merece o mesmo boost de README/AGENTS/CLAUDE/
   // docker-compose/manifesto quando a pergunta pede para explicar, verificar
   // ou documentar "o projeto" — nao so quando o workspace e o proprio
-  // repositorio Synapse.
-  const projectExplanation =
+  // repositorio Synapse. Cobre tambem perguntas de "como rodar/usar/instalar",
+  // que precisam dos mesmos arquivos (README, scripts, docs) para nao virar
+  // tutorial generico inventado.
+  const explainsProject =
     /\b(explique|explica|descreva|resuma|apresente|verifique|verifica|analise|investigue)\b/.test(
       normalizedTask
     ) &&
     /\b(projeto|aplica[cç][aã]o|reposit[oó]rio|documenta[cç][aã]o|codebase|estrutura)\b/.test(
       normalizedTask
     );
+  const asksHowTo =
+    /\b(como|onde)\b/.test(normalizedTask) &&
+    /\b(rodar|rodo|roda|executar|executo|usar|uso|instalar|instalo|iniciar|inicio|configurar|configuro|abrir|abro|subir|subo|start|startar)\b/.test(
+      normalizedTask
+    );
+  const projectExplanation = explainsProject || asksHowTo;
   const synapseModelInventory =
     /\bsynapse\b/.test(normalizedTask) &&
     /\b(modelo|modelos|model|models|ollama|llm|8b|3b|qwen|deepseek|embedding)\b/.test(
@@ -249,6 +257,14 @@ export function rankPathForTask(
     ) {
       score += 12;
       reasons.push("project-explanation-contract");
+    }
+    // scripts/test_* fica de fora: e um script de TESTE (ja priorizado por
+    // broadVerification abaixo), nao um script de "como usar/rodar" -- somar
+    // os dois bonus inverteria a prioridade de scripts/test_* sobre
+    // tests/*contract* em auditorias amplas.
+    if (/^(scripts|docs)\//.test(pathText) && !/^scripts\/test_/.test(pathText)) {
+      score += 4;
+      reasons.push("project-explanation-howto");
     }
     if (/^(adonex|output|artifacts|frontend\/\.next)\//.test(pathText)) {
       score -= 8;

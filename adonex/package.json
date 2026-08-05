@@ -2,7 +2,7 @@
   "name": "adonex",
   "displayName": "AdoneX",
   "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memória compartilhada com Claude Code e Codex, e integração Synapse.",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "publisher": "synapse-ai",
   "icon": "media/adonex-icon.png",
   "license": "UNLICENSED",

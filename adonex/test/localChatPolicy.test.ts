@@ -41,3 +41,25 @@ test("lean local chat preserves explicit attachments and avoids edit requests", 
     "Arquivo citado\n\nAnexo"
   );
 });
+
+test("'como rodar/usar o projeto' is not lean: needs real workspace context and a full answer budget", () => {
+  // Regressao: comecava com "como" e caia no teto lean de 192 tokens sem
+  // varredura de workspace, virando tutorial generico inventado e cortado.
+  const prompt = "como posso rodar o validador no navegador?";
+  assert.equal(shouldUseLeanLocalChat(prompt), false);
+  assert.equal(
+    localChatOutputBudget(prompt, ADONEX_LOCAL_MODEL_PROFILES.fast, 384),
+    384
+  );
+  assert.notEqual(
+    buildLocalChatContext({
+      prompt,
+      recentHistory: "",
+      memoryContext: "",
+      projectContext: "Conteudo real do projeto",
+      mentionContext: "",
+      attachmentContext: ""
+    }),
+    undefined
+  );
+});

@@ -75,6 +75,21 @@ test("workspace context prioritizes README/docs for project questions even witho
   );
 });
 
+test("workspace context prioritizes README/scripts for 'how do I run this' questions", () => {
+  // Regressao: "como rodar o validador" nao devia ficar sem nenhum boost so
+  // porque nao tem "explique"/"projeto" literal -- precisa achar
+  // scripts/validate_project.ps1 tanto quanto README.md.
+  const task = "como posso rodar o validador no navegador?";
+  assert.ok(
+    scorePathForTask("README.md", task) >
+      scorePathForTask("adonex/package.json", task)
+  );
+  assert.ok(
+    scorePathForTask("scripts/validate_project.ps1", task) >
+      scorePathForTask("output/report.json", task)
+  );
+});
+
 test("workspace context prioritizes Synapse model inventory files", () => {
   const task = "quais modelos estamos usando na Synapse?";
   assert.ok(

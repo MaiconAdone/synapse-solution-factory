@@ -12,7 +12,20 @@ export function shouldUseLeanLocalChat(prompt: string): boolean {
     /\b(modelo local|ollama|qwen|deepseek|latencia|tempo de resposta|tempo medio|performance|timeout)\b/.test(
       normalized
     );
-  return !editOrCommand && (simpleQuestion || asksRuntime) && prompt.length < 800;
+  // "como rodar/usar/instalar o projeto" comeca com "como" (cai em
+  // simpleQuestion) mas NAO e trivia: precisa do contexto real do workspace
+  // (readProjectContext) e de um budget de resposta maior que o teto lean de
+  // 192 tokens, senao vira tutorial generico inventado e cortado no meio.
+  const asksHowToRunProject =
+    /\b(como|onde)\b[\s\S]*\b(rodar|rodo|roda|executar|executo|usar|uso|instalar|instalo|iniciar|inicio|configurar|configuro|abrir|abro|subir|subo|start|startar)\b/.test(
+      normalized
+    );
+  return (
+    !editOrCommand &&
+    !asksHowToRunProject &&
+    (simpleQuestion || asksRuntime) &&
+    prompt.length < 800
+  );
 }
 
 export function localChatOutputBudget(
