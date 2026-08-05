@@ -28,6 +28,20 @@ export interface AnalyzerGate {
   solutionStack: string[];
 }
 
+export interface ProjectDiagnosticCheck {
+  id: string;
+  description: string;
+  detail: string;
+}
+
+export interface ProjectDiagnostics {
+  status: "passed" | "failed";
+  checksTotal: number;
+  checksPassed: number;
+  checksFailed: number;
+  failedChecks: ProjectDiagnosticCheck[];
+}
+
 export interface SolutionProjectResult {
   projectName: string;
   destination: string;
@@ -35,6 +49,7 @@ export interface SolutionProjectResult {
   universeSource: "user" | "analyzer" | "default";
   tipoProjeto: string;
   gate: AnalyzerGate | null;
+  diagnostics: ProjectDiagnostics | null;
 }
 
 export function normalizeFactoryText(value: string): string {
@@ -242,6 +257,73 @@ async function appendGateToSharedMemory(input: {
   }
 }
 
+// Abre o projeto recem-criado e roda a analise independente dele
+// (scripts/diagnose_project.ps1), em vez de so confiar no plano/briefing.
+// O script sai com codigo 1 quando ha checks falhando (nao e falha de
+// execucao) e sempre grava output/project_diagnostics.json no proprio
+// projeto; por isso o exit code e ignorado aqui e o relatorio e lido do
+// disco. Best-effort: nunca bloqueia a criacao do projeto.
+async function diagnoseCreatedProject(input: {
+  workspaceRoot: string;
+  projectName: string;
+  projectsRoot: string;
+  destination: string;
+}): Promise<ProjectDiagnostics | null> {
+  const scriptPath = path.join(input.workspaceRoot, "scripts", "diagnose_project.ps1");
+  try {
+    await execFileAsync(
+      "powershell.exe",
+      [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        scriptPath,
+        "-ProjectName",
+        input.projectName,
+        "-DestinoBase",
+        input.projectsRoot
+      ],
+      {
+        cwd: input.workspaceRoot,
+        timeout: 120_000,
+        maxBuffer: 4 * 1024 * 1024,
+        windowsHide: true
+      }
+    );
+  } catch {
+    // Segue para ler o relatorio mesmo assim; se o script realmente nao
+    // rodou, a leitura abaixo tambem falha e retorna null.
+  }
+  try {
+    const reportPath = path.join(input.destination, "output", "project_diagnostics.json");
+    const raw = await fs.readFile(reportPath, "utf8");
+    const parsed = JSON.parse(raw) as {
+      overall_status?: string;
+      checks_total?: number;
+      checks_passed?: number;
+      checks_failed?: number;
+      checks?: Array<{ id?: string; description?: string; passed?: boolean; detail?: string }>;
+    };
+    const failedChecks = (parsed.checks ?? [])
+      .filter((check) => check.passed === false)
+      .map((check) => ({
+        id: check.id ?? "",
+        description: check.description ?? "",
+        detail: check.detail ?? ""
+      }));
+    return {
+      status: parsed.overall_status === "passed" ? "passed" : "failed",
+      checksTotal: parsed.checks_total ?? 0,
+      checksPassed: parsed.checks_passed ?? 0,
+      checksFailed: parsed.checks_failed ?? failedChecks.length,
+      failedChecks
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function createSolutionProject(input: {
   workspaceRoot: string;
   briefing: SolutionBriefing;
@@ -308,13 +390,23 @@ export async function createSolutionProject(input: {
         windowsHide: true
       }
     );
+    input.onProgress?.(
+      `Abrindo ${projectName} para analise independente (diagnose_project.ps1)...`
+    );
+    const diagnostics = await diagnoseCreatedProject({
+      workspaceRoot,
+      projectName,
+      projectsRoot,
+      destination
+    });
     return {
       projectName,
       destination,
       selectedUniverse,
       universeSource,
       tipoProjeto,
-      gate
+      gate,
+      diagnostics
     };
   } catch (error) {
     // uniqueProjectName garantiu que o caminho nao existia antes: uma criacao
@@ -331,12 +423,36 @@ export function renderProjectCreated(result: SolutionProjectResult): string {
       : result.universeSource === "analyzer"
         ? `O analisador inferiu o universo \`${result.selectedUniverse}\` (${result.tipoProjeto}) porque ele nao foi informado no briefing.`
         : `Universo padrao aplicado (${result.tipoProjeto}) porque o briefing nao informou o universo e o analisador nao respondeu.`;
+  const diagnostics = result.diagnostics;
+  const diagnosticsSection = diagnostics
+    ? [
+        "",
+        "### Analise independente do projeto (`scripts/diagnose_project.ps1`)",
+        `- Status: ${diagnostics.status === "passed" ? "todos os checks passaram" : "ha pendencias"} (${diagnostics.checksPassed}/${diagnostics.checksTotal} checks)`,
+        ...(diagnostics.failedChecks.length
+          ? [
+              "- Pendencias encontradas:",
+              ...diagnostics.failedChecks
+                .slice(0, 8)
+                .map((check) => `  - ${check.description} (${check.detail})`),
+              diagnostics.failedChecks.length > 8
+                ? `  - ... e mais ${diagnostics.failedChecks.length - 8} item(ns) no relatorio completo.`
+                : ""
+            ].filter(Boolean)
+          : []),
+        `- Relatorio completo: \`${result.destination}\\output\\project_diagnostics.md\``
+      ]
+    : [
+        "",
+        "_Nao foi possivel rodar a analise independente (`scripts/diagnose_project.ps1`) automaticamente para este projeto; rode manualmente se precisar validar a estrutura gerada._"
+      ];
   return [
     `### Projeto criado com sucesso: ${result.projectName}`,
     "",
     `- Local: \`${result.destination}\``,
     `- ${universeNote}`,
     "- O briefing, a analise de solucao (`config/business_solution_analysis.json`) e os artefatos base do Synapse foram gerados.",
+    ...diagnosticsSection,
     "",
     "Posso abrir, analisar ou evoluir o projeto por aqui quando quiser."
   ].join("\n");

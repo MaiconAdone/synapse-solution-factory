@@ -62,9 +62,36 @@ test("creation summary states universe provenance", () => {
     selectedUniverse: "ml",
     universeSource: "user",
     tipoProjeto: "ML",
-    gate: null
+    gate: null,
+    diagnostics: null
   });
   assert.match(summary, /Projeto criado com sucesso: previsao-compradores/);
   assert.match(summary, /Universo informado no briefing mantido/);
   assert.match(summary, /business_solution_analysis/);
+  assert.match(summary, /Nao foi possivel rodar a analise independente/);
+});
+
+test("creation summary surfaces the independent per-project diagnostics", () => {
+  const summary = renderProjectCreated({
+    projectName: "previsao-compradores",
+    destination: "C:/Projetos/previsao-compradores",
+    selectedUniverse: "ml",
+    universeSource: "analyzer",
+    tipoProjeto: "ML",
+    gate: null,
+    diagnostics: {
+      status: "failed",
+      checksTotal: 40,
+      checksPassed: 38,
+      checksFailed: 2,
+      failedChecks: [
+        { id: "runtime_manifest", description: "Runtime manifest existe", detail: "config/runtime_manifest.json" },
+        { id: "agents_total", description: "Projeto contem 60 agentes", detail: "agents=58" }
+      ]
+    }
+  });
+  assert.match(summary, /Analise independente do projeto/);
+  assert.match(summary, /ha pendencias \(38\/40 checks\)/);
+  assert.match(summary, /Runtime manifest existe \(config\/runtime_manifest\.json\)/);
+  assert.match(summary, /project_diagnostics\.md/);
 });
