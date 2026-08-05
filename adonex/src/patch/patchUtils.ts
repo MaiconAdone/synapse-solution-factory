@@ -4,6 +4,7 @@ import type {
   ProposedFileChange,
   ProposedPatchOperation
 } from "../llm/types";
+import { diffLines } from "./textDiff";
 
 export function resolveSafePath(root: string, relativePath: string): string {
   const resolvedRoot = path.resolve(root);
@@ -14,6 +15,14 @@ export function resolveSafePath(root: string, relativePath: string): string {
   return resolved;
 }
 
+/**
+ * Diff unificado real (LCS via diffLines de ./textDiff): linhas iguais entram
+ * como contexto (` `), so as linhas que realmente mudaram viram `-`/`+`. Antes
+ * disto o diff despejava o arquivo inteiro como removido+adicionado mesmo para
+ * uma edicao de 1 linha (ex.: uma operation cirurgica do Tool Loop), inflando
+ * o resumo falado/textual do patch (patch/patchSummary.ts) para o tamanho do
+ * arquivo inteiro em vez do tamanho real da mudanca.
+ */
 export function createSimpleDiff(
   relativePath: string,
   before: string,
@@ -29,8 +38,7 @@ export function createSimpleDiff(
     `@@ -${beforeLines.length ? 1 : 0},${beforeLines.length} +${
       afterLines.length ? 1 : 0
     },${afterLines.length} @@`,
-    ...beforeLines.map((line) => `-${line}`),
-    ...afterLines.map((line) => `+${line}`)
+    ...diffLines(before, after).map((line) => `${line.tag}${line.text}`)
   ].join("\n");
 }
 

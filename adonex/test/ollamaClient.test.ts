@@ -2,6 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { OllamaClient, OllamaClientError } from "../src/llm/ollamaClient";
 
+/** Response cujo body chega em pedacos exatos, para testar streaming real (nao um Response de string unica). */
+function streamedResponse(chunks: string[]): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.close();
+    }
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { "content-type": "application/x-ndjson" }
+  });
+}
+
 test("ollama client calls the local chat endpoint without fixed seed for open questions", async () => {
   let endpoint = "";
   let payload: Record<string, unknown> = {};
@@ -244,6 +259,43 @@ test("ollama client reports streamed token progress via onToken", async () => {
   const result = await client.generate({ systemPrompt: "s", userPrompt: "u" });
   assert.equal(result.text, "abc");
   assert.deepEqual(reported, [3]);
+});
+
+test("ollama client streams incremental text via onChunk", async () => {
+  const deltas: string[] = [];
+  const client = new OllamaClient({
+    baseUrl: "http://localhost:11434",
+    model: "qwen-test",
+    onChunk: (text) => deltas.push(text),
+    fetcher: async () =>
+      streamedResponse([
+        `${JSON.stringify({ message: { content: "ola " } })}\n`,
+        `${JSON.stringify({ message: { content: "mundo" }, done: true, eval_count: 2 })}\n`
+      ])
+  });
+  const result = await client.generate({ systemPrompt: "s", userPrompt: "u" });
+  assert.deepEqual(deltas, ["ola ", "mundo"]);
+  assert.equal(result.text, "ola mundo");
+});
+
+test("ollama client onChunk keeps a JSON line intact when it is split across chunk boundaries", async () => {
+  const deltas: string[] = [];
+  const fullLine = `${JSON.stringify({
+    message: { content: "ola mundo" },
+    done: true,
+    eval_count: 2
+  })}\n`;
+  const splitPoint = Math.floor(fullLine.length / 2);
+  const client = new OllamaClient({
+    baseUrl: "http://localhost:11434",
+    model: "qwen-test",
+    onChunk: (text) => deltas.push(text),
+    fetcher: async () =>
+      streamedResponse([fullLine.slice(0, splitPoint), fullLine.slice(splitPoint)])
+  });
+  const result = await client.generate({ systemPrompt: "s", userPrompt: "u" });
+  assert.deepEqual(deltas, ["ola mundo"]);
+  assert.equal(result.text, "ola mundo");
 });
 
 test("ollama client passes jsonSchema as the format field", async () => {

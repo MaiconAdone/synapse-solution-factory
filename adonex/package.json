@@ -218,6 +218,10 @@
         "title": "AdoneX: Test Ollama Connection"
       },
       {
+        "command": "adonex.semanticIndex.rebuild",
+        "title": "AdoneX: Rebuild Semantic Index"
+      },
+      {
         "command": "adonex.improveSelection",
         "title": "AdoneX: Improve Selected Code"
       },
@@ -774,6 +778,18 @@
           "minimum": 2000,
           "maximum": 48000,
           "markdownDescription": "Tamanho maximo (chars) do contexto de workspace enviado ao Ollama em edicoes de codigo. Em CPU o prompt-eval domina a latencia (~27 tok/s medido nesta maquina): 16000 chars custavam ~175s so para o modelo ler antes de gerar. 10000 equilibra foco e velocidade; suba em maquinas com GPU/mais RAM, baixe para respostas mais rapidas."
+        },
+        "adonex.synapse.toolLoop.enabled": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Ativa o Tool Loop para `implement`/`fix`: em vez de um unico prompt->JSON completo, o modelo local chama ferramentas (read_file, search_files, list_files, edit_file, run_command) uma por vez, observando o resultado antes do proximo passo, ate `finish`. Edicoes ficam em memoria durante o loop e so vao para o disco apos o preview/aprovacao de sempre — nenhuma garantia de seguranca muda. Desligado por padrao (opt-in): em CPU, varias chamadas sequenciais ao Ollama custam mais tempo que o caminho single-shot atual."
+        },
+        "adonex.synapse.toolLoop.maxSteps": {
+          "type": "number",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 30,
+          "markdownDescription": "Numero maximo de chamadas de ferramenta por execucao do Tool Loop antes de forcar o encerramento com o progresso acumulado (nunca descarta trabalho em silencio)."
         },
         "adonex.synapse.router.enabled": {
           "type": "boolean",

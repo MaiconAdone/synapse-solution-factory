@@ -17,13 +17,20 @@ export class CommandRunner {
     command: string,
     workspaceRoot: string,
     timeoutMs = 180_000,
-    requireApproval = true
+    requireApproval = true,
+    signal?: AbortSignal
   ): Promise<CommandResult> {
     await this.approve(command, requireApproval);
     const output = vscode.window.createOutputChannel("AdoneX Tests");
     output.show(true);
     output.appendLine(`> ${command}`);
-    const captured = await executeCapturedCommand(command, workspaceRoot, timeoutMs);
+    const captured = await executeCapturedCommand(
+      command,
+      workspaceRoot,
+      timeoutMs,
+      undefined,
+      signal
+    );
     const result = {
       ...captured,
       stdout: scanAndRedactSecrets(captured.stdout).redacted,

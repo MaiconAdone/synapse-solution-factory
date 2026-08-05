@@ -487,7 +487,13 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
           ? `Aguardando aprovacao para validar: ${command}`
           : `Composer validando: ${command}`
       );
-      const result = await this.commandRunner.runCaptured(command, root, 600_000, requireApproval);
+      const result = await this.commandRunner.runCaptured(
+        command,
+        root,
+        600_000,
+        requireApproval,
+        this.abortController?.signal
+      );
       this.post({ type: "testResult", result });
       if (result.exitCode !== 0) {
         failed = result;
@@ -737,7 +743,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
             const elapsed = Math.round((Date.now() - chatStartedAt) / 1000);
             this.postStep(`Gerando... ~${tokens} tokens (${elapsed}s)`);
           }
-        }
+        },
+        onChunk: (text) => this.postStreamChunk(text)
       }).generate({
         systemPrompt: localChatSystemPrompt(SYNAPSE_SPECIALIST_SYSTEM, safePrompt),
         userPrompt: safePrompt,
@@ -1063,11 +1070,13 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.pending.snapshot,
       {
         signal: this.abortController?.signal,
-        onProgress: (text) => this.postStep(text)
+        onProgress: (text) => this.postStep(text),
+        onToolStep: (step) => this.postToolStep(step)
       }
     );
     this.ensureNotCancelled();
     this.proposal = execution.proposal;
+    if (this.taskRecord) this.taskRecord.toolSteps = execution.toolSteps;
     this.taskRecord.lifecycle = activateTaskPhase(
       this.taskRecord.lifecycle,
       "observe",
@@ -1119,7 +1128,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       proposalSummary: execution.proposal?.summary,
       provider: execution.response.provider,
       model: execution.response.model,
-      hasPatch: Boolean(execution.proposal?.changes.length),
+      // this.patch (PatchEngine.generate) ja resolve `operations` em `changes`;
+      // checar so execution.proposal.changes ficaria falso-negativo para
+      // propostas do Tool Loop, que chegam so como operations cirurgicas.
+      hasPatch: Boolean(this.patch?.changes.length),
       diff: this.patch?.diff,
       spokenDiffSummary: patchSummary?.spoken
     });
@@ -1252,7 +1264,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
         command,
         this.pending.snapshot.root,
         600_000,
-        requireApproval
+        requireApproval,
+        this.abortController?.signal
       );
       results.push(result);
       this.post({ type: "testResult", result });
@@ -1438,6 +1451,27 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
    */
   private postStep(text: string): void {
     this.post({ type: "step", text });
+  }
+
+  /** Texto incremental do chat principal (ver onChunk em sendLocalChat). */
+  private postStreamChunk(text: string): void {
+    this.post({ type: "streamChunk", text });
+  }
+
+  /**
+   * Passo estruturado do Tool Loop: complementa o canal `step` (texto livre,
+   * ja tratado acima) com nome da ferramenta e resumo do resultado, para o
+   * webview renderar uma linha por chamada em vez de so uma frase narrada.
+   */
+  private postToolStep(step: {
+    index: number;
+    tool: string;
+    argsSummary: string;
+    resultSummary: string;
+    ok: boolean;
+    timestamp: string;
+  }): void {
+    this.post({ type: "toolStep", ...step });
   }
 
   private postVickStatus(status: {

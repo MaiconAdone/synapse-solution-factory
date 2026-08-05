@@ -1,6 +1,8 @@
 export interface McpToolDefinition {
   name: string;
   description: string;
+  /** JSON Schema dos parametros aceitos. Opcional: nem todo tool consumer usa. */
+  parameters?: object;
   execute(input: unknown): Promise<unknown>;
 }
 

@@ -22,6 +22,23 @@ test("patch engine creates a readable preview diff", () => {
   assert.match(diff, /\+new/);
 });
 
+test("patch engine diff only marks the line that actually changed, not the whole file", () => {
+  const lines = Array.from({ length: 50 }, (_, index) => `line ${index}`);
+  const before = lines.join("\n");
+  const after = lines
+    .map((line, index) => (index === 25 ? "line 25 edited" : line))
+    .join("\n");
+  const diff = createSimpleDiff("src/big.ts", before, after);
+  const removed = diff.split("\n").filter((line) => line.startsWith("-") && !line.startsWith("---"));
+  const added = diff.split("\n").filter((line) => line.startsWith("+") && !line.startsWith("+++"));
+  assert.deepEqual(removed, ["-line 25"]);
+  assert.deepEqual(added, ["+line 25 edited"]);
+  // A edicao cirurgica de 1 linha nao pode inflar o diff para o arquivo inteiro
+  // (o dump antigo produziria 50 linhas removidas + 50 adicionadas aqui).
+  assert.match(diff, /^ line 0$/m);
+  assert.match(diff, /^ line 49$/m);
+});
+
 test("patch operations apply incremental replacements with conflict checks", () => {
   const result = applyPatchOperation("const value = 1;\n", {
     type: "replace",

@@ -192,6 +192,15 @@ export interface TaskLifecycleStep {
   updatedAt: string;
 }
 
+export interface ToolLoopStepRecord {
+  index: number;
+  tool: string;
+  argsSummary: string;
+  resultSummary: string;
+  ok: boolean;
+  timestamp: string;
+}
+
 export interface TaskRecord {
   id: string;
   createdAt: string;
@@ -216,6 +225,8 @@ export interface TaskRecord {
   failureDiagnosis?: FailureDiagnosis;
   error?: string;
   lifecycle?: TaskLifecycleStep[];
+  /** Passos do Tool Loop (quando `synapse.toolLoop.enabled` gerou esta proposta). */
+  toolSteps?: ToolLoopStepRecord[];
 }
 
 export interface WorkspaceSnapshot {

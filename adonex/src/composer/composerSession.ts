@@ -139,7 +139,10 @@ export class ComposerSession {
       snapshot,
       { signal, onProgress }
     );
-    if (!execution.proposal || !execution.proposal.changes.length) {
+    if (
+      !execution.proposal ||
+      (!execution.proposal.changes.length && !execution.proposal.operations?.length)
+    ) {
       this.proposal = execution.proposal;
       this.patch = undefined;
       throw new Error(
@@ -194,7 +197,10 @@ export class ComposerSession {
       this.lastSnapshot,
       { signal, onProgress }
     );
-    if (!execution.proposal || !execution.proposal.changes.length) {
+    if (
+      !execution.proposal ||
+      (!execution.proposal.changes.length && !execution.proposal.operations?.length)
+    ) {
       throw new Error("O modelo local nao propos uma correcao para a falha capturada.");
     }
     this.proposal = execution.proposal;

@@ -62,12 +62,18 @@ import { MemoryReader } from "../memory/memoryReader";
 import { formatWorkspaceSnapshot } from "../context/contextFormatter";
 import { selectFocusFilesByGraph } from "../context/focusSelector";
 import { extractPrimaryTask } from "../chat/chatRouting";
+import { CommandRunner } from "../execution/commandRunner";
+import { runToolLoop } from "./toolLoop/loop";
+import type { ToolLoopStep } from "./toolLoop/types";
+import type { ToolLoopStepRecord } from "../llm/types";
 
 export interface AgentExecution {
   plan: TaskPlan;
   response: LlmResponse;
   proposal?: ImplementationProposal;
   actualEstimatedCostUsd: number;
+  /** Passos do Tool Loop, quando `synapse.toolLoop.enabled` gerou esta execucao. */
+  toolSteps?: ToolLoopStepRecord[];
 }
 
 export class AgentOrchestrator {
@@ -172,7 +178,12 @@ export class AgentOrchestrator {
     mode: AgentMode,
     plan: TaskPlan,
     snapshot: WorkspaceSnapshot,
-    options: { signal?: AbortSignal; onProgress?: (text: string) => void } = {}
+    options: {
+      signal?: AbortSignal;
+      onProgress?: (text: string) => void;
+      /** Estrutura por passo do Tool Loop; complementa onProgress (texto livre), nao o substitui. */
+      onToolStep?: (step: ToolLoopStep) => void;
+    } = {}
   ): Promise<AgentExecution> {
     const configuration = vscode.workspace.getConfiguration("adonex");
     // Modo pensativo: o pipeline narra os proprios passos (custo zero de modelo).
@@ -443,6 +454,28 @@ export class AgentOrchestrator {
       );
     };
 
+    // Tool Loop opt-in: em vez de um unico prompt->JSON completo, o modelo chama
+    // ferramentas (read_file/search_files/list_files/edit_file/run_command) uma
+    // por turno, ate `finish`. Escopo inicial: implement/fix, atras de flag
+    // desligada por padrao (mesmo padrao de synapse.router.enabled) — o caminho
+    // single-shot abaixo continua sendo o default e nao muda.
+    const toolLoopEnabled =
+      ["implement", "fix"].includes(action) &&
+      configuration.get<boolean>("synapse.toolLoop.enabled", false);
+    if (toolLoopEnabled) {
+      return this.executeToolLoop(
+        task,
+        action,
+        plan,
+        snapshot,
+        systemPrompt,
+        runModel,
+        configuration,
+        progress,
+        options
+      );
+    }
+
     const response = await runModel(request);
     if (wantsProposal) progress("Interpretando a proposta JSON do modelo...");
     const proposal = wantsProposal
@@ -463,6 +496,101 @@ export class AgentOrchestrator {
         response.outputTokens || plan.estimatedOutputTokens,
         "local"
       ).estimatedCostUsd
+    };
+  }
+
+  /**
+   * Executa o Tool Loop e devolve o resultado no MESMO formato de AgentExecution
+   * do caminho single-shot: o `ImplementationProposal` final (via `operations`
+   * acumuladas em memoria) segue o preview/aprovacao/apply/backup/rollback ja
+   * existentes em PatchEngine/AdoneXPanel sem nenhuma mudanca la.
+   */
+  private async executeToolLoop(
+    task: string,
+    action: AgentAction,
+    plan: TaskPlan,
+    snapshot: WorkspaceSnapshot,
+    systemPromptBase: string,
+    runModel: (req: {
+      systemPrompt: string;
+      userPrompt: string;
+      workspaceContext: string;
+      maxOutputTokens: number;
+      jsonMode: boolean;
+      jsonSchema?: object;
+      seed?: number;
+      signal?: AbortSignal;
+    }) => Promise<LlmResponse>,
+    configuration: vscode.WorkspaceConfiguration,
+    progress: (text: string) => void,
+    options: { signal?: AbortSignal; onToolStep?: (step: ToolLoopStep) => void }
+  ): Promise<AgentExecution> {
+    const maxSteps = Math.max(1, configuration.get<number>("synapse.toolLoop.maxSteps", 8));
+    const commandRunner = new CommandRunner();
+    const result = await runToolLoop({
+      task,
+      action,
+      systemPromptBase,
+      maxSteps,
+      maxOutputTokens: 400,
+      seed: this.seedForAction(action),
+      signal: options.signal,
+      generate: (req) =>
+        runModel({
+          systemPrompt: req.systemPrompt,
+          userPrompt: req.userPrompt,
+          workspaceContext: "",
+          maxOutputTokens: req.maxOutputTokens ?? 400,
+          jsonMode: Boolean(req.jsonMode),
+          jsonSchema: req.jsonSchema,
+          seed: req.seed,
+          signal: req.signal
+        }),
+      onStep: (step) => {
+        progress(`[${step.tool}] ${step.resultSummary.split("\n")[0]}`);
+        options.onToolStep?.(step);
+      },
+      tools: {
+        root: snapshot.root,
+        snapshot,
+        maxReadChars: 6_000,
+        maxSearchResults: 10,
+        semantic: {
+          enabled: configuration.get<boolean>("semanticIndex.enabled", true),
+          baseUrl: configuration.get<string>("ollama.baseUrl", "http://127.0.0.1:11434"),
+          model: configuration.get<string>("ollama.embeddingModel", "nomic-embed-text:latest"),
+          maxCandidates: configuration.get<number>("semanticIndex.maxCandidates", 80),
+          timeoutMs: configuration.get<number>("semanticIndex.timeoutSeconds", 8) * 1_000
+        },
+        runCommand: (command) =>
+          commandRunner.runCaptured(
+            command,
+            snapshot.root,
+            this.ollamaTimeoutMs(action, configuration),
+            true,
+            options.signal
+          )
+      }
+    });
+    progress(
+      `Tool loop concluido: ${result.steps.length} passo(s), ${result.proposal.operations?.length ?? 0} operacao(oes)`
+    );
+    return {
+      plan,
+      response: {
+        provider: "ollama",
+        model: result.lastModel ?? "ollama",
+        text: result.proposal.summary,
+        inputTokens: result.totalInputTokens,
+        outputTokens: result.totalOutputTokens
+      },
+      proposal: result.proposal,
+      actualEstimatedCostUsd: estimateTokenCost(
+        result.totalInputTokens || plan.estimatedInputTokens,
+        result.totalOutputTokens || plan.estimatedOutputTokens,
+        "local"
+      ).estimatedCostUsd,
+      toolSteps: result.steps
     };
   }
 

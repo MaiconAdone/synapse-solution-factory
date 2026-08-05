@@ -13,6 +13,7 @@ export type CapturedExec = (
     maxBuffer: number;
     windowsHide: boolean;
     shell: string;
+    signal?: AbortSignal;
   }
 ) => Promise<{ stdout: string; stderr: string }>;
 
@@ -20,7 +21,8 @@ export async function executeCapturedCommand(
   command: string,
   workspaceRoot: string,
   timeoutMs = 180_000,
-  executor: CapturedExec = defaultExec
+  executor: CapturedExec = defaultExec,
+  signal?: AbortSignal
 ): Promise<CommandResult> {
   const started = performance.now();
   let stdout = "";
@@ -33,11 +35,20 @@ export async function executeCapturedCommand(
       timeout: timeoutMs,
       maxBuffer: 1_500_000,
       windowsHide: true,
-      shell: process.platform === "win32" ? process.env.ComSpec ?? "cmd.exe" : "/bin/sh"
+      shell: process.platform === "win32" ? process.env.ComSpec ?? "cmd.exe" : "/bin/sh",
+      ...(signal ? { signal } : {})
     });
     stdout = result.stdout;
     stderr = result.stderr;
   } catch (error) {
+    if (signal?.aborted) {
+      // Cancelado pelo usuario (botao Parar): propaga como rejeicao, no mesmo
+      // formato de uma chamada ao Ollama cancelada, para o dispatcher central
+      // de AdoneXPanel.ts reconhecer via isUserCancellation() sem logica nova.
+      throw Object.assign(new Error("Comando cancelado pelo usuario."), {
+        name: "AbortError"
+      });
+    }
     const captured = error as Error & {
       code?: number | string;
       killed?: boolean;

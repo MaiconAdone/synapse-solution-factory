@@ -257,7 +257,8 @@ function normalizeOperations(value: unknown): NormalizedList<ProposedPatchOperat
   return { items: operations, dropped };
 }
 
-function normalizeOperation(value: unknown): ProposedPatchOperation | undefined {
+/** Exportado para o Tool Loop validar uma operacao isolada (chamada `edit_file`). */
+export function normalizeOperation(value: unknown): ProposedPatchOperation | undefined {
   if (!value || typeof value !== "object") return undefined;
   const record = value as Record<string, unknown>;
   const type = record.type;

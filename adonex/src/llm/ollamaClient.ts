@@ -48,6 +48,13 @@ export interface OllamaClientOptions {
    * pensativo da UI sem custo extra de modelo.
    */
   onToken?: (tokens: number) => void;
+  /**
+   * Texto incremental conforme chega do Ollama (delta por linha NDJSON), para
+   * UI que queira mostrar a resposta crescendo em vez de esperar o fim. Nao
+   * substitui parseOllamaResponse: o corpo completo continua acumulado e
+   * reparseado normalmente no final da chamada.
+   */
+  onChunk?: (text: string) => void;
 }
 
 export class OllamaClient {
@@ -249,7 +256,9 @@ export class OllamaClient {
         body: JSON.stringify(payload),
         signal: controller.signal
       });
-      const body = await response.text();
+      const body = this.options.onChunk
+        ? await this.readStreamedBody(response)
+        : await response.text();
       if (this.options.onToken) {
         const lines = body.split("\n").filter((line) => line.trim()).length;
         this.options.onToken(lines);
@@ -263,6 +272,34 @@ export class OllamaClient {
       clearTimeout(timeout);
       signal?.removeEventListener("abort", forwardAbort);
     }
+  }
+
+  /**
+   * Le o corpo via ReadableStream em vez de response.text() para poder emitir
+   * onChunk incrementalmente (usado quando um `fetcher` customizado e
+   * injetado — hoje so em testes, ja que producao sempre usa postJson).
+   * Devolve o corpo completo acumulado, igual a response.text() teria dado.
+   */
+  private async readStreamedBody(response: Response): Promise<string> {
+    if (!response.body) return response.text();
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let carry = "";
+    let full = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value, { stream: true });
+      full += text;
+      const split = splitCompleteLines(carry, text);
+      carry = split.carry;
+      for (const line of split.lines) {
+        const delta = extractDelta(line);
+        if (delta) this.options.onChunk?.(delta);
+      }
+    }
+    full += decoder.decode();
+    return full;
   }
 
   private async postJson(
@@ -301,17 +338,26 @@ export class OllamaClient {
           const chunks: Buffer[] = [];
           let receivedFirstChunk = false;
           let streamedLines = 0;
+          let onChunkCarry = "";
           response.on("data", (chunk: Buffer) => {
             if (!receivedFirstChunk) {
               receivedFirstChunk = true;
               onFirstChunk?.();
             }
+            const text = chunk.toString("utf8");
             if (this.options.onToken) {
-              const text = chunk.toString("utf8");
               for (let index = 0; index < text.length; index += 1) {
                 if (text[index] === "\n") streamedLines += 1;
               }
               this.options.onToken(streamedLines);
+            }
+            if (this.options.onChunk) {
+              const { lines, carry } = splitCompleteLines(onChunkCarry, text);
+              onChunkCarry = carry;
+              for (const line of lines) {
+                const delta = extractDelta(line);
+                if (delta) this.options.onChunk(delta);
+              }
             }
             chunks.push(chunk);
           });
@@ -344,6 +390,30 @@ export class OllamaClient {
       request.on("close", () => signal?.removeEventListener("abort", abort));
       request.end(body);
     });
+  }
+}
+
+/**
+ * Acumula texto de streaming em linhas completas (NDJSON: 1 objeto por
+ * linha). Um chunk de rede pode cortar uma linha ao meio; o restante fica em
+ * `carry` para ser prefixado ao proximo chunk. So devolve linhas completas.
+ */
+function splitCompleteLines(carry: string, chunkText: string): { lines: string[]; carry: string } {
+  const combined = carry + chunkText;
+  const parts = combined.split("\n");
+  const newCarry = parts.pop() ?? "";
+  return { lines: parts, carry: newCarry };
+}
+
+/** Extrai o delta de texto de uma linha NDJSON, tolerante a linha vazia/invalida. */
+function extractDelta(line: string): string {
+  const trimmed = line.trim();
+  if (!trimmed) return "";
+  try {
+    const item = JSON.parse(trimmed) as { message?: { content?: string }; response?: string };
+    return item.message?.content ?? item.response ?? "";
+  } catch {
+    return "";
   }
 }
 

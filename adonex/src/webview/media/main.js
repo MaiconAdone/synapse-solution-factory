@@ -247,6 +247,56 @@ function updateThinkingStep(text) {
   else addThinkingStep(text);
 }
 
+// Passo estruturado do Tool Loop: mesma lista viva de "thinking", mas com o
+// nome da ferramenta como badge e a primeira linha do resultado como texto,
+// em vez de uma frase narrada de texto livre.
+// Preview em streaming da resposta do chat principal: cresce token a token
+// enquanto o Ollama gera, depois e removida quando chatResponse chega com o
+// texto final ja sanitizado (guardAgainstLocalHallucinations/sanitizeAdoneXResponse
+// rodam so no host, sobre o texto completo). Mesmo shape de addMessage
+// (<pre>.textContent, sem markdown), entao a troca nao pisca.
+function appendStreamChunk(deltaText) {
+  history.querySelector(".empty-state")?.remove();
+  let bubble = document.getElementById("streamingAnswer");
+  if (!bubble) {
+    bubble = document.createElement("article");
+    bubble.id = "streamingAnswer";
+    bubble.className = "message assistant streaming";
+    const label = document.createElement("strong");
+    label.textContent = "AdoneX";
+    const content = document.createElement("pre");
+    bubble.append(label, content);
+    history.appendChild(bubble);
+  }
+  bubble.querySelector("pre").textContent += deltaText;
+  bubble.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+function addToolLoopStep(step) {
+  const el = ensureThinking();
+  const steps = el.querySelector(".thinking-steps");
+  const current = steps.querySelector(".step.current");
+  if (current) {
+    current.classList.remove("current");
+    current.classList.add("done");
+  }
+  const li = document.createElement("li");
+  li.className = `step current tool-step ${step.ok === false ? "tool-step-error" : "tool-step-ok"}`;
+  const status = document.createElement("span");
+  status.className = "step-status";
+  status.setAttribute("aria-hidden", "true");
+  const tool = document.createElement("span");
+  tool.className = "step-tool";
+  tool.textContent = step.tool || "tool";
+  const label = document.createElement("span");
+  label.className = "step-text";
+  const firstLine = (step.resultSummary || "").split("\n")[0] || "";
+  label.textContent = firstLine;
+  li.append(status, tool, label);
+  steps.appendChild(li);
+  el.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
 function showThinking(show, label) {
   const el = document.getElementById("thinking");
   if (show) {
@@ -317,11 +367,13 @@ prompt.addEventListener("keydown", (event) => {
 window.addEventListener("message", ({ data }) => {
   if (data.type === "chatResponse") {
     setChatBusy(false);
+    document.getElementById("streamingAnswer")?.remove();
     if (activeModel && data.model) activeModel.textContent = `${data.provider || "ollama"}/${data.model}`;
     addMessage("assistant", data.text);
   } else if (data.type === "stopped") {
     setChatBusy(false);
     composerBusy(false);
+    document.getElementById("streamingAnswer")?.remove();
     if (!composerView.hidden) showComposerStatus(data.text || "Processo interrompido.", "");
     addMessage("assistant", data.text || "Processo interrompido.");
   } else if (data.type === "status") {
@@ -329,9 +381,14 @@ window.addEventListener("message", ({ data }) => {
   } else if (data.type === "step") {
     if (!composerView.hidden) showComposerStatus(data.text, "");
     else if (chatBusy) addThinkingStep(data.text);
+  } else if (data.type === "toolStep") {
+    if (composerView.hidden && chatBusy) addToolLoopStep(data);
+  } else if (data.type === "streamChunk") {
+    if (composerView.hidden && chatBusy) appendStreamChunk(data.text);
   } else if (data.type === "error") {
     setChatBusy(false);
     composerBusy(false);
+    document.getElementById("streamingAnswer")?.remove();
     if (!composerView.hidden) showComposerStatus(data.text, "error");
     addMessage("error", data.text);
   } else if (data.type === "attachments") {

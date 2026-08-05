@@ -1,4 +1,21 @@
 ﻿import path from "node:path";
+import { isIgnoredContextPath, isSensitivePath } from "../security/secretScanner";
+
+const TEXT_EXTENSIONS = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".py",
+  ".json",
+  ".md",
+  ".yml",
+  ".yaml",
+  ".toml",
+  ".txt",
+  ".ps1",
+  ".sql"
+]);
 
 const IMPORTANT_FILES = new Set([
   "package.json",
@@ -12,6 +29,21 @@ const IMPORTANT_FILES = new Set([
   "readme.md",
   "tsconfig.json"
 ]);
+
+/**
+ * Decide se um arquivo entra no contexto/indice do AdoneX: extensao de texto
+ * conhecida OU nome de manifesto importante, e nunca um caminho sensivel ou
+ * ignorado. Compartilhado por WorkspaceContext.collect() (selecao de contexto
+ * por tarefa) e pelo comando "AdoneX: Rebuild Semantic Index" (indexacao
+ * completa do workspace) para que os dois nunca divirjam sobre o que conta.
+ */
+export function isIndexableWorkspaceFile(relativePath: string): boolean {
+  const extension = path.extname(relativePath).toLowerCase();
+  const isTextLike =
+    IMPORTANT_FILES.has(path.basename(relativePath).toLowerCase()) ||
+    TEXT_EXTENSIONS.has(extension);
+  return isTextLike && !isSensitivePath(relativePath) && !isIgnoredContextPath(relativePath);
+}
 
 export interface SynapseDetection {
   detected: boolean;

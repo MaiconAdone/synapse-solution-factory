@@ -1,37 +1,17 @@
-﻿import * as path from "node:path";
-import * as vscode from "vscode";
+﻿import * as vscode from "vscode";
 import { estimateTokens } from "../cost/costGuard";
 import type { WorkspaceSnapshot } from "../llm/types";
-import {
-  isIgnoredContextPath,
-  isSensitivePath,
-  scanAndRedactSecrets
-} from "../security/secretScanner";
+import { scanAndRedactSecrets } from "../security/secretScanner";
 import {
   detectSynapseProject,
   detectStack,
+  isIndexableWorkspaceFile,
   rankPathForTask,
   selectContextExcerpt
 } from "./workspaceContextCore";
 import { formatWorkspaceSnapshot } from "./contextFormatter";
 import { buildCodeIntelligence } from "./codeIntelligence";
 import { SemanticWorkspaceIndex } from "./semanticWorkspaceIndex";
-
-const TEXT_EXTENSIONS = new Set([
-  ".ts",
-  ".tsx",
-  ".js",
-  ".jsx",
-  ".py",
-  ".json",
-  ".md",
-  ".yml",
-  ".yaml",
-  ".toml",
-  ".txt",
-  ".ps1",
-  ".sql"
-]);
 
 export class WorkspaceContext {
   public async collect(task: string, maxContextChars = 42_000): Promise<WorkspaceSnapshot> {
@@ -50,28 +30,7 @@ export class WorkspaceContext {
         relativePath: vscode.workspace.asRelativePath(uri, false),
         ...rankPathForTask(vscode.workspace.asRelativePath(uri, false), task)
       }))
-      .filter(({ relativePath }) => {
-        const extension = path.extname(relativePath).toLowerCase();
-        return (
-          [
-            "package.json",
-            "pyproject.toml",
-            "requirements.txt",
-            "docker-compose.yml",
-            "docker-compose.yaml",
-            "pytest.ini",
-            "agents.md",
-            "claude.md",
-            "readme.md",
-            "tsconfig.json"
-          ].includes(path.basename(relativePath).toLowerCase()) ||
-          TEXT_EXTENSIONS.has(extension)
-        );
-      })
-      .filter(
-        ({ relativePath }) =>
-          !isSensitivePath(relativePath) && !isIgnoredContextPath(relativePath)
-      )
+      .filter(({ relativePath }) => isIndexableWorkspaceFile(relativePath))
       .sort(
         (left, right) =>
           right.score - left.score ||

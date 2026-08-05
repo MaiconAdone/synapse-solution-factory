@@ -390,8 +390,34 @@ main {
   animation: adonex-pulse 1.3s ease-in-out infinite;
 }
 
+/* Passo estruturado do Tool Loop: nome da ferramenta como badge, largura livre. */
+.thinking-steps .tool-step .step-tool {
+  width: auto;
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--adonex-mono, monospace);
+  font-size: 11px;
+  color: #d8dbe2;
+  background: color-mix(in srgb, var(--adonex-outline) 60%, transparent);
+}
+
+.thinking-steps .tool-step-error .step-status {
+  background: #e5534b;
+  box-shadow: 0 0 8px color-mix(in srgb, #e5534b 45%, transparent);
+}
+
 @keyframes adonex-pulse {
   50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+/* Cursor piscante no preview em streaming da resposta do chat (main.js appendStreamChunk). */
+.message.streaming pre::after {
+  content: "▍";
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--vscode-textLink-foreground);
+  animation: adonex-pulse 1.3s ease-in-out infinite;
 }
 
 .processing-row {

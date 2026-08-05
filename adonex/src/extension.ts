@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import { registerAdoneXChatParticipant } from "./chat/adonexChatParticipant";
 import { WorkspaceContext } from "./context/workspaceContext";
+import { isIndexableWorkspaceFile } from "./context/workspaceContextCore";
+import { SemanticWorkspaceIndex } from "./context/semanticWorkspaceIndex";
 import { CostGuard } from "./cost/costGuard";
 import { OllamaClient } from "./llm/ollamaClient";
 import { normalizeOllamaBaseUrl } from "./llm/ollamaEndpoint";
@@ -100,6 +102,51 @@ export function activate(context: vscode.ExtensionContext): void {
       const message = error instanceof Error ? error.message : String(error);
       void vscode.window.showErrorMessage(message);
       throw error;
+    }
+  });
+  register("adonex.semanticIndex.rebuild", async () => {
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    if (!folder) {
+      void vscode.window.showErrorMessage(
+        "Open a workspace before rebuilding the AdoneX semantic index."
+      );
+      return;
+    }
+    const configuration = vscode.workspace.getConfiguration("adonex");
+    const ignores = configuration.get<string[]>("workspace.ignorePatterns", []);
+    const exclude = `{${ignores.map((item) => `**/${item}/**`).join(",")}}`;
+    const maxCandidates = configuration.get<number>("semanticIndex.maxCandidates", 80);
+    try {
+      const summary = await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "AdoneX: rebuilding the local semantic index...",
+          cancellable: false
+        },
+        async () => {
+          const uris = await vscode.workspace.findFiles("**/*", exclude, 2_000);
+          const candidates = uris
+            .map((uri) => vscode.workspace.asRelativePath(uri, false))
+            .filter((relativePath) => isIndexableWorkspaceFile(relativePath))
+            .slice(0, maxCandidates)
+            .map((relativePath) => ({ relativePath, score: 0, reasons: [] as string[] }));
+          return new SemanticWorkspaceIndex(folder.uri.fsPath).warmIndex(candidates, {
+            enabled: configuration.get<boolean>("semanticIndex.enabled", true),
+            baseUrl: normalizeOllamaBaseUrl(
+              configuration.get<string>("ollama.baseUrl", "http://127.0.0.1:11434")
+            ),
+            model: configuration.get<string>("ollama.embeddingModel", "nomic-embed-text:latest"),
+            maxCandidates,
+            timeoutMs: configuration.get<number>("semanticIndex.timeoutSeconds", 8) * 1_000
+          });
+        }
+      );
+      void vscode.window.showInformationMessage(
+        `AdoneX semantic index updated: ${summary.embedded} new/changed, ${summary.skipped} already up to date (${summary.total} file(s) total).`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void vscode.window.showErrorMessage(`AdoneX semantic index rebuild failed: ${message}`);
     }
   });
   register("adonex.analyzeWorkspace", async () => {
