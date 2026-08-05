@@ -939,6 +939,13 @@ button.ghost {
   font-family: var(--vscode-editor-font-family);
 }
 
+/* Notacao de diff estilo git: +N em verde (adicoes), -N em vermelho
+   (remocoes). Reaproveita as mesmas variaveis de tema ja usadas pelos
+   badges create/delete do composer, para ficar consistente em qualquer
+   tema do VS Code (claro, escuro ou de alto contraste). */
+.diff-stat-add { color: var(--vscode-testing-iconPassed); }
+.diff-stat-del { color: var(--vscode-errorForeground); }
+
 .composer-open {
   flex: 0 0 auto;
   min-height: 22px;
