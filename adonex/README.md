@@ -26,9 +26,10 @@ O AdoneX usa exclusivamente o Ollama. OpenAI/Codex e Anthropic/Claude Code sao c
 
 - Participante nativo do VS Code Chat disponível como `@adonex`.
 - Planejamento, implementação, revisão, testes, documentação e correção assistida.
-- Patches governados com prévia, confirmação, backup e proteção de caminhos.
-- Execução controlada de comandos e bloqueio de operações perigosas.
-- Seleção contextual de arquivos com redação de segredos.
+- **Tool Loop opcional** (`adonex.synapse.toolLoop.enabled`): em `implement`/`fix`, o modelo local chama ferramentas (`read_file`, `search_files`, `list_files`, `edit_file`, `run_command`) uma por vez, observando o resultado antes do próximo passo, em vez de gerar tudo às cegas num único prompt.
+- Patches governados com prévia, confirmação, backup e proteção de caminhos — diffs reais (LCS), não um dump do arquivo inteiro, mesmo em edições cirúrgicas de 1 linha.
+- Execução controlada de comandos, bloqueio de operações perigosas e cancelamento real (o botão Parar mata um comando em andamento, não só a próxima chamada ao modelo).
+- Seleção contextual de arquivos com redação de segredos e reranking semântico local (embeddings via Ollama).
 - Perfis locais do Ollama para tarefas rápidas, código, planejamento e raciocínio.
 - Conselho Ruflo seletivo e comprimido para tarefas do Synapse.
 - Ferramentas MCP e integração com o assistente de voz Vick.
@@ -48,10 +49,15 @@ O AdoneX funciona como editor de código profissional com modelos locais:
   `adonex.inlineCompletion.*` e `adonex.inlineEdit.*`.
 - **Contexto rico por menções**: `@arquivo`, `@selection`, `@file` e `@editor`
   viram contexto no chat; botão `@` com QuickPick.
-- **Painel de chat**: chat especialista Synapse, botão parar funcional e
+- **Painel de chat**: chat especialista Synapse, resposta em streaming
+  (o texto cresce enquanto o Ollama gera, em vez de aparecer só no fim),
+  botão parar funcional (cancela geração e comando em andamento) e
   indicador de andamento das execuções.
 - **Router agent e control center**: roteamento econômico entre perfis locais
   do Ollama e administração local das execuções.
+- **Tool Loop** (opt-in): timeline de passos no painel mostrando cada
+  ferramenta chamada pelo modelo (`read_file`, `edit_file`, `run_command`...)
+  e o resultado, antes do preview final de patch.
 
 ## Modos locais
 
@@ -129,4 +135,7 @@ ou SDKs da OpenAI e Anthropic.
 - `@adonex /search` pesquisa o workspace com indice local e contexto comprimido.
 - `@adonex /improve` prepara melhorias governadas usando Ollama.
 - `AdoneX: Improve Selected Code` reconhece o arquivo e a selecao ativos.
+- `AdoneX: Rebuild Semantic Index` aquece o cache de embeddings locais
+  (`.adonex/index/semantic-index.json`) para todo o workspace de uma vez, em
+  vez de deixar a primeira tarefa pagar esse custo sozinha.
 - Patches preservam previa, aprovacao humana, backup, validacao e rollback.
