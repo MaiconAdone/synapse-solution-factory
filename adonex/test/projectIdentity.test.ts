@@ -19,37 +19,51 @@ function writeProjectUniverse(root: string, content: unknown): void {
   );
 }
 
-test("detects a generated child project from config/project_universe.json", () => {
+function markAsPlatformRepo(root: string): void {
+  const scriptsDir = path.join(root, "scripts");
+  fs.mkdirSync(scriptsDir, { recursive: true });
+  fs.writeFileSync(path.join(scriptsDir, "create_ai_project.ps1"), "# stub", "utf8");
+}
+
+test("recognizes the Synapse platform repo by its factory script", () => {
   const root = makeTempWorkspace();
-  writeProjectUniverse(root, {
-    project: "especialista_banco",
-    universe: "ia",
-    creation_rules: { managed_by: "synapse", factory_capable: false }
-  });
+  markAsPlatformRepo(root);
   const identity = detectProjectIdentity(root);
-  assert.equal(identity.isGeneratedChildProject, true);
-  assert.equal(identity.name, "especialista_banco");
-  assert.equal(identity.universe, "ia");
+  assert.equal(identity.isPlatformRepo, true);
 });
 
-test("falls back to the folder name when project_universe.json is absent", () => {
+test("treats ANY workspace without the factory script as an independent project", () => {
+  // Nao exige config/project_universe.json nem qualquer outro marcador de
+  // geracao: a auxencia do script da fabrica ja basta. Isso cobre projetos
+  // gerados por versoes antigas do gerador, projetos criados manualmente, e
+  // qualquer outro repositorio que o usuario abra com o AdoneX instalado.
   const root = makeTempWorkspace();
   const identity = detectProjectIdentity(root);
-  assert.equal(identity.isGeneratedChildProject, false);
+  assert.equal(identity.isPlatformRepo, false);
   assert.equal(identity.name, path.basename(root));
 });
 
-test("does not treat a workspace without the synapse creation markers as generated", () => {
+test("uses the real project name from project_universe.json when present", () => {
   const root = makeTempWorkspace();
-  writeProjectUniverse(root, { project: "unrelated", universe: "ml" });
+  writeProjectUniverse(root, { project: "agent_validador", universe: "ia" });
   const identity = detectProjectIdentity(root);
-  assert.equal(identity.isGeneratedChildProject, false);
+  assert.equal(identity.isPlatformRepo, false);
+  assert.equal(identity.name, "agent_validador");
+  assert.equal(identity.universe, "ia");
+});
+
+test("the factory script marker wins even if project_universe.json is also present", () => {
+  const root = makeTempWorkspace();
+  markAsPlatformRepo(root);
+  writeProjectUniverse(root, { project: "should-not-matter" });
+  const identity = detectProjectIdentity(root);
+  assert.equal(identity.isPlatformRepo, true);
 });
 
 test("tolerates malformed project_universe.json without throwing", () => {
   const root = makeTempWorkspace();
   writeProjectUniverse(root, "{ not valid json");
   const identity = detectProjectIdentity(root);
-  assert.equal(identity.isGeneratedChildProject, false);
+  assert.equal(identity.isPlatformRepo, false);
   assert.equal(identity.name, path.basename(root));
 });

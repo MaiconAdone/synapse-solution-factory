@@ -60,6 +60,21 @@ test("workspace context prioritizes root Synapse files for project explanation",
   );
 });
 
+test("workspace context prioritizes README/docs for project questions even without the word Synapse", () => {
+  // Regressao: o boost de explicacao de projeto nao pode depender de o
+  // usuario dizer literalmente "synapse" -- precisa funcionar para qualquer
+  // projeto aberto (ex.: um projeto gerado chamado "agent_validador").
+  const task = "verifique na documentacao do projeto agent_validador como rodar no vs code";
+  assert.ok(
+    scorePathForTask("README.md", task) >
+      scorePathForTask("adonex/package.json", task)
+  );
+  assert.ok(
+    scorePathForTask("AGENTS.md", task) >
+      scorePathForTask("output/report.json", task)
+  );
+});
+
 test("workspace context prioritizes Synapse model inventory files", () => {
   const task = "quais modelos estamos usando na Synapse?";
   assert.ok(

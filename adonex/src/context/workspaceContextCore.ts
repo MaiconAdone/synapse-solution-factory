@@ -210,10 +210,18 @@ export function rankPathForTask(
     score += 5;
     reasons.push("project-manifest");
   }
+  // Sem exigir a palavra "synapse": qualquer projeto aberto (gerado pela
+  // Solution Factory ou nao) merece o mesmo boost de README/AGENTS/CLAUDE/
+  // docker-compose/manifesto quando a pergunta pede para explicar, verificar
+  // ou documentar "o projeto" — nao so quando o workspace e o proprio
+  // repositorio Synapse.
   const projectExplanation =
-    /\b(explique|explica|descreva|resuma|apresente|projeto)\b/.test(
+    /\b(explique|explica|descreva|resuma|apresente|verifique|verifica|analise|investigue)\b/.test(
       normalizedTask
-    ) && /\bsynapse\b/.test(normalizedTask);
+    ) &&
+    /\b(projeto|aplica[cç][aã]o|reposit[oó]rio|documenta[cç][aã]o|codebase|estrutura)\b/.test(
+      normalizedTask
+    );
   const synapseModelInventory =
     /\bsynapse\b/.test(normalizedTask) &&
     /\b(modelo|modelos|model|models|ollama|llm|8b|3b|qwen|deepseek|embedding)\b/.test(
@@ -240,11 +248,11 @@ export function rankPathForTask(
       )
     ) {
       score += 12;
-      reasons.push("Synapse-explanation-contract");
+      reasons.push("project-explanation-contract");
     }
     if (/^(adonex|output|artifacts|frontend\/\.next)\//.test(pathText)) {
       score -= 8;
-      reasons.push("Synapse-explanation-deprioritized");
+      reasons.push("project-explanation-deprioritized");
     }
   }
   for (const term of taskTerms) {

@@ -732,7 +732,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     // projeto, nesse caso.
     const root = this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const projectIdentity = root ? detectProjectIdentity(root) : undefined;
-    const chatBaseSystemPrompt = projectIdentity?.isGeneratedChildProject
+    const chatBaseSystemPrompt = projectIdentity && !projectIdentity.isPlatformRepo
       ? buildChildProjectChatSystemPrompt(projectIdentity)
       : SYNAPSE_SPECIALIST_SYSTEM;
     const dynamicContext = buildLocalChatContext({
