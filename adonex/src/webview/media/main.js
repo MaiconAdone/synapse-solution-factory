@@ -7,6 +7,8 @@ const sendButton = document.getElementById("send");
 const attachButton = document.getElementById("attach");
 const memoryButton = document.getElementById("memory");
 const mentionButton = document.getElementById("mention");
+const clearHistoryButton = document.getElementById("clearHistory");
+const emptyStateTemplate = history.querySelector(".empty-state")?.cloneNode(true) ?? null;
 const attachments = document.getElementById("attachments");
 const memoryPanel = document.getElementById("memoryPanel");
 const memoryHistory = document.getElementById("memoryHistory");
@@ -357,6 +359,11 @@ sendButton.addEventListener("click", () => {
 attachButton.addEventListener("click", () => vscode.postMessage({ type: "selectAttachments" }));
 memoryButton.addEventListener("click", () => vscode.postMessage({ type: "openSharedMemory" }));
 mentionButton.addEventListener("click", () => vscode.postMessage({ type: "mentionPick" }));
+clearHistoryButton.addEventListener("click", () => {
+  history.replaceChildren(...(emptyStateTemplate ? [emptyStateTemplate.cloneNode(true)] : []));
+  vscode.setState({ messages: [] });
+  vscode.postMessage({ type: "clearHistory" });
+});
 closeMemory.addEventListener("click", () => { memoryPanel.hidden = true; });
 resumeTask.addEventListener("click", () => {
   if (!selectedSharedTask) return;

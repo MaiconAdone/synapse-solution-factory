@@ -287,6 +287,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       } else if (message.type === "clearAttachments") {
         this.selectedAttachments = [];
         this.postAttachmentState();
+      } else if (message.type === "clearHistory") {
+        this.localChatHistory.length = 0;
       } else if (message.type === "openSharedMemory") {
         await this.openSharedMemory();
       } else if (message.type === "resumeSharedTask" && message.task) {
@@ -731,12 +733,22 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const chatStartedAt = Date.now();
     let chatTokensReported = 0;
     let response: LlmResponse;
+    // Uma pergunta com contexto de projeto anexado (dynamicContext) tem um
+    // prompt bem maior que uma pergunta "lean" -- em CPU o prompt-eval domina
+    // a latencia, entao o mesmo timeout de 120s configurado para perguntas
+    // curtas corta respostas legitimas pela metade quando ha varredura de
+    // workspace real envolvida. Mesmo padrao de minimo-por-carga que
+    // agentOrchestrator.ollamaTimeoutMs ja usa para o pipeline governado.
+    const timeoutSeconds = Math.max(
+      dynamicContext ? 240 : 120,
+      config.get<number>("ollama.timeoutSeconds", 120)
+    );
     try {
       response = await new OllamaClient({
         baseUrl,
         model,
         apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
-        timeoutMs: config.get<number>("ollama.timeoutSeconds", 120) * 1000,
+        timeoutMs: timeoutSeconds * 1000,
         keepAlive: config.get<string>("ollama.keepAlive", "10m"),
         numCtx: profile.numCtx,
         temperature: profile.temperature,
@@ -1805,6 +1817,7 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
       <button id="attach" class="icon-button" type="button" aria-label="Carregar arquivos e imagens" title="Carregar arquivos e imagens"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.5 6.5 8.9 14.1a3 3 0 0 0 4.2 4.2l7.1-7.1a5 5 0 0 0-7.1-7.1L5.6 11.6a7 7 0 0 0 9.9 9.9l5.3-5.3"/></svg></button>
       <button id="mention" class="icon-button mention-button" type="button" aria-label="Adicionar contexto por mencao" title="Adicionar contexto: @arquivo, @selection, @file">@</button>
       <button id="memory" class="icon-button" type="button" aria-label="Abrir memoria compartilhada" title="Memoria compartilhada: AdoneX, Claude Code e Codex"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h11a4 4 0 0 0 .5-8A6.5 6.5 0 0 0 6 8.5 4.8 4.8 0 0 0 7 18Z"/><path d="M9 13h6M12 10v6"/></svg></button>
+      <button id="clearHistory" class="icon-button" type="button" aria-label="Limpar historico de mensagens" title="Limpar historico de mensagens"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M10 11v6M14 11v6"/></svg></button>
       </div>
       <button id="send" class="primary" type="button" aria-label="Enviar mensagem">Enviar</button>
     </div>
