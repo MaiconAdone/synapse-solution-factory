@@ -1,3 +1,31 @@
+import type { ProjectIdentity } from "../context/projectIdentity";
+
+/**
+ * Versao neutra do SYNAPSE_SPECIALIST_SYSTEM para quando o workspace aberto
+ * NAO e o repositorio da plataforma Synapse, e sim um projeto GERADO por ela
+ * (config/project_universe.json presente, ver detectProjectIdentity). O
+ * SYNAPSE_SPECIALIST_SYSTEM descreve fatos da plataforma como se fossem
+ * fatos do workspace atual e manda o modelo comparar a pergunta contra "os
+ * fatos acima" antes do contexto — para um projeto gerado isso faz o modelo
+ * negar conhecer o proprio projeto aberto (ele nao aparece na descricao da
+ * plataforma). Aqui a instrucao e o oposto: responder SOMENTE com base no
+ * contexto de workspace fornecido, nunca comparando contra uma descricao
+ * fixa da plataforma. Constante por workspace (nome fixo), preserva o
+ * prefix cache do Ollama do mesmo jeito que o system prompt estatico.
+ */
+export function buildChildProjectChatSystemPrompt(identity: ProjectIdentity): string {
+  const universeNote = identity.universe ? ` (universo: ${identity.universe})` : "";
+  return [
+    "Voce e o AdoneX, engenheiro de IA local-first integrado ao VS Code.",
+    "Responda SEMPRE em portugues do Brasil, direto ao ponto, com profundidade proporcional a pergunta.",
+    `O workspace aberto agora e o projeto "${identity.name}"${universeNote}, GERADO pela Solution Factory do Synapse. Ele NAO e o repositorio da plataforma Synapse em si.`,
+    `Refira-se a este workspace pelo nome real "${identity.name}"; nunca diga que o workspace se chama "Synapse" ou que voce nao tem informacoes sobre ele so porque o nome nao aparece em uma descricao generica da plataforma.`,
+    "Use SOMENTE o contexto de workspace fornecido abaixo (estrutura de pastas, arquivos relevantes, memoria compartilhada) para responder sobre este projeto. Se a pergunta pedir algo que nao esta no contexto fornecido, diga exatamente qual arquivo ou informacao falta, em vez de negar conhecimento do projeto.",
+    "Nunca invente tabelas, arquivos, comandos executados ou capacidades nao evidenciadas no contexto.",
+    "Para editar codigo, criar arquivos ou aplicar mudancas neste projeto, oriente o usuario a pedir a implementacao explicitamente (ex.: 'implemente X', 'corrija Y', 'adicione Z'), o que abre o fluxo governado do AdoneX com revisao e aprovacao antes de qualquer escrita."
+  ].join("\n");
+}
+
 /**
  * System prompt ESTAVEL do AdoneX como especialista no ecossistema Synapse.
  * Precisa ser constante entre chamadas para o Ollama reaproveitar o prefix cache

@@ -26,7 +26,8 @@ import { requestApproval } from "../security/approvalGate";
 import { scanAndRedactSecrets } from "../security/secretScanner";
 import { inferUpdateFromText } from "../memory/memorySummarizer";
 import { parseMentions } from "../context/mentionResolver";
-import { SYNAPSE_SPECIALIST_SYSTEM } from "../synapse/synapseKnowledge";
+import { SYNAPSE_SPECIALIST_SYSTEM, buildChildProjectChatSystemPrompt } from "../synapse/synapseKnowledge";
+import { detectProjectIdentity } from "../context/projectIdentity";
 import { MemoryWriter } from "../memory/memoryWriter";
 import type { TaskLog as MemoryTaskLog } from "../memory/types";
 import { diagnoseCommandFailure, finalizeTask } from "../tasks/taskFinalizer";
@@ -724,6 +725,16 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const skipProjectScan = Boolean(mentionContext) || Boolean(attachmentContext) || shouldUseLeanLocalChat(safePrompt);
     if (!skipProjectScan) this.postStep("Percorrendo o projeto aberto...");
     const projectContext = skipProjectScan ? "" : await this.readProjectContext(safePrompt);
+    // SYNAPSE_SPECIALIST_SYSTEM descreve a PLATAFORMA Synapse como se fosse
+    // o workspace atual; para um projeto GERADO pela Solution Factory (nao a
+    // plataforma em si) isso faz o modelo negar conhecer o proprio projeto
+    // aberto. Troca para um system prompt neutro, ancorado no nome real do
+    // projeto, nesse caso.
+    const root = this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const projectIdentity = root ? detectProjectIdentity(root) : undefined;
+    const chatBaseSystemPrompt = projectIdentity?.isGeneratedChildProject
+      ? buildChildProjectChatSystemPrompt(projectIdentity)
+      : SYNAPSE_SPECIALIST_SYSTEM;
     const dynamicContext = buildLocalChatContext({
       prompt: safePrompt,
       recentHistory: recentHistory ? `Conversa recente:\n${recentHistory}` : "",
@@ -766,7 +777,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
         },
         onChunk: (text) => this.postStreamChunk(text)
       }).generate({
-        systemPrompt: localChatSystemPrompt(SYNAPSE_SPECIALIST_SYSTEM, safePrompt),
+        systemPrompt: localChatSystemPrompt(chatBaseSystemPrompt, safePrompt),
         userPrompt: safePrompt,
         workspaceContext: dynamicContext,
         maxOutputTokens: localChatOutputBudget(

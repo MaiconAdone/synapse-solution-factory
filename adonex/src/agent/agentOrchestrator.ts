@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { WorkspaceContext } from "../context/workspaceContext";
+import { detectProjectIdentity } from "../context/projectIdentity";
 import { estimateCost, estimateTokenCost } from "../cost/costGuard";
 import { synapseSystemContext } from "../synapse/synapseProfile";
 import { buildRufloCouncilContext } from "../synapse/rufloCouncil";
@@ -317,6 +318,7 @@ export class AgentOrchestrator {
     // Ordem pensada para o prefix cache do Ollama (CPU-only): blocos 100%
     // estaveis primeiro, semi-estaveis no meio e dinamicos por ultimo. Qualquer
     // byte alterado invalida o cache de tudo que vem depois dele.
+    const projectIdentity = detectProjectIdentity(snapshot.root);
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
       STATIC_POLICY_PROMPT,
@@ -325,7 +327,8 @@ export class AgentOrchestrator {
         snapshot.synapseDetected,
         mode === "synapse",
         snapshot.synapseConfidence,
-        snapshot.synapseSignals
+        snapshot.synapseSignals,
+        projectIdentity
       ),
       actionPrompt(action),
       rufloCouncil.text,
