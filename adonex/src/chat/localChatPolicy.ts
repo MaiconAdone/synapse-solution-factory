@@ -28,6 +28,7 @@ export function buildLocalChatContext(parts: {
   prompt: string;
   recentHistory: string;
   memoryContext: string;
+  projectContext: string;
   mentionContext: string;
   attachmentContext: string;
 }): string | undefined {
@@ -35,7 +36,10 @@ export function buildLocalChatContext(parts: {
     return [parts.mentionContext, parts.attachmentContext].filter(Boolean).join("\n\n");
   }
   if (shouldUseLeanLocalChat(parts.prompt)) return undefined;
-  return [parts.recentHistory, parts.memoryContext].filter(Boolean).join("\n\n") || undefined;
+  return (
+    [parts.recentHistory, parts.memoryContext, parts.projectContext].filter(Boolean).join("\n\n") ||
+    undefined
+  );
 }
 
 export function localChatSystemPrompt(basePrompt: string, prompt: string): string {

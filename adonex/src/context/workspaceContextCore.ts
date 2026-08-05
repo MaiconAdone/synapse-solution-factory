@@ -96,6 +96,64 @@ export function detectSynapseProject(
   };
 }
 
+export interface DatabaseDetection {
+  detected: boolean;
+  confidence: number;
+  signals: string[];
+}
+
+/**
+ * Deteccao heuristica de banco de dados no workspace: sinais de path (arquivo
+ * .sql, schema.prisma, alembic.ini, pasta migrations) somados a sinais de
+ * conteudo (postgres, mysql, sqlite, mongodb, sqlalchemy, prisma client,
+ * connection string). Mesmo padrao de pathSignal/contentSignal ponderado de
+ * detectSynapseProject, usado pelo especialista de banco do AdoneX para
+ * decidir se ha evidencia real antes de acionar o Ollama.
+ */
+export function detectDatabaseProject(
+  paths: string[],
+  contents = ""
+): DatabaseDetection {
+  const normalizedPaths = paths.map((item) =>
+    item.replace(/\\/g, "/").toLowerCase()
+  );
+  const body = contents.toLowerCase();
+  const signals: string[] = [];
+  let score = 0;
+  const pathSignal = (label: string, weight: number, matcher: RegExp): void => {
+    if (normalizedPaths.some((item) => matcher.test(item))) {
+      score += weight;
+      signals.push(label);
+    }
+  };
+  const contentSignal = (label: string, weight: number, terms: string[]): void => {
+    if (terms.some((term) => body.includes(term))) {
+      score += weight;
+      signals.push(label);
+    }
+  };
+
+  pathSignal("sql-file", 4, /\.sql$/);
+  pathSignal("prisma-schema", 4, /(^|\/)schema\.prisma$/);
+  pathSignal("alembic-migrations", 4, /(^|\/)alembic\.ini$/);
+  pathSignal("migrations-dir", 3, /(^|\/)migrations\//);
+  pathSignal("docker-database-service", 2, /(^|\/)docker-compose[^/]*\.ya?ml$/);
+  pathSignal("env-example", 1, /(^|\/)\.env\.example$/);
+  contentSignal("postgres", 3, ["postgres", "postgresql"]);
+  contentSignal("mysql", 3, ["mysql", "mariadb"]);
+  contentSignal("sqlite", 2, ["sqlite"]);
+  contentSignal("mongodb", 3, ["mongodb", "mongoose"]);
+  contentSignal("sqlalchemy", 3, ["sqlalchemy"]);
+  contentSignal("prisma-client", 2, ["@prisma/client", "prisma.schema"]);
+  contentSignal("connection-string", 2, ["database_url", "db_host", "connection string"]);
+
+  return {
+    detected: score >= 4,
+    confidence: Math.min(1, Number((score / 12).toFixed(2))),
+    signals: [...new Set(signals)]
+  };
+}
+
 export function detectStack(paths: string[], contents = ""): string[] {
   const normalized = paths.map((item) => item.toLowerCase());
   const stack = new Set<string>();

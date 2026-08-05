@@ -46,14 +46,23 @@ import {
   routeChatCommand,
   shouldUseComposer
 } from "../chat/chatRouting";
+import {
+  askDatabaseSpecialist,
+  hasDatabaseSpecialist,
+  looksLikeDatabaseQuestion,
+  renderSpecialistProposal
+} from "../chat/databaseSpecialist";
 import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
 import {
   buildLocalChatContext,
   localChatOutputBudget,
-  localChatSystemPrompt
+  localChatSystemPrompt,
+  shouldUseLeanLocalChat
 } from "../chat/localChatPolicy";
 import { evidenceFromSnapshot, guardAgainstLocalHallucinations } from "../chat/hallucinationGuard";
 import { sanitizeAdoneXResponse } from "../chat/responseSanitizer";
+import { formatWorkspaceSnapshot } from "../context/contextFormatter";
+import { WorkspaceContext } from "../context/workspaceContext";
 import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
 import { VickLocalServiceClient } from "../voice/vickLocalService";
 import { OllamaClient } from "../llm/ollamaClient";
@@ -87,6 +96,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   private readonly localChatHistory: Array<{ role: "user" | "assistant"; text: string }> = [];
   private applyMode: "prepare" | "apply" = "prepare";
   private readonly orchestrator: AgentOrchestrator;
+  private readonly workspaceScanner = new WorkspaceContext();
   private readonly patchEngine = new PatchEngine();
   private readonly composer: ComposerSession;
   private readonly commandRunner = new CommandRunner();
@@ -665,6 +675,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.abortController?.abort();
     this.abortController = new AbortController();
     const safePrompt = scanAndRedactSecrets(prompt).redacted;
+    if (await this.tryDatabaseSpecialistChat(safePrompt)) return;
     const baseUrl = normalizeOllamaBaseUrl(config.get<string>("ollama.baseUrl", "http://127.0.0.1:11434"));
     const inventory = await this.answerLocalModelInventory(safePrompt, baseUrl);
     if (inventory) {
@@ -705,10 +716,19 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const recentHistory = this.localChatHistory.slice(-4)
       .map((item) => `${item.role === "user" ? "Usuario" : "AdoneX"}: ${item.text}`)
       .join("\n");
+    // WorkspaceContext.collect() varre o workspace (findFiles + leitura de
+    // ate 40 arquivos + rerank semantico opcional via Ollama) — mais caro
+    // que memoryContext (1 leitura de arquivo). Pulamos para perguntas
+    // "lean" (curtas/triviais) e quando ja ha mencao/anexo, que ganham
+    // sozinhos em buildLocalChatContext de qualquer forma.
+    const skipProjectScan = Boolean(mentionContext) || Boolean(attachmentContext) || shouldUseLeanLocalChat(safePrompt);
+    if (!skipProjectScan) this.postStep("Percorrendo o projeto aberto...");
+    const projectContext = skipProjectScan ? "" : await this.readProjectContext(safePrompt);
     const dynamicContext = buildLocalChatContext({
       prompt: safePrompt,
       recentHistory: recentHistory ? `Conversa recente:\n${recentHistory}` : "",
       memoryContext: memoryContext ? `Memoria compartilhada (trecho):\n${memoryContext}` : "",
+      projectContext,
       mentionContext,
       attachmentContext
     });
@@ -772,6 +792,52 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.selectedAttachments = [];
     this.postAttachmentState();
     this.post({ type: "chatResponse", text: answer, provider: response.provider, model: response.model });
+  }
+
+  private async readProjectContext(prompt: string): Promise<string> {
+    try {
+      const snapshot = await this.workspaceScanner.collect(prompt, 2_500);
+      return formatWorkspaceSnapshot(snapshot, 4_000);
+    } catch {
+      return "";
+    }
+  }
+
+  /**
+   * Intercepta perguntas de banco de dados no chat livre antes do fluxo
+   * normal do Ollama: comando explicito "/banco" ou deteccao implicita por
+   * regex (looksLikeDatabaseQuestion). So aciona o pipeline planner->writer
+   * ->critic quando ha evidencia real de banco no workspace
+   * (hasDatabaseSpecialist); caso contrario deixa o chat seguir normalmente.
+   */
+  private async tryDatabaseSpecialistChat(prompt: string): Promise<boolean> {
+    const explicitCommand = /^\/banco\b/i.test(prompt.trim());
+    const question = explicitCommand ? prompt.trim().replace(/^\/banco\b/i, "").trim() : prompt.trim();
+    if (!explicitCommand && !looksLikeDatabaseQuestion(question)) return false;
+    const root = this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root || !question) return false;
+    if (!(await hasDatabaseSpecialist(root))) return false;
+    this.postStep("Consultando o especialista de banco (planner -> writer -> critic no Ollama local)...");
+    try {
+      const proposal = await askDatabaseSpecialist(root, question, {
+        signal: this.abortController?.signal,
+        onProgress: (text) => this.postStep(text)
+      });
+      const answer = renderSpecialistProposal(proposal);
+      this.rememberLocalChat(prompt, answer);
+      this.selectedAttachments = [];
+      this.postAttachmentState();
+      this.post({ type: "chatResponse", text: answer, provider: "especialista-banco", model: proposal.model });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.post({
+        type: "chatResponse",
+        text: `O especialista de banco falhou: ${message}`,
+        provider: "especialista-banco",
+        model: "planner-writer-critic"
+      });
+    }
+    return true;
   }
 
   private async selectAttachments(): Promise<void> {
@@ -1687,8 +1753,6 @@ ${update.nextSteps.map((step) => `- ${step}`).join("\n") || "- Review task outco
 
       <select id="mode" aria-label="Agent mode">
         <option value="auto"${selected("auto")}>Auto</option>
-        <option value="balanced"${selected("balanced")}>Local Balanced</option>
-        <option value="strong"${selected("strong")}>Local Strong</option>
         <option value="local"${selected("local")}>Local / Ollama</option>
         <option value="synapse"${selected("synapse")}>Synapse Mode</option>
       </select>

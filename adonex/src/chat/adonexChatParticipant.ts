@@ -18,6 +18,11 @@ import {
   resolveChatPrompt,
   routeChatCommand
 } from "./chatRouting";
+import {
+  askDatabaseSpecialist,
+  hasDatabaseSpecialist,
+  renderSpecialistProposal
+} from "./databaseSpecialist";
 import { createLocalFallbackResponse } from "./fallbackResponse";
 import {
   buildSolutionBriefing,
@@ -55,6 +60,9 @@ export function registerAdoneXChatParticipant(
     const parsed = parseChatInput(request.command, request.prompt);
     if (await handleMemoryCommand(parsed.command, parsed.prompt, stream)) {
       return { metadata: { action: parsed.command, memory: true } };
+    }
+    if (parsed.command === "banco") {
+      return await handleDatabaseCommand(parsed.prompt, stream);
     }
     let route = routeChatCommand(parsed.command, parsed.prompt);
     // Briefing multi-turno da Solution Factory: respostas dadas em turnos
@@ -446,6 +454,52 @@ function planSummary(
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+async function handleDatabaseCommand(
+  prompt: string,
+  stream: vscode.ChatResponseStream
+): Promise<vscode.ChatResult> {
+  const question = prompt.trim();
+  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!root) {
+    stream.markdown("Abra uma pasta de workspace para consultar o especialista de banco de dados.");
+    return { metadata: { action: "banco", database: true, skipped: "no-workspace" } };
+  }
+  if (!question) {
+    stream.markdown(
+      "Descreva a pergunta sobre tabelas, schema, migracoes ou relacionamentos do banco de dados."
+    );
+    return { metadata: { action: "banco", database: true, missingPrompt: true } };
+  }
+  stream.progress("Verificando sinais de banco de dados no workspace...");
+  if (!(await hasDatabaseSpecialist(root))) {
+    stream.markdown(
+      "Nao encontrei sinais de banco de dados neste workspace (migrations, schema.prisma, arquivos .sql, docker-compose com Postgres/MySQL etc.)."
+    );
+    return { metadata: { action: "banco", database: true, skipped: "no-database-signals" } };
+  }
+  stream.progress("Consultando o especialista de banco (planner -> writer -> critic no Ollama local)...");
+  try {
+    const proposal = await askDatabaseSpecialist(root, question);
+    stream.markdown(renderSpecialistProposal(proposal));
+    await recordSharedChatMemory(question, "answered", [
+      `provider=${proposal.provider}`,
+      `model=${proposal.model}`
+    ]);
+    return {
+      metadata: {
+        action: "banco",
+        database: true,
+        provider: proposal.provider,
+        model: proposal.model
+      }
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    stream.markdown(`O especialista de banco falhou: ${message}`);
+    return { errorDetails: { message }, metadata: { action: "banco", database: true } };
+  }
 }
 
 async function handleMemoryCommand(

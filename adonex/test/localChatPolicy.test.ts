@@ -17,6 +17,7 @@ test("lean local chat keeps simple local-model questions on model generation wit
       prompt,
       recentHistory: "fallback antigo",
       memoryContext: "memoria grande",
+      projectContext: "contexto do projeto",
       mentionContext: "",
       attachmentContext: ""
     }),
@@ -33,6 +34,7 @@ test("lean local chat preserves explicit attachments and avoids edit requests", 
       prompt: "explique este arquivo",
       recentHistory: "",
       memoryContext: "",
+      projectContext: "",
       mentionContext: "Arquivo citado",
       attachmentContext: "Anexo"
     }),

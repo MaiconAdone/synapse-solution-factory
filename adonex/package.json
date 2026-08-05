@@ -2,7 +2,7 @@
   "name": "adonex",
   "displayName": "AdoneX",
   "description": "Agente local de engenharia de IA para VS Code com Ollama, MCP, memória compartilhada com Claude Code e Codex, e integração Synapse.",
-  "version": "0.7.15",
+  "version": "0.8.0",
   "publisher": "synapse-ai",
   "icon": "media/adonex-icon.png",
   "license": "UNLICENSED",
@@ -126,6 +126,10 @@
             "description": "Gera um roadmap tecnico Synapse local-first."
           },
           {
+            "name": "banco",
+            "description": "Analisa tabelas, schema, migracoes e relacionamentos do banco de dados via pipeline planner-writer-critic."
+          },
+          {
             "name": "memoria",
             "description": "Mostra um resumo da memoria compartilhada do projeto."
           },
@@ -174,7 +178,8 @@
               "revise a arquitetura deste projeto",
               "planeje um agente de validacao",
               "prepare uma ferramenta MCP",
-              "encontre os testes relevantes"
+              "encontre os testes relevantes",
+              "explique as tabelas e relacionamentos do banco de dados"
             ]
           }
         ]
@@ -650,13 +655,11 @@
           "type": "string",
           "enum": [
             "auto",
-            "balanced",
-            "strong",
             "local",
             "synapse"
           ],
           "default": "auto",
-          "markdownDescription": "Modo do AdoneX. Auto classifica a solicitacao e escolhe Local, Balanced, Strong ou Synapse; todos os modos usam somente Ollama/local e nao enviam dados para LLMs externos."
+          "markdownDescription": "Modo do AdoneX. Auto classifica a solicitacao e ajusta automaticamente a intensidade do modelo local (inclusive reforco para tarefas complexas como implementacao, seguranca ou banco de dados); Local forca o modelo rapido; Synapse aciona o fluxo governado do Synapse. Todos os modos usam somente Ollama/local e nao enviam dados para LLMs externos."
         },
         "adonex.security.requireApprovalBeforeWrite": {
           "type": "boolean",
