@@ -5,6 +5,8 @@
 # Codex usa OpenAI diretamente e nao registra ferramentas Ollama.
 # Ollama e reservado ao AdoneX.
 # Root keys MUST come before TOML tables.
+# Operario oficial do Claude Code neste projeto: GPT 5.5 via plugin codex@openai-codex.
+model = "gpt-5.5"
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 

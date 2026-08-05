@@ -66,3 +66,31 @@ data/redis/*
 # Local models
 models/*
 !models/.gitkeep
+
+# Dependências Node.js
+node_modules/
+**/node_modules/
+
+# Builds e caches de frontend
+.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+
+# Caches de ferramentas
+.cache/
+**/.cache/
+.turbo/
+**/.turbo/
+.npm/
+**/.npm/
+
+# Logs Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
