@@ -557,7 +557,13 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
       this.abortController?.signal,
       (text) => this.postStep(text)
     );
-    if (this.composerAutonomousSynapse()) {
+    // fable-judge: se a correcao acusou possivel enfraquecimento de teste, o
+    // modo autonomo Synapse NAO aplica sozinho — exige revisao humana mesmo
+    // quando `synapse.autonomous` estiver ligado.
+    const judgeFlagged = (repaired.warnings ?? []).some((warning) =>
+      warning.startsWith("fable-judge:")
+    );
+    if (this.composerAutonomousSynapse() && !judgeFlagged) {
       this.post({
         type: "status",
         text: `Modo autonomo Synapse: aplicando correcao (${repaired.view.files.length} arquivo(s)) e revalidando.`
@@ -579,7 +585,9 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     this.postComposerProposal(repaired);
     this.postRuntimeState(
       "awaiting_confirmation",
-      "Correcao proposta a partir da falha capturada. Revise e aplique para revalidar."
+      judgeFlagged
+        ? "fable-judge sinalizou possivel enfraquecimento de teste nesta correcao. Revise manualmente antes de aplicar."
+        : "Correcao proposta a partir da falha capturada. Revise e aplique para revalidar."
     );
   }
 

@@ -12,6 +12,10 @@ AdoneX neste workspace Synapse.
 
 ## Recent Dialog Context
 
+- 2026-08-12 | Claude Code | done | Duas melhorias no pipeline de edicao de codigo local do AdoneX (priorizadas pelo usuario entre 4 mapeadas): (1) escalada de perfil de modelo na correcao automatica — `escalateLocalModelProfile` em adonex/src/llm/localModels.ts sobe um degrau na ladder (fast/general->balanced, balanced/code_review->code_strong, code_strong->code_critical, planning_strong->reasoning_strong, reasoning_strong->code_critical) aplicado em `AgentOrchestrator.selectOllamaProfile` somente quando action==="fix" (repair apos falha de validacao), nunca em acao pedida direto pelo usuario; (2) `ComposerSession.refine()` deixa de recoletar o workspace inteiro (`WorkspaceContext.collect()`, que inclui reranking semantico via Ollama) quando o modo nao mudou e a instrucao nao cita arquivo novo — nova heuristica pura `refinementMentionsUnknownFile` em composerModel.ts decide isso; `generate()` continua sempre recoletando do zero. npm run compile limpo, 283/283 testes unitarios (6 novos) e test:extension (exit 0) passaram.
+
+- 2026-08-11 | Claude Code | done | Metodologia do plugin fable-method (github.com/Sahir619/fable-method, Claude Code plugin, MIT) portada como conteudo para o AdoneX (nao instalavel como plugin: AdoneX e extensao VS Code local-only sobre Ollama, sem o mecanismo de plugin/skill do Claude Code). Adicionado: bloco FABLE_METHOD_POLICY (classificar->definir pronto->evidencia->decidir->agir->verificar->reportar) em adonex/src/agent/prompts.ts, injetado no system prompt do AgentOrchestrator; exigencia de linha "Criterio de pronto:" no summary de implement/fix; detector deterministico detectTestWeakening (validationLoop.ts) que acusa assertions/casos de teste reduzidos, novos skip/only/xit ou arquivo de teste apagado; judge adversarial local (adonex/src/agent/judgeAgent.ts + AgentOrchestrator.runTestWeakeningJudge, modelo fast/3B, fail-closed para "uncertain") acionado SO quando o detector acusa algo, chamado em ComposerSession.repair(); AdoneXPanel bloqueia auto-apply do modo autonomo Synapse quando o warning "fable-judge:" aparece, forcando revisao humana. fable-domain (adapters nao-codigo) ficou fora de escopo por decisao do usuario. npm run compile limpo, 277/277 testes unitarios e test:extension (VS Code real, exit 0) passaram; versao incrementada para 0.15.1, VSIX empacotada e instalada no VS Code (code --install-extension --force).
+
 - 2026-08-03 | Codex | maintenance | Memoria compartilhada compactada para reduzir contexto carregado no VS Code/Codex/Claude/AdoneX: arquivo principal mantem 30 registros estruturados recentes; historico antigo e prompts brutos da Vick foram movidos para .adonex/memory/archive/SHARED_DIALOG_MEMORY_YYYY-MM_ARCHIVE.md. Tambem foram preparados excludes de watcher/search para caches e outputs pesados.
 
 - 2026-07-31 | User/Codex | diagnostic | Claude Code corrigido localmente: logs do VS Code mostravam `No authentication found`, `spawn EINVAL` com `C:\tmp\claude-safe-wrapper.cmd` e timeout de inicializacao no binario 2.1.220. Codex desativou o plugin `codex@openai-codex` no Claude, removeu o pin global `model=claude-opus-4-8`, reinstalou/fixou CLI e extensao no canal estavel 2.1.212, moveu a extensao 2.1.220 para `_disabled` e configurou o VS Code para usar `C:\Users\malves\.local\bin\claude.exe`. Pendente: usuario recarregar o VS Code e refazer login no Claude Code, pois nao havia OAuth token local.
@@ -86,3 +90,13 @@ AdoneX neste workspace Synapse.
 
 - 2026-07-20 | Codex | done | Cabecalho web da Vick atualizado: marca textual V substituida por /synapse.png e nome Vick removido; frontend validado com tsc --noEmit.
 
+- [vick] 2026-08-10T12:44:29.137Z sentimento=neutro confianca=low prompt="vamos criar um projeto 'previsao_compradores_2027'"
+- [vick] 2026-08-10T12:44:44.595Z sentimento=neutro confianca=low prompt="blema de classficação"
+- [vick] 2026-08-10T12:44:55.804Z sentimento=neutro confianca=low prompt="é ML"
+- [vick] 2026-08-10T12:45:08.596Z sentimento=neutro confianca=low prompt="m realizar previsão de demanda"
+- [vick] 2026-08-10T12:45:27.299Z sentimento=neutro confianca=low prompt="ou colocar após o projeto ser criado"
+- [vick] 2026-08-10T12:45:39.282Z sentimento=neutro confianca=low prompt="Alto"
+- [vick] 2026-08-10T12:45:39.680Z analyzer-gate projeto=previsao-compradores-2027 status=analyzed requisitado=ia recomendado=ml
+- [vick] 2026-08-10T13:40:49.367Z sentimento=neutro confianca=low prompt="vamos criar um projeto 'Chatbolt'"
+- [vick] 2026-08-10T13:41:37.982Z sentimento=neutro confianca=low prompt="chat inteligente"
+- [vick] 2026-08-10T13:41:43.677Z sentimento=neutro confianca=low prompt="chatbolt"

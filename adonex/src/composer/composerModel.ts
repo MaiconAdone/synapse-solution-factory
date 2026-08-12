@@ -76,6 +76,28 @@ export function selectedChanges(
   return changes.filter((change) => selection.has(change.path));
 }
 
+/**
+ * True quando a instrucao de refinamento parece citar um arquivo (token com
+ * extensao) que o snapshot cacheado ainda nao cobre. Usada por
+ * ComposerSession.refine() para decidir se pode reaproveitar o snapshot da
+ * geracao anterior em vez de recoletar o workspace inteiro. Um falso
+ * positivo so custa uma recoleta extra (seguro); um falso negativo poderia
+ * deixar um arquivo novo fora do contexto — por isso o regex e
+ * propositalmente permissivo.
+ */
+export function refinementMentionsUnknownFile(
+  instruction: string,
+  knownPaths: readonly string[]
+): boolean {
+  const tokens = instruction.match(/[\w./\\-]+\.[A-Za-z0-9]{1,6}\b/g) ?? [];
+  if (!tokens.length) return false;
+  const known = knownPaths.map((path) => path.toLowerCase().replace(/\\/g, "/"));
+  return tokens.some((token) => {
+    const needle = token.toLowerCase().replace(/\\/g, "/");
+    return !known.some((path) => path.endsWith(needle) || path === needle);
+  });
+}
+
 export function summarizeProposalView(view: ComposerProposalView): string {
   const created = view.files.filter((file) => file.changeKind === "create").length;
   const modified = view.files.filter((file) => file.changeKind === "modify").length;

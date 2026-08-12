@@ -99,3 +99,73 @@ export function formatDiagnosticsAsFailure(
 function diagnosticKey(entry: DiagnosticSnapshotEntry): string {
   return `${entry.path}:${entry.line ?? 0}:${entry.message}`;
 }
+
+/** Mesma heuristica de arquivo de teste usada em codeIntelligence.ts. */
+const TEST_FILE_PATTERN =
+  /(^|\/|\\)(__tests__|tests?|specs?)(\/|\\)|(\.|-)(test|spec)\.[a-z0-9]+$/i;
+
+/** Achado deterministico de possivel enfraquecimento de teste. */
+export interface TestWeakeningFinding {
+  path: string;
+  reason: string;
+  severity: "high" | "medium";
+}
+
+const ASSERTION_PATTERN = /\b(expect|assert)\s*[.(]/g;
+const TEST_CASE_PATTERN = /\b(it|test)\s*\(/g;
+const SKIP_ONLY_PATTERN =
+  /\b(it|test|describe)\s*\.\s*(skip|only|todo)\s*\(|\bxit\s*\(|\bxdescribe\s*\(|\bxtest\s*\(/g;
+
+/**
+ * Deteccao 100% deterministica (sem LLM) de correcoes de teste que "passam"
+ * enfraquecendo a checagem em vez de corrigir a causa raiz: menos
+ * assertions/casos de teste que antes, novos skip/only/xit, ou o arquivo de
+ * teste inteiro sendo removido. Roda apenas em arquivos que batem no padrao
+ * de teste do workspace; qualquer outro arquivo retorna lista vazia.
+ */
+export function detectTestWeakening(
+  path: string,
+  before: string | undefined,
+  after: string | undefined
+): TestWeakeningFinding[] {
+  if (!TEST_FILE_PATTERN.test(path)) return [];
+  if (before === undefined) return [];
+  if (after === undefined || after.trim() === "") {
+    return [{ path, reason: "arquivo de teste foi removido/esvaziado", severity: "high" }];
+  }
+  if (before === after) return [];
+  const findings: TestWeakeningFinding[] = [];
+  const beforeAssertions = countMatches(before, ASSERTION_PATTERN);
+  const afterAssertions = countMatches(after, ASSERTION_PATTERN);
+  if (afterAssertions < beforeAssertions) {
+    findings.push({
+      path,
+      reason: `numero de assertions caiu de ${beforeAssertions} para ${afterAssertions}`,
+      severity: "high"
+    });
+  }
+  const beforeCases = countMatches(before, TEST_CASE_PATTERN);
+  const afterCases = countMatches(after, TEST_CASE_PATTERN);
+  if (afterCases < beforeCases) {
+    findings.push({
+      path,
+      reason: `numero de casos de teste caiu de ${beforeCases} para ${afterCases}`,
+      severity: "high"
+    });
+  }
+  const beforeSkips = countMatches(before, SKIP_ONLY_PATTERN);
+  const afterSkips = countMatches(after, SKIP_ONLY_PATTERN);
+  if (afterSkips > beforeSkips) {
+    findings.push({
+      path,
+      reason: `novo(s) skip/only/todo adicionado(s) ao teste (${beforeSkips} -> ${afterSkips})`,
+      severity: "medium"
+    });
+  }
+  return findings;
+}
+
+function countMatches(text: string, pattern: RegExp): number {
+  pattern.lastIndex = 0;
+  return text.match(pattern)?.length ?? 0;
+}

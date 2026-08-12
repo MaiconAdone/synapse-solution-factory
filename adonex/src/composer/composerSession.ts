@@ -14,9 +14,12 @@ import type {
 } from "../llm/types";
 import {
   buildComposerFiles,
+  refinementMentionsUnknownFile,
   selectedChanges,
   type ComposerProposalView
 } from "./composerModel";
+import { detectTestWeakening } from "./validationLoop";
+import { formatJudgeWarning } from "../agent/judgeAgent";
 
 export interface ComposerGenerateResult {
   view: ComposerProposalView;
@@ -111,22 +114,37 @@ export class ComposerSession {
       "",
       "Gere a proposta multi-arquivo consolidada considerando todos os ajustes."
     ].join("\n");
-    return this.runGeneration(combined, mode, signal, onProgress);
+    // Reaproveita o snapshot da geracao anterior (evita recoletar o
+    // workspace inteiro, incluindo reranking semantico via Ollama) quando o
+    // modo nao mudou e o ajuste nao parece citar um arquivo novo.
+    const reuseContext =
+      this.lastMode === mode &&
+      Boolean(this.lastSnapshot) &&
+      !refinementMentionsUnknownFile(safe, [
+        ...(this.lastSnapshot?.structure ?? []),
+        ...(this.lastSnapshot?.relevantFiles.map((file) => file.path) ?? [])
+      ]);
+    return this.runGeneration(combined, mode, signal, onProgress, { reuseContext });
   }
 
   private async runGeneration(
     task: string,
     mode: AgentMode,
     signal?: AbortSignal,
-    onProgress?: (text: string) => void
+    onProgress?: (text: string) => void,
+    options: { reuseContext?: boolean } = {}
   ): Promise<ComposerGenerateResult> {
     const previousSelection = new Set(this.selection);
-    onProgress?.("Planejando a mudanca multi-arquivo...");
-    const { plan, snapshot } = await this.orchestrator.createPlan(
-      task,
-      "implement",
-      mode
-    );
+    let plan: TaskPlan;
+    let snapshot: WorkspaceSnapshot;
+    if (options.reuseContext && this.lastPlan && this.lastSnapshot) {
+      onProgress?.("Reaproveitando o contexto da geracao anterior (sem reescanear o workspace)...");
+      plan = this.lastPlan;
+      snapshot = this.lastSnapshot;
+    } else {
+      onProgress?.("Planejando a mudanca multi-arquivo...");
+      ({ plan, snapshot } = await this.orchestrator.createPlan(task, "implement", mode));
+    }
     this.root = snapshot.root;
     this.lastMode = mode;
     this.lastPlan = plan;
@@ -213,6 +231,12 @@ export class ComposerSession {
     const files = buildComposerFiles(this.patch.changes, befores);
     // Correcao e minima por contrato: todos os arquivos entram selecionados.
     this.selection = new Set(files.map((file) => file.path));
+    const judgeWarnings = await this.judgeTestWeakening(
+      capturedFailure,
+      this.patch.changes,
+      befores,
+      signal
+    );
     return {
       view: {
         summary: execution.proposal.summary,
@@ -221,8 +245,43 @@ export class ComposerSession {
       },
       responseText: execution.response.text,
       model: `${execution.response.provider}/${execution.response.model}`,
-      ...(this.patch.warnings?.length ? { warnings: this.patch.warnings } : {})
+      ...(this.patch.warnings?.length || judgeWarnings.length
+        ? { warnings: [...(this.patch.warnings ?? []), ...judgeWarnings] }
+        : {})
     };
+  }
+
+  /**
+   * Metodo fable (fable-judge): checagem deterministica primeiro
+   * (`detectTestWeakening`, sem custo de LLM); so escala para o judge local
+   * (uma chamada extra ao modelo rapido) quando ela ja acusa algo suspeito
+   * num arquivo de teste tocado pela correcao.
+   */
+  private async judgeTestWeakening(
+    capturedFailure: string,
+    changes: readonly { path: string; content: string }[],
+    befores: Map<string, string | undefined>,
+    signal?: AbortSignal
+  ): Promise<string[]> {
+    const findings = changes.flatMap((change) =>
+      detectTestWeakening(change.path, befores.get(change.path), change.content)
+    );
+    if (!findings.length) return [];
+    const testPaths = new Set(findings.map((finding) => finding.path));
+    const testDiffs = changes
+      .filter((change) => testPaths.has(change.path))
+      .map((change) => ({ path: change.path, before: befores.get(change.path), after: change.content }));
+    const productionDiffs = changes
+      .filter((change) => !testPaths.has(change.path))
+      .map((change) => ({ path: change.path, before: befores.get(change.path), after: change.content }));
+    const verdict = await this.orchestrator.runTestWeakeningJudge(
+      capturedFailure,
+      testDiffs,
+      productionDiffs,
+      signal
+    );
+    if (verdict.verdict === "fixes_root_cause") return [];
+    return findings.map((finding) => formatJudgeWarning(finding, verdict));
   }
 
   public toggleFile(path: string, selected: boolean): void {

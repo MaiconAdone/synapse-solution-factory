@@ -24,6 +24,8 @@ import {
   ADONEX_PLANNING_STRONG_LOCAL_MODEL,
   ADONEX_REASONING_STRONG_LOCAL_MODEL,
   ADONEX_CODE_CRITICAL_LOCAL_MODEL,
+  ADONEX_LOCAL_MODEL_PROFILES,
+  escalateLocalModelProfile,
   type AdoneXAllowedLocalModel,
   type AdoneXLocalModelProfile,
   type LocalModelCallProfile,
@@ -40,7 +42,7 @@ import type {
   TaskPlan,
   WorkspaceSnapshot
 } from "../llm/types";
-import { actionPrompt, BASE_SYSTEM_PROMPT, STATIC_POLICY_PROMPT } from "./prompts";
+import { actionPrompt, BASE_SYSTEM_PROMPT, FABLE_METHOD_POLICY, STATIC_POLICY_PROMPT } from "./prompts";
 import {
   buildProposalRepairPrompt,
   parseProposalText,
@@ -57,6 +59,13 @@ import {
   type RouterDecision
 } from "./routerAgent";
 import { compilePrompt } from "./promptCompiler";
+import {
+  buildJudgeSystemPrompt,
+  buildJudgeUserPrompt,
+  JUDGE_JSON_SCHEMA,
+  parseJudgeVerdict,
+  type JudgeResult
+} from "./judgeAgent";
 import { specialistPrompts } from "./specialists";
 import { classifyTaskComplexity } from "./taskRouter";
 import { MemoryReader } from "../memory/memoryReader";
@@ -322,6 +331,7 @@ export class AgentOrchestrator {
     const systemPrompt = [
       BASE_SYSTEM_PROMPT,
       STATIC_POLICY_PROMPT,
+      FABLE_METHOD_POLICY,
       compiledPrompt.systemAddendum,
       synapseSystemContext(
         snapshot.synapseDetected,
@@ -680,6 +690,57 @@ export class AgentOrchestrator {
     return this.workspaceContext.collect(task);
   }
 
+  /**
+   * Judge adversarial (fable-judge): confirma com o modelo local rapido se
+   * uma correcao de teste ataca a causa raiz ou so enfraquece a checagem.
+   * So deve ser chamado quando `detectTestWeakening` (deterministico) ja
+   * sinalizou algo suspeito. Fail-closed: qualquer erro do modelo/timeout
+   * vira "uncertain" via `parseJudgeVerdict`, nunca libera a correcao em
+   * silencio.
+   */
+  public async runTestWeakeningJudge(
+    capturedFailure: string,
+    testDiffs: readonly { path: string; before?: string; after?: string }[],
+    productionDiffs: readonly { path: string; before?: string; after?: string }[],
+    signal?: AbortSignal
+  ): Promise<JudgeResult> {
+    const configuration = vscode.workspace.getConfiguration("adonex");
+    if (!configuration.get<boolean>("ollama.enabled", true)) {
+      return { verdict: "uncertain", reason: "Ollama desabilitado nas configuracoes do AdoneX" };
+    }
+    try {
+      const client = new OllamaClient({
+        baseUrl: normalizeOllamaBaseUrl(
+          configuration.get<string>("ollama.baseUrl", "http://127.0.0.1:11434")
+        ),
+        model: normalizeLocalModel(
+          configuration.get<string>("ollama.model", ADONEX_FAST_LOCAL_MODEL),
+          ADONEX_FAST_LOCAL_MODEL
+        ),
+        apiStyle: configuration.get<"chat" | "generate">("ollama.apiStyle", "chat"),
+        timeoutMs: Math.max(configuration.get<number>("synapse.router.timeoutSeconds", 20), 5) * 1_000,
+        keepAlive: configuration.get<string>("ollama.keepAlive", "10m"),
+        numCtx: 4_096,
+        temperature: 0,
+        maxRetries: 0
+      });
+      const response = await client.generate({
+        systemPrompt: buildJudgeSystemPrompt(),
+        userPrompt: buildJudgeUserPrompt(capturedFailure, testDiffs, productionDiffs),
+        maxOutputTokens: 220,
+        jsonMode: true,
+        jsonSchema: JUDGE_JSON_SCHEMA,
+        signal
+      });
+      return parseJudgeVerdict(response.text);
+    } catch (error) {
+      return {
+        verdict: "uncertain",
+        reason: `judge falhou: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
   private async tryGenerateWithSynapseGateway(
     request: {
       systemPrompt: string;
@@ -745,25 +806,34 @@ export class AgentOrchestrator {
     return commands.length ? commands : ["Review the project test configuration"];
   }
 
+  /**
+   * Escala um degrau na ladder de capacidade quando action === "fix": nesse
+   * orquestrador, "fix" so chega via proposeFix() (ComposerSession.repair()
+   * e AdoneXPanel.fixFromError()), ou seja, so em correcao apos falha de
+   * validacao — nunca uma acao pedida direto pelo usuario. Local models tem
+   * mais chance de acertar a correcao com mais capacidade do que repetindo o
+   * mesmo perfil que ja falhou.
+   */
   private selectOllamaProfile(
     action: AgentAction,
     task: string,
     configuration: vscode.WorkspaceConfiguration
   ): LocalModelCallProfile {
-    const profileModel = this.localModelProfileFromCodeProfile(
-      this.lastCodeModelProfile,
-      configuration
-    );
-    if (profileModel) return profileModel;
-    return this.applyConfiguredLocalModel(
-      selectLocalModelProfileForTask(
-      action,
-      task,
-      configuration.get<string>("ollama.model", ADONEX_FAST_LOCAL_MODEL),
-      configuration.get<string>("ollama.modelReasoning")
-      ),
-      configuration
-    );
+    const base =
+      this.localModelProfileFromCodeProfile(this.lastCodeModelProfile, configuration) ??
+      this.applyConfiguredLocalModel(
+        selectLocalModelProfileForTask(
+          action,
+          task,
+          configuration.get<string>("ollama.model", ADONEX_FAST_LOCAL_MODEL),
+          configuration.get<string>("ollama.modelReasoning")
+        ),
+        configuration
+      );
+    if (action !== "fix") return base;
+    const escalated = escalateLocalModelProfile(base.profile);
+    if (escalated === base.profile) return base;
+    return this.applyConfiguredLocalModel(ADONEX_LOCAL_MODEL_PROFILES[escalated], configuration);
   }
 
   private localModelProfileFromCodeProfile(

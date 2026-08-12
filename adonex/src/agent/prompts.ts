@@ -75,6 +75,22 @@ export const STATIC_POLICY_PROMPT = [
   "- Usar synapse-peers apenas para mensagens curtas locais entre sessoes ativas."
 ].join("\n");
 
+// Metodo fable (classificar -> definir pronto -> evidencia -> decidir -> agir
+// -> verificar -> reportar), adaptado do plugin fable-method (Sahir619,
+// MIT) como politica de prompt local. Bloco 100% estatico, concatenado apos
+// STATIC_POLICY_PROMPT para preservar o prefix cache do Ollama.
+export const FABLE_METHOD_POLICY = [
+  "Metodo fable (obrigatorio em toda tarefa de codigo):",
+  "- Classificar: identifique o tipo real da tarefa (bug, feature, duvida, validacao) antes de agir.",
+  "- Definir pronto: declare um criterio de pronto objetivo e verificavel (o que precisa ser verdade para a tarefa estar concluida) antes de escrever qualquer patch.",
+  "- Reunir evidencia: baseie a decisao apenas em arquivos do contexto, erro capturado e resultado de comando/diagnostic; nunca em suposicao.",
+  "- Decidir: escolha a menor mudanca segura que satisfaz o criterio de pronto.",
+  "- Agir: gere o patch minimo; nao toque codigo fora do escopo do criterio de pronto.",
+  "- Verificar: o criterio de pronto so e satisfeito por resultado real do host (comando, diagnostics), nunca pela propria alegacao do modelo.",
+  "- Reportar: o summary final deve citar a evidencia que sustenta a conclusao; se a evidencia nao sustentar 'pronto', diga isso explicitamente em vez de declarar sucesso.",
+  "- Especificamente em correcao de teste que falhou: corrija a causa raiz no codigo de producao; nunca enfraqueca, remova, comente ou marque como skip/only um assert ou teste so para o comando de validacao passar."
+].join("\n");
+
 export function actionPrompt(action: AgentAction): string {
   const prompts: Record<AgentAction, string> = {
     chat: "Responda a pergunta de engenharia em pt-BR com orientacao concreta baseada no repositorio.",
@@ -85,6 +101,7 @@ export function actionPrompt(action: AgentAction): string {
       "Prefira operations incrementais com anchors/expected unicos. Use changes com conteudo completo apenas para arquivo novo ou quando a edicao incremental nao for segura.",
       "Inclua comandos de validacao reais do repositorio; prefira testes focados antes de suites amplas.",
       "Nunca inclua comandos destrutivos, instalacoes oportunistas, secrets, .env ou alteracoes fora do escopo.",
+      "O summary deve comecar com uma linha 'Criterio de pronto: <condicao objetiva e verificavel>' antes do resumo da mudanca.",
       "Nao inclua explicacoes fora do JSON. Se nao houver mudanca segura, retorne changes vazio e explique no summary."
     ].join("\n"),
     review: "Revise corretude, seguranca, regressoes, riscos arquiteturais e testes ausentes. Responda em pt-BR e comece pelos achados.",
@@ -98,6 +115,8 @@ export function actionPrompt(action: AgentAction): string {
       "Use a menor correcao segura. Nunca inclua .env ou credenciais.",
       "Prefira operations incrementais com anchors unicos para preservar edicoes simultaneas do workspace.",
       "Preserve mudancas ja aplicadas e ajuste somente o necessario para resolver a falha capturada.",
+      "Corrija a causa raiz no codigo de producao; nunca enfraqueca, remova, comente ou marque como skip/only um assert ou teste so para o comando de validacao passar.",
+      "O summary deve comecar com uma linha 'Criterio de pronto: <condicao objetiva e verificavel>' antes da causa raiz e correcao.",
       "Nao inclua explicacoes fora do JSON. Se nao houver correcao segura, retorne changes vazio e explique no summary."
     ].join("\n"),
     commit: "Retorne um conventional commit conciso e, opcionalmente, um corpo curto em pt-BR.",

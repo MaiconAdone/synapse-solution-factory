@@ -151,6 +151,28 @@ export const ADONEX_LOCAL_MODEL_PROFILES: Record<
   }
 };
 
+// Ladder de escalada para a correcao (repair): um unico degrau acima do
+// perfil que ja falhou, com teto em code_critical/reasoning_strong. Local
+// models ganham mais com uma segunda tentativa MAIS capaz do que com uma
+// tentativa identica; um degrau evita saltar direto para 32b sem pedido
+// explicito do usuario.
+const PROFILE_ESCALATION: Partial<Record<AdoneXLocalModelProfile, AdoneXLocalModelProfile>> = {
+  fast: "balanced",
+  general: "balanced",
+  balanced: "code_strong",
+  code_review: "code_strong",
+  code_strong: "code_critical",
+  planning_strong: "reasoning_strong",
+  reasoning_strong: "code_critical"
+};
+
+/** Um degrau acima na ladder de capacidade; teto em code_critical/embeddings (no-op). */
+export function escalateLocalModelProfile(
+  profile: AdoneXLocalModelProfile
+): AdoneXLocalModelProfile {
+  return PROFILE_ESCALATION[profile] ?? profile;
+}
+
 export function isAllowedLocalModel(model: string): model is AdoneXAllowedLocalModel {
   return (ADONEX_ALLOWED_LOCAL_MODELS as readonly string[]).includes(model);
 }

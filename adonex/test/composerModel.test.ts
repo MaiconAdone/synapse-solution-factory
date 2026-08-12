@@ -4,6 +4,7 @@ import {
   buildComposerFiles,
   diffLineStats,
   inferChangeKind,
+  refinementMentionsUnknownFile,
   selectedChanges,
   summarizeProposalView
 } from "../src/composer/composerModel";
@@ -82,4 +83,42 @@ test("summarizeProposalView reports counts per change kind", () => {
     ]
   });
   assert.equal(summary, "1 novo(s) · 2 alterado(s)");
+});
+
+const knownPaths = ["src/agent/agentOrchestrator.ts", "src/composer/composerSession.ts"];
+
+test("refinementMentionsUnknownFile is false when the instruction has no file-like token", () => {
+  assert.equal(
+    refinementMentionsUnknownFile("deixa a mensagem mais curta e direta", knownPaths),
+    false
+  );
+});
+
+test("refinementMentionsUnknownFile is false when the mentioned file is already known", () => {
+  assert.equal(
+    refinementMentionsUnknownFile("ajusta tambem o agentOrchestrator.ts", knownPaths),
+    false
+  );
+  assert.equal(
+    refinementMentionsUnknownFile("atualiza src/composer/composerSession.ts", knownPaths),
+    false
+  );
+});
+
+test("refinementMentionsUnknownFile is true when the instruction cites a new file", () => {
+  assert.equal(
+    refinementMentionsUnknownFile("aplica a mesma mudanca em judgeAgent.ts", knownPaths),
+    true
+  );
+});
+
+test("refinementMentionsUnknownFile is case-insensitive and normalizes backslashes", () => {
+  assert.equal(
+    refinementMentionsUnknownFile("AJUSTA O AgentOrchestrator.TS", knownPaths),
+    false
+  );
+  assert.equal(
+    refinementMentionsUnknownFile("mexe em src\\composer\\composerSession.ts", knownPaths),
+    false
+  );
 });

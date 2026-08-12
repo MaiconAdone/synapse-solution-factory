@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildRepairInput,
+  detectTestWeakening,
   diffDiagnosticsErrors,
   formatDiagnosticsAsFailure,
   selectValidationCommands
@@ -92,4 +93,67 @@ test("formatDiagnosticsAsFailure caps the list and mentions the overflow", () =>
   assert.match(text, /12 erro\(s\) novo\(s\)/);
   assert.match(text, /mais 2 erro\(s\)/);
   assert.match(text, /a\.ts:1: e0/);
+});
+
+const originalTest = [
+  "test('adds', () => {",
+  "  assert.equal(add(1, 2), 3);",
+  "  assert.equal(add(2, 2), 4);",
+  "});"
+].join("\n");
+
+test("detectTestWeakening ignores non-test files", () => {
+  assert.deepEqual(detectTestWeakening("src/add.ts", "a", "b"), []);
+});
+
+test("detectTestWeakening ignores unchanged test files", () => {
+  assert.deepEqual(
+    detectTestWeakening("test/add.test.ts", originalTest, originalTest),
+    []
+  );
+});
+
+test("detectTestWeakening flags fewer assertions", () => {
+  const weakened = [
+    "test('adds', () => {",
+    "  assert.equal(add(1, 2), 3);",
+    "});"
+  ].join("\n");
+  const findings = detectTestWeakening("test/add.test.ts", originalTest, weakened);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].severity, "high");
+  assert.match(findings[0].reason, /assertions caiu de 2 para 1/);
+});
+
+test("detectTestWeakening flags fewer test cases", () => {
+  const twoCases = [
+    "test('adds', () => { assert.equal(add(1, 2), 3); });",
+    "test('subtracts', () => { assert.equal(sub(2, 1), 1); });"
+  ].join("\n");
+  const oneCase = "test('adds', () => { assert.equal(add(1, 2), 3); });";
+  const findings = detectTestWeakening("test/add.test.ts", twoCases, oneCase);
+  assert.ok(findings.some((finding) => /casos de teste caiu de 2 para 1/.test(finding.reason)));
+});
+
+test("detectTestWeakening flags new skip/only", () => {
+  const skipped = [
+    "test.skip('adds', () => {",
+    "  assert.equal(add(1, 2), 3);",
+    "  assert.equal(add(2, 2), 4);",
+    "});"
+  ].join("\n");
+  const findings = detectTestWeakening("test/add.test.ts", originalTest, skipped);
+  assert.ok(findings.some((finding) => finding.severity === "medium"));
+  assert.ok(findings.some((finding) => /skip\/only\/todo/.test(finding.reason)));
+});
+
+test("detectTestWeakening flags a deleted test file as high severity", () => {
+  const findings = detectTestWeakening("test/add.test.ts", originalTest, "");
+  assert.deepEqual(findings, [
+    { path: "test/add.test.ts", reason: "arquivo de teste foi removido/esvaziado", severity: "high" }
+  ]);
+});
+
+test("detectTestWeakening ignores brand new test files (no before)", () => {
+  assert.deepEqual(detectTestWeakening("test/add.test.ts", undefined, originalTest), []);
 });
