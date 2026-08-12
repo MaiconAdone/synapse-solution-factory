@@ -51,12 +51,12 @@ test("Synapse fallback analyzes the question when Ollama times out", () => {
 test("local chat timeout fallback is not rendered as user cancellation", () => {
   const text = createLocalChatFailureResponse(
     "qual o tempo medio de resposta do modelo local em uma solicitacao simples?",
-    "qwen2.5-coder:3b",
+    "qwen3-coder-14b-team",
     "request exceeded 120 seconds"
   );
 
   assert.match(text, /Ollama local nao concluiu a resposta/);
-  assert.match(text, /qwen2\.5-coder:3b/);
+  assert.match(text, /qwen3-coder-14b-team/);
   assert.match(text, /inventario-ou-roteamento-de-modelos/);
   assert.match(text, /pergunta-aberta/);
   assert.match(text, /nao tratou isso como cancelamento do usuario/);

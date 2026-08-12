@@ -292,7 +292,7 @@ function nextStepFor(intent: string, missingFields: string[]): string {
     return "Complete os campos faltantes no chat; depois o AdoneX deve consultar o BusinessSolutionAnalyzer antes de implementar.";
   }
   if (intent === "inventario-ou-roteamento-de-modelos") {
-    return "Repetir a pergunta com o perfil rapido `qwen2.5-coder:3b`, contexto menor e saida curta; escalar para 8B/14B apenas por pedido explicito.";
+    return "Repetir a pergunta com o perfil rapido `qwen3-coder-14b-team`, contexto menor e saida curta.";
   }
   if (intent === "implementacao-ou-correcao") {
     return "Transformar a solicitacao em tarefa governada para patch/testes, ou repetir com escopo menor para o Ollama local.";

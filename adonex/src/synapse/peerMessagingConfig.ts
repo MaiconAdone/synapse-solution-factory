@@ -45,7 +45,7 @@ export function buildSynapsePeersServer(
         ]
       ).join(","),
       SYNAPSE_PEER_MODEL_PROFILE:
-        options.modelProfile ?? "ollama:qwen2.5-coder:3b+qwen3:8b",
+        options.modelProfile ?? "ollama:qwen3-coder-14b-team",
       SYNAPSE_PEER_ACTIVE_AGENTS: String(options.activeAgents ?? 60),
       PEER_MESSAGING_DB_PATH:
         options.dbPath ?? "./artifacts/peers/synapse-peers.db",

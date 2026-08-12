@@ -67,7 +67,7 @@ import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
 import { VickLocalServiceClient } from "../voice/vickLocalService";
 import { OllamaClient } from "../llm/ollamaClient";
 import { normalizeOllamaBaseUrl } from "../llm/ollamaEndpoint";
-import { ADONEX_FAST_LOCAL_MODEL, selectLocalModelProfileForTask } from "../llm/localModels";
+import { ADONEX_FAST_LOCAL_MODEL, ADONEX_REASONING_LOCAL_MODEL, selectLocalModelProfileForTask } from "../llm/localModels";
 import { MEMORY_PATHS } from "../memory/memoryFiles";
 
 interface PendingTask {
@@ -698,7 +698,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     const profile = selectLocalModelProfileForTask(
       "chat", safePrompt,
       config.get<string>("ollama.fastModel", ADONEX_FAST_LOCAL_MODEL),
-      config.get<string>("ollama.reasoningModel", "deepseek-coder-v2:lite")
+      config.get<string>("ollama.reasoningModel", ADONEX_REASONING_LOCAL_MODEL)
     );
     const attachmentContext = await this.readAttachmentContext();
     const mentionContext = await this.readMentionContext(safePrompt);
@@ -1037,13 +1037,14 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
 
   private async answerLocalModelInventory(prompt: string, baseUrl: string): Promise<string | undefined> {
     const normalized = prompt.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-    if (!/(modelos? locais?|modelos? (?:do|no) adonex|modelos? (?:baixados|instalados|disponiveis))/.test(normalized)) return undefined;
+    if (!/(modelos? locais?|modelos? (?:do|no) adonex|modelos? (?:baixados|instalados|disponiveis)|conectado[a-z]* (?:a|ao|com|no) modelo|modelo[a-z]*.*conectado)/.test(normalized)) return undefined;
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/api/tags`, { signal: this.abortController?.signal });
-    if (!response.ok) throw new Error(`Nao foi possivel consultar o Ollama local (HTTP ${response.status}).`);
+    if (!response.ok) throw new Error(`Nao foi possivel consultar o Ollama em ${baseUrl} (HTTP ${response.status}).`);
     const payload = await response.json() as { models?: Array<{ name?: string; size?: number }> };
     const models = (payload.models ?? []).filter((item) => item.name).map((item) => ({ name: item.name!, size: item.size }));
-    if (!models.length) return "O Ollama esta acessivel, mas nao retornou nenhum modelo local instalado.";
-    return [`O Ollama retornou ${models.length} modelo(s) instalado(s) nesta maquina:`, "", ...models.map((item) => `- ${item.name}${item.size ? ` (${(item.size / 1_073_741_824).toFixed(1)} GB)` : ""}`), "", "Essa lista veio diretamente do Ollama (/api/tags), nao de uma suposicao do modelo."].join("\n");
+    const host = (() => { try { return new URL(baseUrl).host; } catch { return baseUrl; } })();
+    if (!models.length) return `O Ollama em ${host} esta acessivel, mas nao retornou nenhum modelo instalado.`;
+    return [`O Ollama em ${host} retornou ${models.length} modelo(s) instalado(s):`, "", ...models.map((item) => `- ${item.name}${item.size ? ` (${(item.size / 1_073_741_824).toFixed(1)} GB)` : ""}`), "", "Essa lista veio diretamente do Ollama (/api/tags) nesse host, nao de uma suposicao do modelo."].join("\n");
   }
 
   private rememberLocalChat(user: string, assistant: string): void {

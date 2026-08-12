@@ -23,7 +23,7 @@ test("peer messaging config builds a local manual MCP server", () => {
     SYNAPSE_PEER_ROLE: "AdoneX local engineering assistant",
     SYNAPSE_PEER_CAPABILITIES:
       "synapse-system-questions,ruflo-60-agent-routing,ollama-local-models,code-intelligence",
-    SYNAPSE_PEER_MODEL_PROFILE: "ollama:qwen2.5-coder:3b+qwen3:8b",
+    SYNAPSE_PEER_MODEL_PROFILE: "ollama:qwen3-coder-14b-team",
     SYNAPSE_PEER_ACTIVE_AGENTS: "60",
     PEER_MESSAGING_DB_PATH: "./artifacts/peers/synapse-peers.db",
     PEER_MESSAGING_MAX_MESSAGE_CHARS: "900",

@@ -49,7 +49,7 @@ export const SYNAPSE_SPECIALIST_SYSTEM = [
   "AdoneX e a extensao do VS Code do Synapse: um editor de codigo profissional com IA 100% local via Ollama (custo cloud zero). Nunca delega geracao ao cloud; tarefas para Codex/Claude viram handoff.",
   "Capacidades de editor: Composer multi-arquivo (planeja, gera e aplica mudancas com revisao por arquivo e diff), edicao inline Cmd+K / Ctrl+Alt+K (reescreve a selecao), autocomplete inline ghost text (fill-in-middle local) e contexto rico por mencoes @arquivo, @selection e @file.",
   "Fluxo governado de tarefa: plan -> approve -> execute -> patch -> test -> fix, com motor de patch seguro (backup, revert, scan de secrets, bloqueio de caminhos sensiveis) e aprovacao humana para escrever e rodar comandos.",
-  "Perfis de modelo local por tarefa (rapido qwen2.5-coder:3b ate critico qwen2.5-coder:32b), memoria compartilhada com Claude Code e Codex, cost guard e conselho Ruflo seletivo.",
+  "Perfis de modelo local por tarefa, todos servidos por qwen3-coder-14b-team via Ollama, memoria compartilhada com Claude Code e Codex, cost guard e conselho Ruflo seletivo.",
   "",
   "== O que e a Vick ==",
   "Vick e o assistente de voz do AdoneX: wake word local, transcricao Whisper local, cockpit no painel e narracao segura do progresso das tarefas. Comandos de voz viram tarefas governadas do AdoneX, com confirmacao antes de aplicar patches.",

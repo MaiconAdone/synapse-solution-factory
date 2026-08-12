@@ -372,113 +372,65 @@
         },
         "adonex.ollama.model": {
           "type": "string",
-          "default": "qwen2.5-coder:3b",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
-          "markdownDescription": "Modelo local rapido do AdoneX. No Synapse, use qwen2.5-coder:3b por padrao e escale via gateway/model router quando a tarefa exigir."
+          "markdownDescription": "Modelo local rapido do AdoneX. Padrao unificado do time: qwen3-coder-14b-team."
         },
         "adonex.ollama.modelReasoning": {
           "type": "string",
-          "default": "deepseek-coder-v2:lite",
-          "markdownDescription": "Modelo local usado para tarefas de maior raciocinio, como arquitetura, revisao, correcao e implementacao. Pode usar modelos maiores quando ja baixados no Ollama.",
+          "default": "qwen3-coder-14b-team",
+          "markdownDescription": "Modelo local usado para tarefas de maior raciocinio, como arquitetura, revisao, correcao e implementacao.",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ]
         },
         "adonex.ollama.modelGeneral": {
           "type": "string",
-          "default": "qwen3:8b",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
           "markdownDescription": "Modelo local para explicacoes, documentacao leve, perguntas gerais e sintese final."
         },
         "adonex.ollama.modelCodeReview": {
           "type": "string",
-          "default": "deepseek-coder-v2:lite",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
           "markdownDescription": "Modelo local para code review, bugs, stack traces, seguranca e reparos pequenos."
         },
         "adonex.ollama.modelCodeStrong": {
           "type": "string",
-          "default": "qwen2.5-coder:14b",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
           "markdownDescription": "Modelo local para implementacoes maiores, scripts, endpoints e integracoes."
         },
         "adonex.ollama.modelPlanningStrong": {
           "type": "string",
-          "default": "qwen3:14b",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
           "markdownDescription": "Modelo local para arquitetura, governanca, planejamento agentico e roadmap."
         },
         "adonex.ollama.modelReasoningStrong": {
           "type": "string",
-          "default": "deepseek-r1:14b",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
           "markdownDescription": "Modelo local para causa raiz, validacao logica e raciocinio dificil."
         },
         "adonex.ollama.modelCodeCritical": {
           "type": "string",
-          "default": "qwen2.5-coder:32b",
+          "default": "qwen3-coder-14b-team",
           "enum": [
-            "qwen2.5-coder:3b",
-            "qwen3:8b",
-            "deepseek-coder-v2:lite",
-            "qwen2.5-coder:14b",
-            "qwen3:14b",
-            "deepseek-r1:14b",
-            "qwen2.5-coder:32b"
+            "qwen3-coder-14b-team"
           ],
           "markdownDescription": "Modelo local mais forte para codigo critico, revisao final e refatoracoes de alto risco por pedido explicito."
         },
@@ -586,8 +538,8 @@
         },
         "adonex.inlineCompletion.model": {
           "type": "string",
-          "default": "qwen2.5-coder:3b",
-          "markdownDescription": "Modelo local de fill-in-middle para o autocomplete inline. Use um modelo rapido (3B) para latencia baixa em CPU."
+          "default": "qwen3-coder-14b-team",
+          "markdownDescription": "Modelo local de fill-in-middle para o autocomplete inline."
         },
         "adonex.inlineCompletion.debounceMs": {
           "type": "number",
@@ -631,7 +583,7 @@
         },
         "adonex.inlineEdit.model": {
           "type": "string",
-          "default": "deepseek-coder-v2:lite",
+          "default": "qwen3-coder-14b-team",
           "markdownDescription": "Modelo local usado na edicao inline (Cmd+K / Ctrl+Alt+K). Vazio usa adonex.ollama.modelReasoning."
         },
         "adonex.inlineEdit.maxTokens": {
@@ -818,8 +770,8 @@
         },
         "adonex.synapse.router.model": {
           "type": "string",
-          "default": "qwen2.5-coder:3b",
-          "markdownDescription": "Modelo local do sub-agent de roteamento. Use um modelo rapido (3B) para manter a latencia do passo de roteamento baixa."
+          "default": "qwen3-coder-14b-team",
+          "markdownDescription": "Modelo local do sub-agent de roteamento."
         },
         "adonex.synapse.router.maxTokens": {
           "type": "number",
