@@ -6,6 +6,7 @@ import { detectDatabaseProject, selectContextExcerpt } from "../context/workspac
 import {
   ADONEX_FAST_LOCAL_MODEL,
   ADONEX_REASONING_LOCAL_MODEL,
+  localFallbackModelForProfile,
   localProfileForName,
   type LocalModelCallProfile
 } from "../llm/localModels";
@@ -261,6 +262,10 @@ async function callOllama(
 ) {
   return new OllamaClient({
     baseUrl,
+    fallbackBaseUrl: normalizeOllamaBaseUrl(
+      configuration.get<string>("ollama.fallbackBaseUrl", "http://127.0.0.1:11434")
+    ),
+    fallbackModel: localFallbackModelForProfile(profile.profile),
     model: profile.model,
     apiStyle: configuration.get<"chat" | "generate">("ollama.apiStyle", "chat"),
     timeoutMs: configuration.get<number>("ollama.timeoutSeconds", 120) * 1000,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  advanceSolutionFactoryBriefing,
   checkSolutionFactoryDialog,
   parseChatInput,
   renderSolutionFactoryMissingInfo,
@@ -162,6 +163,53 @@ test("solution factory chat proceeds when briefing is complete", () => {
   const check = checkSolutionFactoryDialog(prompt, route);
   assert.equal(check.applies, true);
   assert.deepEqual(check.missingFields, []);
+});
+
+test("a lone briefing answer does not look like project creation on its own", () => {
+  // Regression guard: this is exactly why advanceSolutionFactoryBriefing needs
+  // an explicit "dialog is active" state instead of re-classifying each
+  // message in isolation.
+  const answerOnly =
+    "Qual o nivel de risco esperado: alto";
+  const route = routeChatCommand(undefined, answerOnly);
+  assert.equal(route.action, "chat");
+  const check = checkSolutionFactoryDialog(answerOnly, route);
+  assert.equal(check.applies, false);
+});
+
+test("advanceSolutionFactoryBriefing keeps the dialog alive across turns that don't repeat creation keywords", () => {
+  const turn1 = 'vamos criar um novo projeto "Churn_2027"';
+  const route1 = routeChatCommand(undefined, turn1);
+  const step1 = advanceSolutionFactoryBriefing(undefined, turn1, route1);
+  assert.equal(step1.check.applies, true);
+  assert.ok(step1.check.missingFields.length > 0);
+  assert.ok(step1.nextPendingBriefing);
+
+  // Turn 2 answers the questions but, read alone, has no creation keywords
+  // ("criar"/"novo projeto") and would default to the plain chat route.
+  const turn2 = [
+    "Qual problema de negocio essa solucao precisa resolver? Classificacao",
+    "Qual universo devemos usar: ML/DL/series temporais",
+    "Qual metrica de sucesso, KPI ou criterio de aceite define que funcionou? precision, recall, f1-score e AUC",
+    "Quais dados, documentos, bases ou fontes de conhecimento estao disponiveis? os dados vou inserir depois que o projeto for criado",
+    "Qual o nivel de risco esperado: alto, critico"
+  ].join("\n");
+  const route2 = routeChatCommand(undefined, turn2);
+  assert.equal(route2.action, "chat", "turn 2 alone must not look like a creation request");
+
+  const step2 = advanceSolutionFactoryBriefing(step1.nextPendingBriefing, turn2, route2);
+  assert.equal(step2.route.action, "synapse_agent", "dialog must force the creation route while active");
+  assert.equal(step2.check.applies, true);
+  assert.deepEqual(step2.check.missingFields, []);
+  assert.equal(step2.nextPendingBriefing, undefined);
+  assert.match(step2.briefingSource, /Churn_2027/);
+});
+
+test("advanceSolutionFactoryBriefing without prior state re-evaluates the message on its own", () => {
+  const answerOnly = "Qual o nivel de risco esperado: alto";
+  const step = advanceSolutionFactoryBriefing(undefined, answerOnly, routeChatCommand(undefined, answerOnly));
+  assert.equal(step.check.applies, false);
+  assert.equal(step.nextPendingBriefing, undefined);
 });
 
 test("natural language ML project creation follows the Vick solution factory flow", () => {

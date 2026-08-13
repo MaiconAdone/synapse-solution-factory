@@ -192,6 +192,40 @@ export function renderSolutionFactoryMissingInfo(
   ].join("\n");
 }
 
+export interface SolutionFactoryDialogStep {
+  route: ChatRoute;
+  briefingSource: string;
+  check: SolutionFactoryDialogCheck;
+  /** Proximo estado a persistir; `undefined` significa "dialogo encerrado (concluido, nao aplicavel, ou nunca comecou)". */
+  nextPendingBriefing: string[] | undefined;
+}
+
+/**
+ * Junta uma resposta do usuario ao briefing da Solution Factory ja em
+ * andamento (se houver) e decide se o dialogo continua pedindo campos ou se
+ * ja pode seguir para a criacao do projeto. Sem isso, uma resposta que so
+ * responde a pergunta (ex.: "alto" para o nivel de risco) nao repete
+ * palavras-chave de criacao, seria avaliada isolada do resto do dialogo e
+ * cairia de volta no chat generico em vez de continuar/concluir o briefing.
+ */
+export function advanceSolutionFactoryBriefing(
+  pendingBriefing: string[] | undefined,
+  resolvedPrompt: string,
+  route: ChatRoute
+): SolutionFactoryDialogStep {
+  const active = Boolean(pendingBriefing);
+  const effectiveRoute = active && !isCreationRoute(route) ? routeChatCommand("projeto") : route;
+  const briefingSource = active ? [...pendingBriefing!, resolvedPrompt].join("\n") : resolvedPrompt;
+  const check = checkSolutionFactoryDialog(briefingSource, effectiveRoute);
+  const nextPendingBriefing =
+    check.applies && check.missingFields.length
+      ? active
+        ? [...pendingBriefing!, resolvedPrompt]
+        : [resolvedPrompt]
+      : undefined;
+  return { route: effectiveRoute, briefingSource, check, nextPendingBriefing };
+}
+
 export function parseChatInput(
   command: string | undefined,
   prompt: string

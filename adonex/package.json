@@ -370,6 +370,11 @@
           "type": "string",
           "default": "http://127.0.0.1:11434"
         },
+        "adonex.ollama.fallbackBaseUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434",
+          "markdownDescription": "Host Ollama usado automaticamente quando `adonex.ollama.baseUrl` (ex.: o Mac mini do time) nao aceita conexao. Deixe igual a `adonex.ollama.baseUrl` ou vazio para desativar o fallback."
+        },
         "adonex.ollama.model": {
           "type": "string",
           "default": "qwen3-coder-14b-team",

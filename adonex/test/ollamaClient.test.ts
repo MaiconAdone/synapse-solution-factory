@@ -298,6 +298,92 @@ test("ollama client onChunk keeps a JSON line intact when it is split across chu
   assert.equal(result.text, "ola mundo");
 });
 
+test("ollama client falls back to the local host with a model actually installed there when the primary (e.g. Mac mini) refuses connections", async () => {
+  const calledEndpoints: string[] = [];
+  const requestedModels: string[] = [];
+  const events: string[] = [];
+  const cause = Object.assign(new Error("connect ETIMEDOUT 192.168.5.223:11434"), {
+    code: "ETIMEDOUT"
+  });
+  const client = new OllamaClient({
+    baseUrl: "http://192.168.5.223:11434",
+    fallbackBaseUrl: "http://127.0.0.1:11434",
+    model: "qwen3-coder-14b-team",
+    fallbackModel: "qwen2.5-coder:3b",
+    logger: (event) => events.push(event.type),
+    fetcher: async (input, init) => {
+      calledEndpoints.push(String(input));
+      const payload = JSON.parse(String(init?.body)) as { model: string };
+      requestedModels.push(payload.model);
+      if (String(input).startsWith("http://192.168.5.223")) {
+        throw new TypeError("fetch failed", { cause });
+      }
+      return new Response(
+        JSON.stringify({ model: payload.model, message: { content: "local machine response" } }),
+        { status: 200, headers: { "content-type": "application/json" } }
+      );
+    }
+  });
+  const result = await client.generate({ systemPrompt: "s", userPrompt: "u" });
+  assert.equal(result.text, "local machine response");
+  assert.deepEqual(calledEndpoints, [
+    "http://192.168.5.223:11434/api/chat",
+    "http://127.0.0.1:11434/api/chat"
+  ]);
+  assert.deepEqual(requestedModels, ["qwen3-coder-14b-team", "qwen2.5-coder:3b"]);
+  assert.ok(events.includes("failover"));
+});
+
+test("ollama client does not fail over on an HTTP error from a reachable primary host", async () => {
+  let fallbackCalled = false;
+  const client = new OllamaClient({
+    baseUrl: "http://192.168.5.223:11434",
+    fallbackBaseUrl: "http://127.0.0.1:11434",
+    model: "qwen-test",
+    fetcher: async (input) => {
+      if (String(input).startsWith("http://127.0.0.1")) fallbackCalled = true;
+      return new Response("model not found", { status: 404 });
+    }
+  });
+  await assert.rejects(
+    () => client.generate({ systemPrompt: "s", userPrompt: "u" }),
+    OllamaClientError
+  );
+  assert.equal(fallbackCalled, false);
+});
+
+test("ollama client does not fail over on a generation timeout (host is reachable, just slow)", async () => {
+  let fallbackCalled = false;
+  const client = new OllamaClient({
+    baseUrl: "http://192.168.5.223:11434",
+    fallbackBaseUrl: "http://127.0.0.1:11434",
+    model: "qwen-test",
+    fetcher: async (input) => {
+      if (String(input).startsWith("http://127.0.0.1")) fallbackCalled = true;
+      throw new Error("This operation was aborted");
+    }
+  });
+  await assert.rejects(
+    () => client.generate({ systemPrompt: "s", userPrompt: "u" }),
+    /request exceeded/
+  );
+  assert.equal(fallbackCalled, false);
+});
+
+test("ollama client does not fail over when no fallbackBaseUrl is configured", async () => {
+  const client = new OllamaClient({
+    baseUrl: "http://192.168.5.223:11434",
+    model: "qwen-test",
+    fetcher: async () => {
+      throw new Error("connection refused");
+    }
+  });
+  await assert.rejects(
+    () => client.generate({ systemPrompt: "s", userPrompt: "u" }),
+    OllamaClientError
+  );
+});
+
 test("ollama client passes jsonSchema as the format field", async () => {
   let payload: Record<string, unknown> = {};
   const schema = { type: "object", properties: { x: { type: "string" } } };

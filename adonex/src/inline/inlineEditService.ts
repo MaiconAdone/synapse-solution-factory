@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { OllamaClient } from "../llm/ollamaClient";
 import { normalizeOllamaBaseUrl } from "../llm/ollamaEndpoint";
-import { ADONEX_FAST_LOCAL_MODEL, normalizeLocalModel } from "../llm/localModels";
+import { ADONEX_FAST_LOCAL_MODEL, localFallbackModelForProfile, normalizeLocalModel } from "../llm/localModels";
 import { isSensitivePath, scanAndRedactSecrets } from "../security/secretScanner";
 import { extractCodeBlock } from "./codeExtraction";
 
@@ -92,6 +92,10 @@ export class InlineEditService {
           baseUrl: normalizeOllamaBaseUrl(
             config.get<string>("ollama.baseUrl", "http://127.0.0.1:11434")
           ),
+          fallbackBaseUrl: normalizeOllamaBaseUrl(
+            config.get<string>("ollama.fallbackBaseUrl", "http://127.0.0.1:11434")
+          ),
+          fallbackModel: localFallbackModelForProfile("balanced"),
           model,
           apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
           timeoutMs:

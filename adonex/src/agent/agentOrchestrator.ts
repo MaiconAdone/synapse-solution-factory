@@ -29,6 +29,7 @@ import {
   type AdoneXAllowedLocalModel,
   type AdoneXLocalModelProfile,
   type LocalModelCallProfile,
+  localFallbackModelForProfile,
   localProfileForName,
   normalizeLocalModel,
   outputBudgetForTask,
@@ -398,6 +399,8 @@ export class AgentOrchestrator {
           "ollama.baseUrl",
           "http://127.0.0.1:11434"
         )),
+        fallbackBaseUrl: this.ollamaFallbackBaseUrl(configuration),
+        fallbackModel: localFallbackModelForProfile(selectedProfile.profile),
         model: selectedModel,
         apiStyle: configuration.get<"chat" | "generate">(
           "ollama.apiStyle",
@@ -421,6 +424,8 @@ export class AgentOrchestrator {
             );
           } else if (event.type === "retry") {
             progress("Falha transitoria do Ollama; tentando de novo...");
+          } else if (event.type === "failover") {
+            progress("Mac mini indisponivel; tentando o modelo local desta maquina...");
           }
         },
         onToken: (tokens: number): void => {
@@ -713,6 +718,8 @@ export class AgentOrchestrator {
         baseUrl: normalizeOllamaBaseUrl(
           configuration.get<string>("ollama.baseUrl", "http://127.0.0.1:11434")
         ),
+        fallbackBaseUrl: this.ollamaFallbackBaseUrl(configuration),
+        fallbackModel: localFallbackModelForProfile("fast"),
         model: normalizeLocalModel(
           configuration.get<string>("ollama.model", ADONEX_FAST_LOCAL_MODEL),
           ADONEX_FAST_LOCAL_MODEL
@@ -898,6 +905,8 @@ export class AgentOrchestrator {
         "ollama.baseUrl",
         "http://127.0.0.1:11434"
       )),
+      fallbackBaseUrl: this.ollamaFallbackBaseUrl(configuration),
+      fallbackModel: localFallbackModelForProfile("fast"),
       model: fastModel,
       apiStyle: configuration.get<"chat" | "generate">("ollama.apiStyle", "chat"),
       timeoutMs: this.ollamaTimeoutMs(action, configuration),
@@ -1050,6 +1059,14 @@ export class AgentOrchestrator {
     }
   }
 
+  private ollamaFallbackBaseUrl(
+    configuration: vscode.WorkspaceConfiguration
+  ): string {
+    return normalizeOllamaBaseUrl(
+      configuration.get<string>("ollama.fallbackBaseUrl", "http://127.0.0.1:11434")
+    );
+  }
+
   private ollamaTimeoutMs(
     action: AgentAction,
     configuration: vscode.WorkspaceConfiguration
@@ -1141,6 +1158,8 @@ export class AgentOrchestrator {
         baseUrl: normalizeOllamaBaseUrl(
           configuration.get<string>("ollama.baseUrl", "http://127.0.0.1:11434")
         ),
+        fallbackBaseUrl: this.ollamaFallbackBaseUrl(configuration),
+        fallbackModel: localFallbackModelForProfile("fast"),
         model: normalizeLocalModel(
           configuration.get<string>("synapse.router.model"),
           ADONEX_FAST_LOCAL_MODEL

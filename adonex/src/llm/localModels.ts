@@ -30,6 +30,32 @@ export type AdoneXLocalModelProfile =
   | "code_critical"
   | "embeddings";
 
+/**
+ * Modelo local de fallback por papel, usado quando o host configurado (ex.:
+ * o Mac mini com qwen3-coder-14b-team) fica sem conexao. Sao os modelos que
+ * o time ja rodava localmente por papel antes da consolidacao no modelo de
+ * time (ver historico de ADONEX_*_LOCAL_MODEL) e que continuam instalados na
+ * maquina local (`ollama list`); o fallback nunca deve pedir
+ * qwen3-coder-14b-team a um host que so tem esses modelos.
+ */
+export const ADONEX_LOCAL_FALLBACK_MODELS: Record<AdoneXLocalModelProfile, string> = {
+  fast: "qwen2.5-coder:3b",
+  general: "qwen3:8b",
+  balanced: "deepseek-coder-v2:lite",
+  code_review: "deepseek-coder-v2:lite",
+  code_strong: "qwen2.5-coder:14b",
+  planning_strong: "qwen3:14b",
+  reasoning_strong: "deepseek-r1:14b",
+  code_critical: "qwen2.5-coder:32b",
+  embeddings: ADONEX_EMBEDDING_LOCAL_MODEL
+};
+
+export function localFallbackModelForProfile(
+  profile: AdoneXLocalModelProfile | undefined
+): string {
+  return ADONEX_LOCAL_FALLBACK_MODELS[profile ?? "fast"] ?? ADONEX_LOCAL_FALLBACK_MODELS.fast;
+}
+
 export interface LocalModelCallProfile {
   profile: AdoneXLocalModelProfile;
   model: AdoneXAllowedLocalModel;

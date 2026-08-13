@@ -15,7 +15,7 @@ export class OllamaClientError extends Error {}
 export class OllamaTruncatedResponseError extends OllamaClientError {}
 
 export interface OllamaClientEvent {
-  type: "request" | "first_token" | "retry" | "success" | "error";
+  type: "request" | "first_token" | "retry" | "success" | "error" | "failover";
   attempt: number;
   maxAttempts: number;
   endpoint: string;
@@ -28,6 +28,21 @@ export interface OllamaClientEvent {
 
 export interface OllamaClientOptions {
   baseUrl: string;
+  /**
+   * Host tentado quando `baseUrl` (ex.: o Mac mini do time) nao aceita
+   * conexao. So dispara para falhas de conectividade (host fora do ar, porta
+   * fechada, DNS) — nunca para timeout de geracao lenta ou erro HTTP de um
+   * host que respondeu. Ignorado se vazio ou igual a `baseUrl`.
+   */
+  fallbackBaseUrl?: string;
+  /**
+   * Modelo usado na chamada de fallback em vez de `model`/`request.model`.
+   * Necessario porque o host de fallback (maquina local) normalmente NAO tem
+   * o mesmo modelo do host principal (ex.: qwen3-coder-14b-team so existe no
+   * Mac mini) — sem isso o fallback so trocaria de host para falhar de novo
+   * com "model not found". Ignorado se vazio.
+   */
+  fallbackModel?: string;
   model: string;
   apiStyle?: "chat" | "generate";
   fetcher?: typeof fetch;
@@ -66,13 +81,51 @@ export class OllamaClient {
 
   public async generate(request: LlmRequest): Promise<LlmResponse> {
     const apiStyle = this.options.apiStyle ?? "chat";
-    const endpoint = `${this.options.baseUrl.replace(/\/$/, "")}/api/${apiStyle}`;
     const payload =
       apiStyle === "chat"
         ? this.createChatPayload(request)
         : this.createGeneratePayload(request);
-    const maxAttempts = (this.options.maxRetries ?? 0) + 1;
     const model = request.model ?? this.options.model;
+    try {
+      return await this.attemptHost(this.options.baseUrl, apiStyle, model, payload, request);
+    } catch (error) {
+      const fallbackBaseUrl = this.normalizedFallbackBaseUrl();
+      if (!fallbackBaseUrl || !isConnectivityError(error)) {
+        throw error;
+      }
+      const fallbackModel = this.options.fallbackModel?.trim() || model;
+      const fallbackPayload =
+        fallbackModel === model
+          ? payload
+          : { ...(payload as Record<string, unknown>), model: fallbackModel };
+      this.emitLog({
+        type: "failover",
+        attempt: 1,
+        maxAttempts: (this.options.maxRetries ?? 0) + 1,
+        endpoint: `${fallbackBaseUrl}/api/${apiStyle}`,
+        model: fallbackModel,
+        apiStyle,
+        detail: `${this.options.baseUrl} indisponivel (${errorDetail(error)}); usando fallback local ${fallbackBaseUrl} com ${fallbackModel}`
+      });
+      return await this.attemptHost(fallbackBaseUrl, apiStyle, fallbackModel, fallbackPayload, request);
+    }
+  }
+
+  private normalizedFallbackBaseUrl(): string | undefined {
+    const fallback = this.options.fallbackBaseUrl?.trim().replace(/\/$/, "");
+    const primary = this.options.baseUrl.trim().replace(/\/$/, "");
+    return fallback && fallback !== primary ? fallback : undefined;
+  }
+
+  private async attemptHost(
+    baseUrl: string,
+    apiStyle: "chat" | "generate",
+    model: string,
+    payload: object,
+    request: LlmRequest
+  ): Promise<LlmResponse> {
+    const endpoint = `${baseUrl.replace(/\/$/, "")}/api/${apiStyle}`;
+    const maxAttempts = (this.options.maxRetries ?? 0) + 1;
     const startedAt = Date.now();
     let lastError: unknown;
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -163,7 +216,7 @@ export class OllamaClient {
           throw error;
         }
         throw new OllamaClientError(
-          `Ollama request failed at ${this.options.baseUrl} using model ${model}: ${detail}`
+          `Ollama request failed at ${baseUrl} using model ${model}: ${detail}`
         );
       }
     }
@@ -620,4 +673,25 @@ function errorDetail(error: unknown): string {
 function isRetryableError(error: unknown): boolean {
   const message = error instanceof Error ? errorDetail(error) : String(error);
   return !/\b(abort(?:ed)?|not found|model not found|invalid|bad request)\b/i.test(message);
+}
+
+const CONNECTIVITY_ERROR_CODES =
+  /\b(ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EHOSTUNREACH|ENETUNREACH|ECONNRESET|EAI_AGAIN)\b/;
+
+/**
+ * So dispara o fallback para host local quando o host configurado (ex.: o
+ * Mac mini do time) nunca respondeu — recusou conexao, caiu no timeout de
+ * conexao do SO, ou o DNS/rota falhou. Timeout de geracao lenta (abort do
+ * nosso proprio controller) e erro HTTP de um host que respondeu (ex.: model
+ * not found) significam que o host esta de pe, entao nao trocam de host.
+ */
+function isConnectivityError(error: unknown): boolean {
+  if (error instanceof OllamaTruncatedResponseError) return false;
+  if (!(error instanceof Error)) return false;
+  if (/^Ollama rejected the request/.test(error.message)) return false;
+  if (CONNECTIVITY_ERROR_CODES.test(error.message)) return true;
+  if (/request exceeded \d+ seconds/i.test(error.message) || /\babort(?:ed)?\b/i.test(error.message)) {
+    return false;
+  }
+  return /fetch failed/i.test(error.message);
 }

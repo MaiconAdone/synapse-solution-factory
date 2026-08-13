@@ -40,7 +40,7 @@ import {
 import { TaskStore } from "../tasks/taskStore";
 import { normalizeConfiguredAgentMode, resolveAgentMode } from "../chat/agentModeSelector";
 import {
-  checkSolutionFactoryDialog,
+  advanceSolutionFactoryBriefing,
   renderSolutionFactoryMissingInfo,
   resolveChatPrompt,
   routeChatCommand,
@@ -52,6 +52,13 @@ import {
   looksLikeDatabaseQuestion,
   renderSpecialistProposal
 } from "../chat/databaseSpecialist";
+import {
+  buildSolutionBriefing,
+  createSolutionProject,
+  hasSolutionFactory,
+  isBriefingCancellation,
+  renderProjectCreated
+} from "../chat/solutionFactory";
 import { createLocalChatFailureResponse } from "../chat/fallbackResponse";
 import {
   buildLocalChatContext,
@@ -67,7 +74,7 @@ import { VickVoiceSession, type VickVoiceState } from "../voice/vickVoice";
 import { VickLocalServiceClient } from "../voice/vickLocalService";
 import { OllamaClient } from "../llm/ollamaClient";
 import { normalizeOllamaBaseUrl } from "../llm/ollamaEndpoint";
-import { ADONEX_FAST_LOCAL_MODEL, ADONEX_REASONING_LOCAL_MODEL, selectLocalModelProfileForTask } from "../llm/localModels";
+import { ADONEX_FAST_LOCAL_MODEL, ADONEX_REASONING_LOCAL_MODEL, localFallbackModelForProfile, selectLocalModelProfileForTask } from "../llm/localModels";
 import { MEMORY_PATHS } from "../memory/memoryFiles";
 
 interface PendingTask {
@@ -94,6 +101,14 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   private abortController?: AbortController;
   private selectedAttachments: vscode.Uri[] = [];
   private readonly localChatHistory: Array<{ role: "user" | "assistant"; text: string }> = [];
+  /**
+   * Turnos do usuario acumulados enquanto um briefing da Solution Factory
+   * esta em andamento. Sem isso, cada resposta do usuario as perguntas do
+   * briefing (ex.: so "alto" para o nivel de risco) e avaliada isolada na
+   * proxima mensagem, sem o texto que a contextualiza, e o dialogo cai no
+   * chat generico em vez de continuar/criar o projeto.
+   */
+  private pendingSolutionFactoryBriefing?: string[];
   private applyMode: "prepare" | "apply" = "prepare";
   private readonly orchestrator: AgentOrchestrator;
   private readonly workspaceScanner = new WorkspaceContext();
@@ -289,6 +304,7 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
         this.postAttachmentState();
       } else if (message.type === "clearHistory") {
         this.localChatHistory.length = 0;
+        this.pendingSolutionFactoryBriefing = undefined;
       } else if (message.type === "openSharedMemory") {
         await this.openSharedMemory();
       } else if (message.type === "resumeSharedTask" && message.task) {
@@ -652,15 +668,58 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
   }
 
   private async handleUnifiedRequest(prompt: string, requestedMode?: AgentMode): Promise<void> {
-    const route = routeChatCommand(undefined, prompt);
-    const resolved = resolveChatPrompt(prompt, route);
+    const initialRoute = routeChatCommand(undefined, prompt);
+    const resolved = resolveChatPrompt(prompt, initialRoute);
     if (!resolved) return;
-    const solutionFactory = checkSolutionFactoryDialog(resolved, route);
+
+    if (this.pendingSolutionFactoryBriefing && isBriefingCancellation(resolved)) {
+      this.pendingSolutionFactoryBriefing = undefined;
+      const response = "Briefing cancelado. Nenhum projeto foi criado.";
+      this.rememberLocalChat(resolved, response);
+      this.post({ type: "chatResponse", text: response, provider: "adonex", model: "solution-factory" });
+      return;
+    }
+    const step = advanceSolutionFactoryBriefing(
+      this.pendingSolutionFactoryBriefing,
+      resolved,
+      initialRoute
+    );
+    const route = step.route;
+    const briefingSource = step.briefingSource;
+    const solutionFactory = step.check;
     if (solutionFactory.applies) {
+      this.pendingSolutionFactoryBriefing = step.nextPendingBriefing;
       if (solutionFactory.missingFields.length) {
         const response = renderSolutionFactoryMissingInfo(solutionFactory);
         this.rememberLocalChat(resolved, response);
         this.post({ type: "chatResponse", text: response, provider: "adonex", model: "solution-factory" });
+        return;
+      }
+      const workspaceRoot =
+        this.composer.getRoot() ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (workspaceRoot && (await hasSolutionFactory(workspaceRoot))) {
+        try {
+          this.postStep("Executando a Solution Factory do Synapse...");
+          const briefing = buildSolutionBriefing(briefingSource);
+          const created = await createSolutionProject({
+            workspaceRoot,
+            briefing,
+            onProgress: (message) => this.postStep(message)
+          });
+          this.pendingSolutionFactoryBriefing = undefined;
+          const response = renderProjectCreated(created);
+          this.rememberLocalChat(resolved, response);
+          this.post({ type: "chatResponse", text: response, provider: "adonex", model: "solution-factory" });
+        } catch (error) {
+          // Mantem o briefing pendente: a proxima mensagem (ex.: "tente
+          // novamente") reencontra os mesmos campos completos e tenta criar
+          // de novo, sem obrigar o usuario a repetir todo o Q&A.
+          this.pendingSolutionFactoryBriefing = briefingSource.split("\n");
+          const message = error instanceof Error ? error.message : String(error);
+          const response = `Briefing completo, mas a criacao do projeto falhou: ${message}\n\nDiga "tente novamente" para repetir com o mesmo briefing ou "cancelar" para encerrar.`;
+          this.rememberLocalChat(resolved, response);
+          this.post({ type: "chatResponse", text: response, provider: "adonex", model: "solution-factory" });
+        }
         return;
       }
       await this.createPlan(resolved, route.action, "synapse");
@@ -754,6 +813,10 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
     try {
       response = await new OllamaClient({
         baseUrl,
+        fallbackBaseUrl: normalizeOllamaBaseUrl(
+          config.get<string>("ollama.fallbackBaseUrl", "http://127.0.0.1:11434")
+        ),
+        fallbackModel: localFallbackModelForProfile(profile.profile),
         model,
         apiStyle: config.get<"chat" | "generate">("ollama.apiStyle", "chat"),
         timeoutMs: timeoutSeconds * 1000,
@@ -769,6 +832,8 @@ export class AdoneXPanel implements vscode.WebviewViewProvider {
             this.postStep(
               `Primeiro token apos ${Math.round((event.durationMs ?? 0) / 1000)}s; escrevendo...`
             );
+          } else if (event.type === "failover") {
+            this.postStep("Mac mini indisponivel; tentando o modelo local desta maquina...");
           }
         },
         onToken: (tokens) => {

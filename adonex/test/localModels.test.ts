@@ -3,14 +3,18 @@ import test from "node:test";
 import {
   ADONEX_ALLOWED_LOCAL_MODELS,
   ADONEX_FAST_LOCAL_MODEL,
+  ADONEX_LOCAL_FALLBACK_MODELS,
   ADONEX_LOCAL_MODEL_PROFILES,
   ADONEX_REASONING_LOCAL_MODEL,
+  ADONEX_TEAM_LOCAL_MODEL,
   escalateLocalModelProfile,
+  localFallbackModelForProfile,
   localProfileForName,
   normalizeLocalModel,
   outputBudgetForTask,
   selectLocalModelForTask,
-  selectLocalModelProfileForTask
+  selectLocalModelProfileForTask,
+  type AdoneXLocalModelProfile
 } from "../src/llm/localModels";
 
 test("AdoneX only allows the Synapse-approved local Ollama models", () => {
@@ -45,6 +49,30 @@ test("local model profiles connect every installed Synapse Ollama role", () => {
   assert.equal(ADONEX_LOCAL_MODEL_PROFILES.code_critical.model, "qwen3-coder-14b-team");
   assert.equal(ADONEX_LOCAL_MODEL_PROFILES.embeddings.model, "nomic-embed-text:latest");
   assert.equal(ADONEX_LOCAL_MODEL_PROFILES.embeddings.generation, false);
+});
+
+test("local fallback models never point at the Mac mini team model", () => {
+  const profiles = Object.keys(ADONEX_LOCAL_MODEL_PROFILES) as AdoneXLocalModelProfile[];
+  for (const profile of profiles) {
+    if (profile === "embeddings") continue;
+    assert.notEqual(
+      ADONEX_LOCAL_FALLBACK_MODELS[profile],
+      ADONEX_TEAM_LOCAL_MODEL,
+      `fallback for "${profile}" must be a model actually installed on the local machine, not the team host's model`
+    );
+  }
+});
+
+test("localFallbackModelForProfile matches the models the team already has installed locally", () => {
+  assert.equal(localFallbackModelForProfile("fast"), "qwen2.5-coder:3b");
+  assert.equal(localFallbackModelForProfile("general"), "qwen3:8b");
+  assert.equal(localFallbackModelForProfile("balanced"), "deepseek-coder-v2:lite");
+  assert.equal(localFallbackModelForProfile("code_strong"), "qwen2.5-coder:14b");
+  assert.equal(localFallbackModelForProfile("planning_strong"), "qwen3:14b");
+  assert.equal(localFallbackModelForProfile("reasoning_strong"), "deepseek-r1:14b");
+  assert.equal(localFallbackModelForProfile("code_critical"), "qwen2.5-coder:32b");
+  assert.equal(localFallbackModelForProfile("embeddings"), "nomic-embed-text:latest");
+  assert.equal(localFallbackModelForProfile(undefined), "qwen2.5-coder:3b");
 });
 
 test("local model selector keeps routine work on the fast local model", () => {
