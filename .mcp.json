@@ -35,7 +35,7 @@
 
         "OPENAI_API_KEY": "${env:OPENAI_API_KEY}"
       },
-      "autoStart": false
+      "autoStart": true
     },
     "synapse-peers": {
       "command": "python",

@@ -65,6 +65,22 @@ Conceptual reference without copied text:
 - Monitoring and drift plans.
 - Release workflows.
 
+Conceptual reference without copied text:
+
+- *Introduction to Machine Learning Systems*, by Vijay Janapa Reddi
+  (mlsysbook.ai): the full ML systems lifecycle — data pipelines, training
+  infrastructure, deployment, monitoring, and operational tradeoffs at scale.
+
+SYNAPSE application:
+
+- Tie model cards and drift plans to the observability practices already
+  required for agent fleets in `docs/runbooks/agent_sre.md`.
+- Reuse the same release-workflow discipline (checklists, rollback) for ML
+  model releases that `docs/checklists/agent_fleet_certification.md` already
+  requires for agent fleets, instead of inventing a second process.
+- Record data contracts alongside `config/business_solution_analysis.json` so
+  ML and agentic projects share one contract format.
+
 ## Foundations of Machine Learning
 
 - Map experience, task, and performance measure before choosing a model.
@@ -147,6 +163,66 @@ SYNAPSE application:
 - Use `config/agentic_architectural_patterns.json` as the reusable pattern
   catalog for orchestrator-specialist routing, critic gates, A2A messages,
   tool gateways, model routers, shared memory retrieval and lifecycle callbacks.
+
+## Multi-Agent Coordination
+
+- Treat agent coordination as an explicit protocol: who observes what, who
+  decides, how credit is assigned when several agents contribute to one
+  outcome.
+- Separate the learning/shared-signal layer from the per-agent runtime
+  execution layer instead of mixing them.
+- Make inter-agent communication explicit and budgeted, not implicit shared
+  state.
+- Coordination topology (mesh, hierarchical, star, decentralized) is a
+  deliberate per-task choice, not a default.
+
+Conceptual reference without copied text:
+
+- *Multi-Agent Reinforcement Learning*, by Albrecht, Christianos, and
+  Schäfer: cooperative and competitive multi-agent formulations, credit
+  assignment, coordination protocols, and centralized-training/decentralized-
+  execution boundaries.
+
+SYNAPSE application:
+
+- Fleets in `config/agent_fleets.json` should declare their coordination
+  topology and communication budget explicitly, instead of assuming full
+  mesh by default — mirrors the existing one-agent-first rule under
+  `Agentic Coding` above.
+- Record which coordination pattern a fleet uses (hierarchical-mesh, star,
+  decentralized) and why in `config/agentic_architectural_patterns.json`,
+  alongside the orchestrator-specialist patterns already documented there.
+- Multi-agent outcome credit belongs in `config/agent_improvement_loop.json`
+  per contributing agent, not folded into one aggregate score.
+
+## Reinforcement Learning Foundations
+
+- Define state, action, reward, and policy explicitly before calling any
+  adaptive behavior "learning."
+- Prefer off-policy evaluation on logged data before letting a policy change
+  live behavior.
+- Value/confidence estimates should decay without fresh evidence — a stale
+  reward signal should not keep steering behavior.
+- Exploration must be bounded and reversible in production; no unbounded
+  exploration against real users or external systems.
+
+Conceptual reference without copied text:
+
+- *Reinforcement Learning: An Introduction*, by Sutton and Barto: Markov
+  decision processes, value functions, policy evaluation/improvement, and the
+  exploration-exploitation tradeoff.
+
+SYNAPSE application:
+
+- Ruflo's `autopilot_learn`, `daa_agent_adapt`, and `neural_train` tools
+  should log the state/action/reward they act on so behavior changes stay
+  auditable instead of opaque.
+- Route policy changes from these tools through the same eval-before-
+  promotion gate as prompts and models (see `AI Engineering` above) — no
+  adaptive behavior change ships without eval evidence.
+- Keep exploration (e.g. `daa_cognitive_pattern` switching) scoped to
+  non-production or simulated runs until a human approves live use,
+  consistent with the risk escalation in `config/agent_trust_framework.json`.
 
 ## Cybernetic Feedback and Adaptive Control
 
