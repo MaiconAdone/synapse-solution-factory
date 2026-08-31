@@ -32,6 +32,7 @@ dist/
 build/
 .cache/
 .swarm/
+.claude-flow/
 .adonex/tasks/
 .adonex/index/
 .adonex-backup/
@@ -67,7 +68,7 @@ data/redis/*
 models/*
 !models/.gitkeep
 
-# Dependências Node.js
+# Dependï¿½ncias Node.js
 node_modules/
 **/node_modules/
 
