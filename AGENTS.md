@@ -3,7 +3,6 @@
 - Codex usa o modelo OpenAI configurado diretamente para analisar, editar e revisar codigo.
 - Codex nunca chama Ollama, `ask_ollama` ou o MCP `SYNAPSE_ollama`.
 - Claude Code usa Anthropic diretamente e nunca chama Ollama.
-- Ollama e o provedor exclusivo do AdoneX.
 - Use `execute_governed_swarm` com `allow_cloud=false` para fluxos Ruflo.
 - Cloud exige pedido explicito do usuario e aprovacao humana.
 - Comece com um agente; escale somente quando o problema exigir outros dominios.
@@ -14,9 +13,8 @@
   output, artifacts, .claude-flow ou memoria completa sem necessidade direta.
 - Use Ruflo como artefato/roteador local; nao replique o raciocinio de 60 agentes dentro
   do prompt do Codex.
-- Compartilhe memoria entre VS Code Chat, Codex, Claude Code e AdoneX por
-  `.adonex/memory/SHARED_DIALOG_MEMORY.md`, `.adonex/memory/CHAT_TASKS.md` e
-  pelo MCP local `synapse-peers`.
+- Compartilhe memoria entre VS Code Chat, Codex e Claude Code pelo MCP local
+  `synapse-peers`.
 - Antes de pedir contexto novamente ao usuario, consulte a memoria compartilhada
   e mensagens pendentes dos peers locais.
 - Para tarefas simples, use no maximo 1 arquivo principal + testes relacionados.
@@ -40,14 +38,14 @@
   analise.
 - A caixa de dialogo e o caminho principal. Tasks do VS Code sao atalhos
   opcionais, nao requisito para criar ou implementar projeto.
-- No VS Code, use a conversa do Codex, Claude Code ou `@adonex /projeto`
-  para iniciar projetos. O assistente deve perguntar no proprio chat qualquer
-  informacao faltante; nao exigir navegador ou task para completar briefing.
+- No VS Code, use a conversa do Codex ou Claude Code para iniciar projetos.
+  O assistente deve perguntar no proprio chat qualquer informacao faltante;
+  nao exigir navegador ou task para completar briefing.
 - Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat,
-  AdoneX, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes,
+  Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes,
   aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses
   chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os quatro canais devem acessar a mesma Solution Factory do Synapse:
+- Todos os canais devem acessar a mesma Solution Factory do Synapse:
   memoria compartilhada, `config/llm_solution_factory_policy.json`,
   `config/ai_framework_selection.json`, analisador de solucoes, governanca,
   testes e evals.
@@ -56,5 +54,5 @@
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso,
   dados/fontes disponiveis ou nivel de risco, pergunte ao usuario pela conversa
   antes de implementar. Nao invente essas informacoes.
-- Respeitar os provedores fixos: Codex/OpenAI, Claude Code/Anthropic e AdoneX/Ollama.
+- Respeitar os provedores fixos: Codex/OpenAI e Claude Code/Anthropic.
 - Edicoes e comandos continuam sujeitos a aprovacao humana conforme o risco.

@@ -175,14 +175,11 @@
     "namespace": "synapse-ai",
     "persist_on_create": true,
     "runtime_file": "memory/project_memory.runtime.json",
-    "shared_dialog_memory": ".adonex/memory/SHARED_DIALOG_MEMORY.md",
-    "chat_tasks": ".adonex/memory/CHAT_TASKS.md",
     "peer_messaging_server": "synapse-peers",
     "shared_by": [
       "vscode-chat",
       "codex",
-      "claude-code",
-      "adonex"
+      "claude-code"
     ],
     "backend": "hybrid",
     "tiers": [
@@ -205,7 +202,6 @@
     "enabled": true,
     "authorized_user_request_channels": [
       "VS Code Chat",
-      "AdoneX",
       "Claude Code",
       "Codex"
     ],
@@ -219,8 +215,6 @@
       "technology_layer": "docs/specifications/technology_layer.md",
       "ml_foundations_policy": "config/ml_foundations_policy.json",
       "ml_foundations_spec": "docs/specifications/ml_foundations.md",
-      "shared_dialog_memory": ".adonex/memory/SHARED_DIALOG_MEMORY.md",
-      "chat_tasks": ".adonex/memory/CHAT_TASKS.md",
       "peer_mailbox": "synapse-peers",
       "tests": "tests",
       "evals": "evals"
@@ -392,10 +386,6 @@
       "scripts/analyze_business_solution.py",
       "scripts/test_local_llm.py",
       "scripts/synapse_ollama_mcp.py",
-      ".adonex/memory/AGENT_CONTEXT.md",
-      ".adonex/memory/CURRENT_STATE.md",
-      ".adonex/memory/SHARED_DIALOG_MEMORY.md",
-      ".adonex/memory/CHAT_TASKS.md",
       "agents/definitions/business_transformation_agents.yaml",
       "config/workflows/ruflo/business-transformation.json",
       "docs/AGENTIC_AI_TRANSFORMATION.md",
@@ -415,11 +405,6 @@
       "provider": "anthropic",
       "direct_generation": true,
       "ollama_allowed": false
-    },
-    "adonex": {
-      "provider": "ollama",
-      "exclusive": true,
-      "cloud_allowed": false
     }
   }
 }

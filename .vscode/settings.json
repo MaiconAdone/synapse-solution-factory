@@ -8,17 +8,7 @@
   "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
   "terminal.integrated.defaultProfile.windows": "PowerShell",
   "powershell.scriptAnalysis.enable": true,
-  "task.allowAutomaticTasks": "on",
-  "adonex.voice.startWithVSCode": true,
-  "adonex.voice.autoOpenCockpit": true,
-  "adonex.voice.wakeWord": "Vick",
-  "adonex.voice.engine": "local_service",
-  "adonex.voice.localServiceUrl": "http://127.0.0.1:8765",
-  "adonex.patch.applyMode": "prepare",
-  "adonex.voice.requireConfirmationForPatch": true,
-  "adonex.security.requireApprovalBeforeWrite": true,
-  "adonex.security.requireApprovalBeforeCommand": true,
-  "adonex.synapse.autonomous": false
+  "task.allowAutomaticTasks": "on"
 }
 
 

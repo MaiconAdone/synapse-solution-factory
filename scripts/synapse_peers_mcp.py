@@ -40,9 +40,9 @@ mcp = FastMCP(
     "synapse-peers",
     instructions=(
         "Use these local peer tools to coordinate Codex, Claude, Ruflo, and human "
-        "operator sessions while reducing repeated context. AdoneX should register "
-        "as peer_type=adonex and route Synapse system questions through Ruflo/Ollama "
-        "local-first. Prefer list_peers and short summaries before requesting details. "
+        "operator sessions while reducing repeated context. Route Synapse system "
+        "questions through Ruflo/Ollama local-first. Prefer list_peers and short "
+        "summaries before requesting details. "
         "Do not send secrets or large file contents. All messages stay local in SQLite."
     ),
 )
@@ -195,7 +195,7 @@ def route_to_ruflo_agents(objective: str, required_agents_csv: str = "", max_age
         )
         return {
             "ok": True,
-            "route": "adonex-ruflo-local",
+            "route": "ruflo-local",
             "provider": "ollama",
             "cloud_used": False,
             "max_agents": 60,

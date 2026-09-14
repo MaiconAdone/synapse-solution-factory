@@ -62,7 +62,7 @@
     {
       "id": "a2a-message-contract",
       "name": "Agent To Agent Message Contract",
-      "intent": "Exchange short structured messages between Codex, Claude, AdoneX, Ruflo and humans.",
+      "intent": "Exchange short structured messages between Codex, Claude, Ruflo and humans.",
       "use_when": [
         "another assistant already has useful context",
         "token cost can be reduced by sharing summaries",

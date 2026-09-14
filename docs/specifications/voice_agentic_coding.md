@@ -2,8 +2,8 @@
 
 ## Objetivo
 
-Transformar Vick e AdoneX em uma interface de voz para engenharia de software
-com ativacao previsivel, transcricao de termos tecnicos, contexto de repositorio,
+Construir uma interface de voz para engenharia de software com ativacao
+previsivel, transcricao de termos tecnicos, contexto de repositorio,
 ferramentas governadas, validacao e rollback.
 
 ## Metas De Release
@@ -71,16 +71,15 @@ registrados antes de declarar conformidade.
 ## Validacao
 
 - `config/voice_agent_quality_gates.json` define os limites.
-- `evals/voice_agent_cases.jsonl` cobre wake, termos tecnicos e ambiguidade.
 - `evals/agentic_coding_cases.jsonl` cobre patch, testes, aprovacao e rollback.
 - testes deterministas validam roteamento e contratos; evals medem comportamento.
 
 ## Narracao Segura De Progresso
 
-- A Vick confirma o recebimento e inicia a fala em ate 3 segundos.
+- O assistente de voz confirma o recebimento e inicia a fala em ate 3 segundos.
 - Confianca ASR abaixo de 0,6 exige aviso falado; transcricao apenas interina e
   fala sem comando recuperavel tambem geram esclarecimento por voz.
-- Codex, Claude Code e AdoneX sao observados somente por eventos estruturados
+- Codex e Claude Code sao observados somente por eventos estruturados
   locais. A interface traduz esses eventos para estados fixos: inicio, analise,
   leitura, edicao, validacao, espera, conclusao ou interrupcao.
 - Texto livre, raciocinio, argumentos de ferramenta, comandos, caminhos, prompts,

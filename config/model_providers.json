@@ -138,11 +138,6 @@
       "provider": "anthropic",
       "direct_generation": true,
       "ollama_allowed": false
-    },
-    "adonex": {
-      "provider": "ollama",
-      "exclusive": true,
-      "cloud_allowed": false
     }
   }
 }

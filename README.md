@@ -1,7 +1,7 @@
 ﻿# synapse-solution-factory
 
-Enterprise AI/ML solution factory with Ruflo as the multi-agent core and four
-official dialog channels: VS Code Chat, AdoneX, Claude Code, and Codex.
+Enterprise AI/ML solution factory with Ruflo as the multi-agent core and three
+official dialog channels: VS Code Chat, Claude Code, and Codex.
 Synapse is the control plane and the only project factory. Experiment tracking
 uses the local model registry in `artifacts/models/`.
 
@@ -9,58 +9,22 @@ uses the local model registry in `artifacts/models/`.
 
 O Synapse funciona de forma independente no navegador e no VS Code, com o
 mesmo nucleo de agentes, projetos, dados, evals e governanca. No navegador a
-interface e a Vick, assistente de voz web. No VS Code os canais sao o VS Code
-Chat, o AdoneX, o Claude Code e o Codex. Consulte
+interface e o painel Next.js (`/ops`, `/projects`, etc.). No VS Code os canais
+sao o VS Code Chat, o Claude Code e o Codex. Consulte
 `docs/dual-interface-contract.md`.
 
 ## Stack Oficial No VS Code
 
-- Quatro canais oficiais de dialogo: VS Code Chat, AdoneX, Claude Code e Codex,
+- Canais oficiais de dialogo: VS Code Chat, Claude Code e Codex,
   todos ligados a mesma Solution Factory, memoria compartilhada e governanca.
-- Separacao de provedores: AdoneX usa exclusivamente Ollama local; Claude Code
-  usa Anthropic diretamente; Codex usa OpenAI. Nenhum canal delega geracao ao
-  provedor do outro.
-- Memoria compartilhada entre canais em `.adonex/memory/SHARED_DIALOG_MEMORY.md`,
-  `.adonex/memory/CHAT_TASKS.md` e MCP `synapse-peers`.
+- Separacao de provedores: Claude Code usa Anthropic diretamente; Codex usa
+  OpenAI. Nenhum canal delega geracao ao provedor do outro.
+- Memoria compartilhada entre canais pelo MCP `synapse-peers`.
 - Ruflo com swarm hierarchical-mesh, 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
 - Project Factory em `scripts/create_ai_project.ps1`.
 - Memoria hibrida working/episodic/semantic.
 - RAG e Vector DB em `vector_db/`.
 - FastAPI apenas como runtime interno quando necessario.
-
-## Vick - Assistente De Voz Web
-
-A Vick e a interface de navegador do Synapse, um assistente de voz que roda no
-frontend Next.js e conversa com o mesmo nucleo de governanca dos demais canais.
-
-- Chat por voz e texto via `POST /api/vick/chat`, com Whisper local para
-  transcricao e Web Speech para sintese.
-- Cockpit de telemetria via `GET /api/vick/telemetry`: custo do dia, atividade
-  ao vivo e gastos/tokens de Codex e Claude Code lidos do ledger de roteamento
-  LLM e da memoria compartilhada.
-- Narracao segura de progresso dos assistentes via `GET /api/vick/progress`,
-  com quality gates de voz e tolerancia a desconexoes do polling.
-- Acoes de projeto pela conversa: abrir, analisar, melhorar e editar projetos.
-  A edicao real usa a ponte HTTP local do AdoneX (`127.0.0.1` + token).
-- Autostart opcional controlado por `scripts/toggle_vick_autostart.py`.
-
-## AdoneX - Editor Pro Local
-
-O AdoneX e a extensao do VS Code em `adonex/`, um agente de engenharia 100%
-local que usa exclusivamente modelos do Ollama. Nenhum prompt do AdoneX vai
-para provedores de nuvem. Consulte `adonex/README.md`.
-
-- Composer agentico multi-arquivo: plano, proposta, revisao por arquivo com
-  diff nativo e aplicacao seletiva com backup e rollback.
-- Edicao inline (`Ctrl+Alt+K`): reescreve somente a selecao com undo nativo.
-- Autocomplete inline ghost text via fill-in-middle no Ollama, com debounce,
-  cancelamento e timeout.
-- Contexto rico por mencoes: `@arquivo`, `@selection`, `@file` e `@editor`.
-- Chat especialista Synapse, botao parar e indicador de andamento no painel.
-- Router agent e control center para roteamento economico e administracao
-  local dos perfis Ollama.
-- Ponte HTTP opcional para a Vick, desativada por padrao, apenas em
-  `127.0.0.1` e com token obrigatorio.
 
 ## Arquitetura Dos Projetos
 
@@ -120,34 +84,28 @@ Consulte `docs/AGENTIC_AI_TRANSFORMATION.md`.
 ## Criar Projetos Pelo Dialogo
 
 Projetos sao criados pela conversa, sem tasks nem scripts manuais. Os canais
-de criacao sao os quatro chats do VS Code (VS Code Chat, AdoneX, Claude Code e
-Codex) e a Vick no navegador, que tambem abre, analisa, melhora e edita
-projetos por voz ou texto.
+de criacao sao os chats do VS Code (VS Code Chat, Claude Code e Codex), que
+tambem abrem, analisam, melhoram e editam projetos pela conversa.
 
 Antes de criar ou implementar, o assistente pergunta no proprio chat qualquer
 campo faltante do briefing minimo: objetivo, problema de negocio, universo,
 metrica/criterio de aceite, dados/fontes disponiveis e risco.
 
-Exemplos:
+Exemplo:
 
 ```text
-@adonex /projeto crie uma solucao de IA/RAG para atendimento ao cliente
-```
-
-```text
-Vick, crie um projeto de ML para prever churn de clientes
+crie uma solucao de IA/RAG para atendimento ao cliente
 ```
 
 Com o briefing completo, o Synapse consulta o BusinessSolutionAnalyzer, gera
 `config/business_solution_analysis.json` e segue arquitetura, testes, evals,
 governanca e custo local-first. O projeto e criado localmente em
-`C:\Users\malves\Documents\Projetos`, com `data/`, experimentos, memoria,
+`C:\Users\<seu_usuario>\Documents\Projetos`, com `data/`, experimentos, memoria,
 evals, guardrails, contratos e documentacao aplicaveis ao tipo ML, IA ou
 hibrido.
 
-Todos os canais compartilham memoria local: pedidos e resultados ficam em
-`.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`, e o
-MCP `synapse-peers` cobre mensagens curtas entre sessoes ativas.
+Todos os canais compartilham memoria local pelo MCP `synapse-peers`, que cobre
+mensagens curtas entre sessoes ativas.
 
 ### Conteudo Por Universo
 

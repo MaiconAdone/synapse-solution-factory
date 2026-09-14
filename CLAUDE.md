@@ -21,15 +21,13 @@ Anthropic API, Claude Agent SDK ou fluxos assistidos por Ruflo.
   sem exigir navegador. Se precisar de mais informacao, pergunte direto ao
   usuario e aguarde a resposta antes de criar ou implementar a solucao.
 - Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat,
-  AdoneX, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes,
+  Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes,
   aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses
   chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os quatro canais devem acessar a mesma Solution Factory do Synapse:
+- Todos os canais devem acessar a mesma Solution Factory do Synapse:
   memoria compartilhada, `config/llm_solution_factory_policy.json`,
   `config/ai_framework_selection.json`, analisador de solucoes, governanca,
   testes e evals.
-- Para continuidade entre chats, leia `.adonex/memory/SHARED_DIALOG_MEMORY.md`
-  e `.adonex/memory/CHAT_TASKS.md`.
 - Ao concluir, bloquear ou deixar pergunta pendente, registre resumo curto na
   memoria compartilhada sem copiar secrets, datasets completos ou diffs longos.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes disponiveis ou nivel de risco, pergunte ao usuario no chat antes de implementar. Nao invente essas informacoes.
@@ -153,7 +151,7 @@ Perfis:
 | extreme | ate 15 | auditoria; 60 somente com aprovacao explicita |
 
 Claude Code usa Anthropic diretamente para analisar, editar e revisar o Synapse e
-nunca delega geracao ao Ollama. Ollama e exclusivo do AdoneX. Edicoes e comandos
+nunca delega geracao ao Ollama. Edicoes e comandos
 continuam sujeitos aos gates de aprovacao humana e seguranca.
 
 Regra de arquitetura:

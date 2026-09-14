@@ -83,7 +83,6 @@ function Copy-Template {
         ".claude",
         ".claude-flow",
         ".codex",
-        ".adonex",
         ".vscode",
         ".vscode-test",
         ".next",
@@ -175,83 +174,6 @@ function Copy-Template {
         Write-Host $_.Exception.Message -ForegroundColor Red
         throw "Falha ao copiar template para ${Destino}: $($_.Exception.Message)"
     }
-}
-
-function Copy-AdoneXRuntime {
-    $SourceRoot = Join-Path $Template "adonex"
-    $TargetRoot = Join-Path $Destino "adonex"
-    if (!(Test-Path $SourceRoot)) {
-        Write-Host "ERRO: runtime AdoneX nao encontrado no template: $SourceRoot" -ForegroundColor Red
-        throw "Runtime AdoneX nao encontrado no template: $SourceRoot"
-    }
-
-    $SkipNames = @(
-        "node_modules",
-        "dist",
-        ".vscode-test",
-        "coverage",
-        ".cache",
-        ".turbo",
-        "out"
-    )
-    $SkipFiles = @(
-        "debug.log",
-        "*.vsix",
-        "*.tsbuildinfo",
-        ".env",
-        ".env.*"
-    )
-
-    function Copy-AdoneXItem {
-        param(
-            [System.IO.FileSystemInfo]$SourceItem,
-            [string]$TargetParent
-        )
-
-        if ($SkipNames -contains $SourceItem.Name) {
-            return
-        }
-
-        foreach ($Pattern in $SkipFiles) {
-            if ($SourceItem.Name -like $Pattern) {
-                return
-            }
-        }
-
-        $TargetPath = Join-Path $TargetParent $SourceItem.Name
-        if ($SourceItem.PSIsContainer) {
-            New-Item -ItemType Directory -Path $TargetPath -Force -ErrorAction Stop | Out-Null
-            Get-ChildItem -LiteralPath $SourceItem.FullName -Force | ForEach-Object {
-                Copy-AdoneXItem -SourceItem $_ -TargetParent $TargetPath
-            }
-        }
-        else {
-            Copy-Item -LiteralPath $SourceItem.FullName -Destination $TargetPath -Force -ErrorAction Stop
-        }
-    }
-
-    try {
-        if (Test-Path $TargetRoot) {
-            Remove-Item -LiteralPath $TargetRoot -Recurse -Force
-        }
-        New-Item -ItemType Directory -Path $TargetRoot -Force -ErrorAction Stop | Out-Null
-        Get-ChildItem -LiteralPath $SourceRoot -Force | ForEach-Object {
-            Copy-AdoneXItem -SourceItem $_ -TargetParent $TargetRoot
-        }
-    }
-    catch {
-        Write-Host "ERRO: Falha ao copiar runtime AdoneX completo para $TargetRoot" -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor Red
-        throw "Falha ao copiar runtime AdoneX para ${TargetRoot}: $($_.Exception.Message)"
-    }
-
-    foreach ($Required in @("package.json", "src\extension.ts", "src\agent\agentOrchestrator.ts", "src\patch\patchEngine.ts", "src\llm\localModels.ts")) {
-        if (!(Test-Path (Join-Path $TargetRoot $Required))) {
-            Write-Host "ERRO: runtime AdoneX incompleto, ausente: adonex\$Required" -ForegroundColor Red
-            throw "Runtime AdoneX incompleto, ausente: adonex\$Required"
-        }
-    }
-    Write-Host "Runtime AdoneX completo herdado sem dependencias/build pesados." -ForegroundColor Green
 }
 
 function Configure-RuntimeManifest {
@@ -623,15 +545,14 @@ function Create-AssistantInheritanceArtifacts {
 - Nunca ative os 60 agentes por padrao.
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
 - Limite respostas locais normalmente a 512 tokens e contexto a 4096 tokens.
-- Use `synapse-peers` para trocar resumos curtos entre Codex, Claude, AdoneX e Ruflo antes de repetir contexto.
-- Leia e atualize `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md` para tarefas pedidas pela caixa de dialogo.
+- Use `synapse-peers` para trocar resumos curtos entre Codex, Claude e Ruflo antes de repetir contexto.
 - Este projeto pertence ao universo `$($ProjectUniverse.universe)` e herda somente os artefatos de solucao aplicaveis.
 - Antes de criar ou implementar qualquer funcionalidade, siga `config/business_solution_analysis.json` e `docs/briefings/business_solution_analysis.md`.
 - Se o problema de negocio mudar, atualize a analise com `scripts/analyze_business_solution.py` no Synapse antes de alterar arquitetura, testes ou evals.
 - A caixa de dialogo e o fluxo principal; tasks sao atalhos opcionais, nao requisito.
-- Codex, Claude Code, AdoneX e VS Code Chat devem conduzir briefing e implementacao pela conversa local, sem exigir navegador.
-- Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, AdoneX, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os quatro canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
+- Codex, Claude Code e VS Code Chat devem conduzir briefing e implementacao pela conversa local, sem exigir navegador.
+- Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
+- Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou nivel de risco, pergunte ao usuario antes de implementar. Nao invente essas informacoes.
 "@
     Write-TextFile -Path (Join-Path $Destino "AGENTS.md") -Content $CodexInstructions
@@ -649,8 +570,7 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
 - Leia `config/synapse_solution_contract.json`, `config/project_universe.json` e `config/cost_optimization_policy.json` antes de escalar agentes.
 - Leia `config/business_solution_analysis.json` antes de decidir arquitetura, agentes, RAG, ML, testes ou evals.
 - Ative um agente primeiro; use perfis de custo para escalar para 3 ou 8. Sessenta agentes exigem alta complexidade explicita.
-- Use o MCP `synapse-peers` para coordenar com Codex, AdoneX e Ruflo por resumos curtos, sem secrets e sem colar arquivos grandes.
-- Antes de responder tarefas continuadas, leia `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`.
+- Use o MCP `synapse-peers` para coordenar com Codex e Ruflo por resumos curtos, sem secrets e sem colar arquivos grandes.
 - Ao concluir ou bloquear uma tarefa de chat, registre resumo curto na memoria compartilhada.
 
 ## Escopo
@@ -660,41 +580,16 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
 - A implementacao deve seguir a analise de solucao, SDD, testes e evals gerados para este projeto.
 - A conversa e o caminho principal para pedir mudancas; tasks locais sao apenas atalhos auxiliares.
 - Claude Code deve perguntar pelo proprio chat quando faltar briefing; nao envie o usuario para navegador nem dependa de task do VS Code.
-- Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, AdoneX, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os quatro canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
+- Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
+- Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
 - Se faltar contexto essencial, pergunte ao usuario no chat antes de implementar.
 "@
     Write-TextFile -Path (Join-Path $Destino "CLAUDE.md") -Content $ClaudeInstructions
 
-    $AdonexGuide = @"
-# AdoneX no Projeto
-
-AdoneX deve operar em modo local-first neste projeto.
-
-- Modo padrao: `local`.
-- Modelo rapido: `qwen2.5-coder:3b`.
-- Modelo de raciocinio/revisao: `deepseek-coder-v2:lite`.
-- Modelos fortes sob demanda: `qwen2.5-coder:14b`, `qwen3:14b`, `deepseek-r1:14b` e `qwen2.5-coder:32b`.
-- Janela local recomendada: 4096 tokens.
-- Timeout local recomendado: 600 segundos para evitar fallback prematuro.
-- Peer messaging: `./artifacts/peers/synapse-peers.db`.
-- Memoria de dialogo: `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`.
-- Use o comando `AdoneX: Configure Synapse Peer Messaging` se precisar regravar a configuracao MCP.
-- Antes de criar, alterar ou revisar uma solucao, leia `config/business_solution_analysis.json` e `docs/briefings/business_solution_analysis.md`.
-- Se a conversa trouxer novo problema de negocio, peca a atualizacao da analise antes de mudar a arquitetura.
-- Se faltar objetivo, problema de negocio, universo, metrica, dados/fontes ou risco, responda com perguntas curtas antes de seguir.
-- Use `@adonex /projeto` ou linguagem natural no chat para iniciar criacao/implementacao; navegador e tasks sao opcionais.
-- Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, AdoneX, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os quatro canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
-
-AdoneX pode ajudar com planejamento, revisao, handoff para Codex, memoria compartilhada e tarefas Ruflo, sempre respeitando `config/cost_optimization_policy.json`.
-"@
-    Write-TextFile -Path (Join-Path $Destino "docs\runbooks\adonex.md") -Content $AdonexGuide
-
     $PeerRunbook = @"
 # Peer Messaging Local
 
-O MCP `synapse-peers` permite que Codex, Claude, AdoneX, Ruflo e operadores humanos compartilhem resumos curtos em SQLite local.
+O MCP `synapse-peers` permite que Codex, Claude, Ruflo e operadores humanos compartilhem resumos curtos em SQLite local.
 
 Use para reduzir custo por tokens:
 
@@ -705,67 +600,18 @@ Use para reduzir custo por tokens:
 
 Banco local: `./artifacts/peers/synapse-peers.db`.
 Limite padrao: 1200 caracteres por mensagem e 360 por resumo.
-
-## Memoria Persistente De Dialogo
-
-Use tambem:
-
-- `.adonex/memory/SHARED_DIALOG_MEMORY.md` para contexto curto compartilhado;
-- `.adonex/memory/CHAT_TASKS.md` para historico de tarefas solicitadas por chat;
-- `.adonex/memory/CURRENT_STATE.md` para estado atual consolidado.
-
-VS Code Chat, Codex, Claude Code e AdoneX devem consultar esses arquivos antes
-de pedir novamente informacoes ja fornecidas pelo usuario.
 "@
     Write-TextFile -Path (Join-Path $Destino "docs\runbooks\peer_messaging.md") -Content $PeerRunbook
 
     $Extensions = @"
 {
-  "recommendations": [
-    "synapse-ai.adonex"
-  ]
+  "recommendations": []
 }
 "@
     Write-TextFile -Path (Join-Path $Destino ".vscode\extensions.json") -Content $Extensions
 
     $Settings = @"
 {
-  "adonex.agent.defaultMode": "local",
-  "adonex.ollama.enabled": true,
-  "adonex.ollama.baseUrl": "http://127.0.0.1:11434",
-  "adonex.ollama.model": "qwen2.5-coder:3b",
-  "adonex.ollama.modelReasoning": "deepseek-coder-v2:lite",
-  "adonex.ollama.modelGeneral": "qwen3:8b",
-  "adonex.ollama.modelCodeReview": "deepseek-coder-v2:lite",
-  "adonex.ollama.modelCodeStrong": "qwen2.5-coder:14b",
-  "adonex.ollama.modelPlanningStrong": "qwen3:14b",
-  "adonex.ollama.modelReasoningStrong": "deepseek-r1:14b",
-  "adonex.ollama.modelCodeCritical": "qwen2.5-coder:32b",
-  "adonex.ollama.embeddingModel": "nomic-embed-text:latest",
-  "adonex.ollama.timeoutSeconds": 600,
-  "adonex.ollama.numCtx": 4096,
-  "adonex.ollama.temperature": 0,
-  "adonex.cost.dailyBudgetUsd": 0,
-  "adonex.cost.monthlyBudgetUsd": 0,
-  "adonex.synapse.rufloCouncil.enabled": true,
-  "adonex.synapse.rufloCouncil.maxAgents": 8,
-  "adonex.synapse.rufloCouncil.llmConcurrency": 1,
-  "adonex.synapse.rufloCouncil.maxChars": 8000,
-  "adonex.synapse.llmGateway.enabled": true,
-  "adonex.synapse.llmGateway.requireGateway": false,
-  "adonex.synapse.llmGateway.baseUrl": "http://127.0.0.1:8000",
-  "adonex.synapse.llmGateway.projectId": "$NomeProjeto",
-  "adonex.synapse.peerMessaging.peerType": "adonex",
-  "adonex.synapse.peerMessaging.dbPath": "./artifacts/peers/synapse-peers.db",
-  "adonex.synapse.peerMessaging.maxMessageChars": 1200,
-  "adonex.synapse.peerMessaging.maxSummaryChars": 360,
-  "adonex.voice.enabled": true,
-  "adonex.voice.startWithVSCode": true,
-  "adonex.voice.autoOpenCockpit": true,
-  "adonex.voice.wakeWord": "Vick",
-  "adonex.voice.engine": "simulated",
-  "adonex.security.requireApprovalBeforeWrite": true,
-  "adonex.security.requireApprovalBeforeCommand": true,
   "task.allowAutomaticTasks": "on"
 }
 "@
@@ -786,7 +632,7 @@ DB_PATH = Path(os.getenv("PEER_MESSAGING_DB_PATH", "./artifacts/peers/synapse-pe
 MAX_MESSAGE_CHARS = int(os.getenv("PEER_MESSAGING_MAX_MESSAGE_CHARS", "1200"))
 MAX_SUMMARY_CHARS = int(os.getenv("PEER_MESSAGING_MAX_SUMMARY_CHARS", "360"))
 PEER_TYPE = (os.getenv("SYNAPSE_PEER_TYPE", "codex").strip().lower() or "codex")
-ALLOWED_PEER_TYPES = {"codex", "claude", "adonex", "ruflo", "ollama", "human", "other"}
+ALLOWED_PEER_TYPES = {"codex", "claude", "ruflo", "ollama", "human", "other"}
 
 
 def now() -> str:
@@ -874,7 +720,7 @@ REGISTERED_PEER = register_peer()
 MCP = FastMCP(
     "synapse-peers",
     instructions=(
-        "Coordinate Codex, Claude, AdoneX, Ruflo and human sessions locally. "
+        "Coordinate Codex, Claude, Ruflo and human sessions locally. "
         "Prefer summaries before details. Do not send secrets or large files."
     ),
 )
@@ -1000,7 +846,7 @@ if __name__ == "__main__":
         $Runtime = Get-Content $RuntimePath -Raw | ConvertFrom-Json
         $Runtime | Add-Member -NotePropertyName "assistant_inheritance" -NotePropertyValue ([ordered]@{
             enabled = $true
-            user_request_channels = @("VS Code Chat", "AdoneX", "Claude Code", "Codex")
+            user_request_channels = @("VS Code Chat", "Claude Code", "Codex")
             content_collection_rule = "Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados pelos chats autorizados antes de usar tasks, scripts, navegador ou ferramentas."
             shared_solution_factory_access = [ordered]@{
                 policy = "config/llm_solution_factory_policy.json"
@@ -1011,8 +857,6 @@ if __name__ == "__main__":
                 technology_layer = "docs/specifications/technology_layer.md"
                 ml_foundations_policy = "config/ml_foundations_policy.json"
                 ml_foundations_spec = "docs/specifications/ml_foundations.md"
-                shared_dialog_memory = ".adonex/memory/SHARED_DIALOG_MEMORY.md"
-                chat_tasks = ".adonex/memory/CHAT_TASKS.md"
                 peer_mailbox = "synapse-peers"
                 tests = "tests"
                 evals = "evals"
@@ -1025,32 +869,6 @@ if __name__ == "__main__":
                 instructions = "CLAUDE.md"
                 cloud_requires_explicit_user_request = $true
             }
-            adonex = [ordered]@{
-                settings = ".vscode/settings.json"
-                runbook = "docs/runbooks/adonex.md"
-                default_mode = "local"
-                runtime = "adonex"
-                package = "adonex/package.json"
-                source = "adonex/src"
-                tests = "adonex/test"
-                complete_runtime = $true
-                excluded_runtime_paths = @("adonex/node_modules", "adonex/dist", "adonex/.vscode-test", "adonex/coverage", "adonex/debug.log")
-                coding_capabilities = @(
-                    "incremental_patch_operations",
-                    "workspace_conflict_detection",
-                    "structured_failure_diagnosis",
-                    "local_model_profiles",
-                    "ruflo_selective_council"
-                )
-            }
-            vick = [ordered]@{
-                enabled = $true
-                browser_assistant = "scripts/start_vick.py"
-                wake_word = "Vick"
-                auto_open_task = ".vscode/tasks.json"
-                startup = "VS Code folderOpen task"
-                purpose = "Interacao inicial em navegador para briefing de solucoes corporativas, herdando AdoneX e Solution Factory."
-            }
             peer_messaging = [ordered]@{
                 server = "synapse-peers"
                 script = "scripts/synapse_solution_peers_mcp.py"
@@ -1058,40 +876,20 @@ if __name__ == "__main__":
                 max_message_chars = 1200
                 max_summary_chars = 360
             }
-            shared_dialog_memory = [ordered]@{
-                enabled = $true
-                persistent_context = ".adonex/memory/SHARED_DIALOG_MEMORY.md"
-                chat_tasks = ".adonex/memory/CHAT_TASKS.md"
-                current_state = ".adonex/memory/CURRENT_STATE.md"
-                peer_mailbox = "synapse-peers"
-                applies_to = @("vscode-chat", "codex", "claude-code", "adonex")
-            }
         }) -Force
         $RequiredPaths = @($Runtime.validation.required_practice_paths)
         foreach ($RelativePath in @(
             "AGENTS.md",
             "CLAUDE.md",
-            ".adonex/memory/AGENT_CONTEXT.md",
-            ".adonex/memory/CURRENT_STATE.md",
-            ".adonex/memory/SHARED_DIALOG_MEMORY.md",
-            ".adonex/memory/CHAT_TASKS.md",
             "config/llm_solution_factory_policy.json",
             "config/business_solution_analysis.json",
             "docs/briefings/business_solution_analysis.md",
             "docs/specifications/llm_solution_factory_governance.md",
-            "docs/runbooks/adonex.md",
             "docs/runbooks/peer_messaging.md",
-            "scripts/start_vick.py",
             "scripts/synapse_solution_peers_mcp.py",
             ".vscode/settings.json",
             ".vscode/extensions.json",
-            ".vscode/tasks.json",
-            "adonex/package.json",
-            "adonex/src/extension.ts",
-            "adonex/src/agent/agentOrchestrator.ts",
-            "adonex/src/patch/patchEngine.ts",
-            "adonex/src/llm/localModels.ts",
-            "adonex/test"
+            ".vscode/tasks.json"
         )) {
             if ($RelativePath -notin $RequiredPaths) {
                 $RequiredPaths += $RelativePath
@@ -1101,7 +899,7 @@ if __name__ == "__main__":
         Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
     }
 
-    Write-Host "Heranca Codex, Claude, AdoneX e peer messaging configurada." -ForegroundColor Green
+    Write-Host "Heranca Codex, Claude e peer messaging configurada." -ForegroundColor Green
 }
 
 function Create-ProjectStructure {
@@ -1132,10 +930,6 @@ function Create-ProjectStructure {
         "artifacts\chatbot",
         "data\session_logs",
         "data\conversations",
-        ".adonex\memory",
-        ".adonex\tasks",
-        ".adonex\handoff",
-        ".adonex\snapshots",
         "memory\snapshots",
         "tests",
         "output"
@@ -1419,89 +1213,6 @@ chatbot:
 }
 "@
     Write-TextFile (Join-Path $Destino "memory\project_memory.runtime.json") $ProjectMemory
-
-    $AgentContextMemory = @"
-# Agent Context
-
-## Quick Instructions
-
-Este projeto foi criado pelo Synapse e compartilha memoria entre VS Code Chat,
-Codex, Claude Code e AdoneX.
-
-## Como Trabalhar
-
-- Leia `AGENTS.md`, `CLAUDE.md`, `.adonex/memory/CURRENT_STATE.md`,
-  `.adonex/memory/SHARED_DIALOG_MEMORY.md` e `.adonex/memory/CHAT_TASKS.md`
-  antes de continuar tarefas solicitadas por chat.
-- Use `synapse-peers` para mensagens curtas locais entre sessoes ativas.
-- Nao repita contexto grande: registre resumos curtos e referencias de arquivo.
-- Nao grave secrets, datasets completos, chaves, tokens ou diffs longos.
-- Antes de criar ou implementar solucao, siga `config/business_solution_analysis.json`.
-
-## Universo
-
-- Projeto: $NomeProjeto
-- Universo: $($ProjectUniverse.universe)
-- Foco: $($ProjectUniverse.solution_focus)
-"@
-    Write-TextFile (Join-Path $Destino ".adonex\memory\AGENT_CONTEXT.md") $AgentContextMemory
-
-    $CurrentStateMemory = @"
-# Current State
-
-Last updated: $CreationDate
-Source: scripts/create_ai_project.ps1
-
-## Current Project State
-
-Projeto de solucao criado pelo Synapse no universo $($ProjectUniverse.universe).
-
-## Current Goal
-
-Usar a caixa de dialogo do VS Code, Codex, Claude Code ou AdoneX para evoluir a
-solucao com memoria compartilhada local.
-
-## Open Problems
-
-- Nenhum problema registrado ainda.
-
-## Next Steps
-
-- Registrar cada tarefa de chat em `.adonex/memory/CHAT_TASKS.md`.
-- Usar `.adonex/memory/SHARED_DIALOG_MEMORY.md` para contexto curto compartilhado.
-- Usar `synapse-peers` para coordenacao curta entre sessoes ativas.
-"@
-    Write-TextFile (Join-Path $Destino ".adonex\memory\CURRENT_STATE.md") $CurrentStateMemory
-
-    $SharedDialogMemory = @"
-# Shared Dialog Memory
-
-Memoria persistente local compartilhada por VS Code Chat, Codex, Claude Code e
-AdoneX neste projeto.
-
-## Regras
-
-- Registrar somente resumos curtos, decisoes, perguntas pendentes e resultados.
-- Nao registrar secrets, credenciais, arquivos inteiros, datasets completos ou diffs longos.
-- Usar referencias de arquivos e ids de tarefas quando possivel.
-- Usar `synapse-peers` para mensagens curtas entre sessoes ativas.
-
-## Recent Dialog Context
-"@
-    Write-TextFile (Join-Path $Destino ".adonex\memory\SHARED_DIALOG_MEMORY.md") $SharedDialogMemory
-
-    $ChatTasksMemory = @"
-# Chat Tasks
-
-Tarefas solicitadas pela caixa de dialogo do VS Code, Codex, Claude Code ou
-AdoneX. Cada assistente deve consultar esta tabela antes de pedir contexto que
-ja foi fornecido.
-
-| Date | Source | Status | Objective | Notes |
-| --- | --- | --- | --- | --- |
-| $CreationDate | synapse | created | Projeto $NomeProjeto criado no universo $($ProjectUniverse.universe) | Memoria compartilhada inicializada |
-"@
-    Write-TextFile (Join-Path $Destino ".adonex\memory\CHAT_TASKS.md") $ChatTasksMemory
 
     $AttachmentManifest = @"
 {
@@ -1834,7 +1545,7 @@ multiagente empresariais. O catalogo executavel fica em
 
 - Orchestrator Specialist: um lider coordena especialistas sob demanda.
 - Critic Reviewer Gate: risco alto passa por revisao, evals e aprovacao.
-- A2A Message Contract: Codex, Claude, AdoneX, Ruflo e humanos trocam resumos
+- A2A Message Contract: Codex, Claude, Ruflo e humanos trocam resumos
   curtos por `synapse-peers`.
 - Tool Gateway: ferramentas operam com menor privilegio e auditoria.
 - Model Router: agentes nao chamam LLM direto; passam pelo gateway.
@@ -2169,8 +1880,8 @@ function Create-Runbooks {
         "",
         "## Trabalhar pelo VS Code",
         "",
-        "Caminho principal: converse com Codex, Claude Code ou AdoneX no VS Code.",
-        "Use `@adonex /projeto` ou linguagem natural para pedir criacao, evolucao ou implementacao.",
+        "Caminho principal: converse com Codex ou Claude Code no VS Code.",
+        "Use linguagem natural no chat para pedir criacao, evolucao ou implementacao.",
         "Se faltar objetivo, problema de negocio, universo, metrica/criterio, dados/fontes ou risco, o assistente deve perguntar no chat antes de implementar.",
         "Navegador e tasks sao opcionais.",
         "",
@@ -2666,8 +2377,6 @@ function Finalize-SynapseSolutionProject {
         contains_frontend = $false
         ruflo_runtime = "inherited"
         agents_runtime = "inherited"
-        adonex_runtime = "inherited_complete"
-        adonex_package = "adonex/package.json"
         practices = @(
             "ai_engineering",
             "machine_learning",
@@ -2712,7 +2421,6 @@ function Run-ProjectValidation {
         "tests\test_evals_contract.py",
         "tests\test_data_contract.py",
         "scripts\treat_dataset.py"
-        "scripts\start_vick.py"
         "prompts\master_data_treatment.md"
         "scripts\start_ruflo_swarm.ps1"
         "agents\definitions\enterprise_agents.yaml"
@@ -2724,20 +2432,11 @@ function Run-ProjectValidation {
         ".mcp.json"
         "AGENTS.md"
         "CLAUDE.md"
-        "docs\runbooks\adonex.md"
         "docs\runbooks\peer_messaging.md"
         "scripts\synapse_solution_peers_mcp.py"
         ".vscode\settings.json"
         ".vscode\extensions.json"
         ".vscode\tasks.json"
-        "adonex\package.json"
-        "adonex\src\extension.ts"
-        "adonex\src\agent\agentOrchestrator.ts"
-        "adonex\src\patch\patchEngine.ts"
-        "adonex\src\patch\patchUtils.ts"
-        "adonex\src\llm\localModels.ts"
-        "adonex\src\tasks\taskFinalizer.ts"
-        "adonex\test"
     )
     if ($ProjectUniverse.ml_enabled) {
         $RequiredPaths += @(
@@ -2757,13 +2456,6 @@ function Run-ProjectValidation {
             throw "Componente exclusivo do Synapse copiado para o projeto: $ForbiddenPath"
         }
     }
-    foreach ($ForbiddenPath in @("adonex\node_modules", "adonex\dist", "adonex\.vscode-test", "adonex\coverage", "adonex\debug.log")) {
-        if (Test-Path (Join-Path $Destino $ForbiddenPath)) {
-            Write-Host "ERRO: componente pesado do runtime AdoneX copiado: $ForbiddenPath" -ForegroundColor Red
-            throw "Componente pesado do runtime AdoneX copiado para o projeto: $ForbiddenPath"
-        }
-    }
-
     $EnvExamplePath = Join-Path $Destino ".env.example"
     if (Test-Path $EnvExamplePath) {
         $EnvExample = Get-Content $EnvExamplePath -Raw
@@ -2817,43 +2509,6 @@ function Configure-SolutionVsCodeTasks {
     }
   ],
   "tasks": [
-    {
-      "label": "Vick: Abrir assistente web automaticamente",
-      "detail": "Sobe a Vick local em http://127.0.0.1:8765 e abre o navegador quando este projeto Synapse e carregado no VS Code.",
-      "type": "shell",
-      "command": "python",
-      "args": [
-        "`${workspaceFolder}\\scripts\\start_vick.py",
-        "--workspace",
-        "`${workspaceFolder}",
-        "--port",
-        "8765",
-        "--wake-word",
-        "Vick",
-        "--open-browser"
-      ],
-      "isBackground": true,
-      "runOptions": {
-        "runOn": "folderOpen"
-      },
-      "problemMatcher": {
-        "owner": "vick",
-        "pattern": {
-          "regexp": "^$"
-        },
-        "background": {
-          "activeOnStart": true,
-          "beginsPattern": "Vick running at",
-          "endsPattern": "Vick running at"
-        }
-      },
-      "presentation": {
-        "reveal": "silent",
-        "panel": "dedicated",
-        "clear": false,
-        "focus": false
-      }
-    },
     {
       "label": "Synapse: Ollama offline",
       "detail": "Executa um dos perfis locais do Synapse sem navegador e sem API paga.",
@@ -2970,7 +2625,6 @@ function Normalize-GeneratedProjectFilesystem {
 # the partial project directory so no half-built project is left behind.
 try {
     Copy-Template
-    Copy-AdoneXRuntime
     Configure-RuntimeManifest
     Configure-EnterpriseSpec
     Configure-CostOptimizationPolicy

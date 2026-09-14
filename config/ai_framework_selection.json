@@ -314,7 +314,7 @@
       "name": "MCP servers",
       "category": "tool_context_protocol",
       "capabilities": ["mcp", "tools", "resources", "prompts", "integration"],
-      "best_for": ["tool_boundaries", "codex_adonex_integration", "standard_context"],
+      "best_for": ["tool_boundaries", "codex_claude_integration", "standard_context"],
       "select_when": ["mcp", "tools", "integration", "context", "server"],
       "templates": ["templates/mcp/server.py"]
     }

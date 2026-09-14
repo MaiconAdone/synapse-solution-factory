@@ -23,25 +23,6 @@ jobs:
           $env:PYTHONPATH="backend"
           python -m pytest tests
 
-  adonex:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: adonex/package-lock.json
-      - name: Install AdoneX dependencies
-        working-directory: adonex
-        run: npm ci
-      - name: Compile AdoneX
-        working-directory: adonex
-        run: npm run compile
-      - name: Run AdoneX unit tests
-        working-directory: adonex
-        run: npm run test:unit
-
   frontend:
     runs-on: ubuntu-latest
     steps:

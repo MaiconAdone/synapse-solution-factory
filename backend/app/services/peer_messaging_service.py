@@ -387,8 +387,8 @@ class PeerMessagingService:
     @staticmethod
     def _validate_peer_type(peer_type: str) -> str:
         normalized = peer_type.strip().lower().replace("_", "-")
-        if normalized not in {"codex", "claude", "adonex", "ruflo", "ollama", "human", "other"}:
-            raise PeerMessagingError("peer_type must be codex, claude, adonex, ruflo, ollama, human, or other")
+        if normalized not in {"codex", "claude", "ruflo", "ollama", "human", "other"}:
+            raise PeerMessagingError("peer_type must be codex, claude, ruflo, ollama, human, or other")
         return normalized
 
     @staticmethod

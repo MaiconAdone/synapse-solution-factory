@@ -75,15 +75,10 @@ Test-RelativePath "ruflo_runtime" "scripts\start_ruflo_swarm.ps1" "Runtime Ruflo
 Test-RelativePath "ruflo_mcp" ".mcp.json" "Configuracao MCP Ruflo do projeto existe"
 Test-RelativePath "codex_agents_instructions" "AGENTS.md" "Instrucoes Codex/agents do projeto existem"
 Test-RelativePath "claude_instructions" "CLAUDE.md" "Instrucoes Claude do projeto existem"
-Test-RelativePath "shared_dialog_memory" ".adonex\memory\SHARED_DIALOG_MEMORY.md" "Memoria compartilhada de dialogo existe"
-Test-RelativePath "chat_tasks_memory" ".adonex\memory\CHAT_TASKS.md" "Historico de tarefas de chat existe"
-Test-RelativePath "agent_context_memory" ".adonex\memory\AGENT_CONTEXT.md" "Contexto compartilhado dos agentes existe"
-Test-RelativePath "current_state_memory" ".adonex\memory\CURRENT_STATE.md" "Estado atual compartilhado existe"
-Test-RelativePath "adonex_runbook" "docs\runbooks\adonex.md" "Runbook AdoneX do projeto existe"
 Test-RelativePath "peer_messaging_runbook" "docs\runbooks\peer_messaging.md" "Runbook de peer messaging existe"
 Test-RelativePath "peer_messaging_mcp" "scripts\synapse_solution_peers_mcp.py" "MCP peer messaging standalone existe"
-Test-RelativePath "vscode_adonex_settings" ".vscode\settings.json" "Settings VS Code/AdoneX existem"
-Test-RelativePath "vscode_adonex_extensions" ".vscode\extensions.json" "Recomendacao da extensao AdoneX existe"
+Test-RelativePath "vscode_settings" ".vscode\settings.json" "Settings VS Code existem"
+Test-RelativePath "vscode_extensions" ".vscode\extensions.json" "Recomendacoes de extensoes VS Code existem"
 Test-RelativePath "agents_yaml" "agents\definitions\enterprise_agents.yaml" "Catalogo de agentes do projeto existe"
 Test-RelativePath "attachment_manifest" "docs\briefings\codex_attachments_manifest.json" "Manifesto de anexos Codex/Ruflo existe"
 Test-RelativePath "execution_spec" "docs\specifications\ai_ml_execution_spec.md" "Especificacao de execucao existe"
@@ -149,10 +144,8 @@ if (Test-Path $RuntimePath) {
         Add-Check "runtime_continual_learning" "Aprendizagem continua por memoria esta ativa" ([bool]$Runtime.continual_learning.enabled) "enabled=$($Runtime.continual_learning.enabled)"
         Add-Check "runtime_no_auto_weight_update" "Pesos do modelo nao mudam automaticamente" (-not [bool]$Runtime.continual_learning.automatic_weight_updates) "automatic_weight_updates=$($Runtime.continual_learning.automatic_weight_updates)"
         Add-Check "runtime_learning_approval" "Promocao de aprendizado exige evals e aprovacao humana" ([bool]$Runtime.continual_learning.promotion_requires_evals_and_human_approval) "approval=$($Runtime.continual_learning.promotion_requires_evals_and_human_approval)"
-        Add-Check "runtime_assistant_inheritance" "Runtime declara heranca Codex/Claude/AdoneX" ([bool]$Runtime.assistant_inheritance.enabled) "enabled=$($Runtime.assistant_inheritance.enabled)"
+        Add-Check "runtime_assistant_inheritance" "Runtime declara heranca Codex/Claude" ([bool]$Runtime.assistant_inheritance.enabled) "enabled=$($Runtime.assistant_inheritance.enabled)"
         Add-Check "runtime_peer_messaging_standalone" "Runtime aponta para peer messaging standalone" ($Runtime.assistant_inheritance.peer_messaging.script -eq "scripts/synapse_solution_peers_mcp.py") "script=$($Runtime.assistant_inheritance.peer_messaging.script)"
-        Add-Check "runtime_shared_dialog_memory" "Runtime declara memoria compartilhada dos chats" ([bool]$Runtime.assistant_inheritance.shared_dialog_memory.enabled) "enabled=$($Runtime.assistant_inheritance.shared_dialog_memory.enabled)"
-        Add-Check "runtime_shared_dialog_paths" "Runtime aponta para memoria compartilhada de dialogo" ($Runtime.assistant_inheritance.shared_dialog_memory.persistent_context -eq ".adonex/memory/SHARED_DIALOG_MEMORY.md" -and $Runtime.assistant_inheritance.shared_dialog_memory.chat_tasks -eq ".adonex/memory/CHAT_TASKS.md") "shared=$($Runtime.assistant_inheritance.shared_dialog_memory.persistent_context); tasks=$($Runtime.assistant_inheritance.shared_dialog_memory.chat_tasks)"
     }
     catch {
         Add-Check "runtime_json" "Runtime manifest e JSON valido" $false $_.Exception.Message
@@ -233,14 +226,11 @@ if (Test-Path $McpPath) {
 $VsCodeSettingsPath = Join-Path $ProjectRoot ".vscode\settings.json"
 if (Test-Path $VsCodeSettingsPath) {
     try {
-        $VsCodeSettings = Get-Content $VsCodeSettingsPath -Raw | ConvertFrom-Json
-        Add-Check "adonex_local_mode" "AdoneX opera em modo local" ($VsCodeSettings.'adonex.agent.defaultMode' -eq "local") "mode=$($VsCodeSettings.'adonex.agent.defaultMode')"
-        Add-Check "adonex_fast_model" "AdoneX usa qwen2.5-coder:3b como modelo rapido" ($VsCodeSettings.'adonex.ollama.model' -eq "qwen2.5-coder:3b") "model=$($VsCodeSettings.'adonex.ollama.model')"
-        Add-Check "adonex_reasoning_model" "AdoneX usa deepseek-coder-v2:lite como modelo de raciocinio" ($VsCodeSettings.'adonex.ollama.modelReasoning' -eq "deepseek-coder-v2:lite") "modelReasoning=$($VsCodeSettings.'adonex.ollama.modelReasoning')"
-        Add-Check "adonex_peer_db" "AdoneX aponta para o banco local de peers" ($VsCodeSettings.'adonex.synapse.peerMessaging.dbPath' -eq "./artifacts/peers/synapse-peers.db") "db=$($VsCodeSettings.'adonex.synapse.peerMessaging.dbPath')"
+        Get-Content $VsCodeSettingsPath -Raw | ConvertFrom-Json | Out-Null
+        Add-Check "vscode_settings_json" ".vscode/settings.json e JSON valido" $true "settings=$VsCodeSettingsPath"
     }
     catch {
-        Add-Check "adonex_settings_json" ".vscode/settings.json e JSON valido" $false $_.Exception.Message
+        Add-Check "vscode_settings_json" ".vscode/settings.json e JSON valido" $false $_.Exception.Message
     }
 }
 

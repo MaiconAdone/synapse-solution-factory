@@ -1,6 +1,6 @@
 # LLM Solution Factory Governance
 
-Este documento e o contrato operacional para Codex, Claude Code, AdoneX, VS Code
+Este documento e o contrato operacional para Codex, Claude Code, VS Code
 chat, Ruflo e modelos Ollama ao criar ou implementar solucoes no Synapse.
 
 ## Regra Principal
@@ -15,7 +15,6 @@ contexto, consultar o analisador e executar a implementacao.
 Canais autorizados para conteudo solicitado pelo usuario:
 
 - VS Code Chat
-- AdoneX
 - Claude Code
 - Codex
 
@@ -147,7 +146,7 @@ evals, observabilidade e custo.
 - Escalar Ruflo por dominio somente quando necessario.
 - Nunca ativar 60 agentes por padrao.
 - Usar `config/cost_optimization_policy.json` antes de ampliar agentes.
-- Usar `synapse-peers` para handoff curto entre Codex, Claude, AdoneX, Ruflo e
+- Usar `synapse-peers` para handoff curto entre Codex, Claude, Ruflo e
   operadores humanos.
 
 ## Contrato Para Assistentes
@@ -163,7 +162,7 @@ use a analise como plano de arquitetura.
 Leia `CLAUDE.md`, esta especificacao e a policy. Use a analise como ADR
 operacional. Preserve prompt caching e contexto pequeno.
 
-### AdoneX E VS Code Chat
+### VS Code Chat
 
 Receba o pedido pela conversa, colete lacunas minimas, prefira Ollama local e
 consulte o analisador antes de sugerir arquitetura ou gerar handoff para Codex.

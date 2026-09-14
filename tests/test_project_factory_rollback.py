@@ -2,8 +2,9 @@
 
 If a build phase fails after scaffolding started, create_ai_project.ps1 must
 remove the partial project directory instead of leaving a half-built project.
-A build against an empty template deterministically fails at the AdoneX runtime
-copy (after the destination was created), which must trigger the rollback.
+A build against an empty template deterministically fails once a later phase
+reads a template file that does not exist (after the destination was created),
+which must trigger the rollback.
 """
 
 import subprocess

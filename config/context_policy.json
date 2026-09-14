@@ -1,7 +1,7 @@
 {
   "id": "synapse-context-policy",
   "version": "1.0.0",
-  "purpose": "Reduce noisy workspace content before LLM, Ruflo, Codex, Claude, and AdoneX calls.",
+  "purpose": "Reduce noisy workspace content before LLM, Ruflo, Codex, and Claude calls.",
   "max_chars": {
     "simple": 4000,
     "standard": 12000,
@@ -9,7 +9,6 @@
     "hard_limit": 42000
   },
   "ignored_directories": [
-    ".adonex",
     ".cache",
     ".claude",
     ".claude-flow",

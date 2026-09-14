@@ -61,5 +61,5 @@ claude --dangerously-load-development-channels server:claude-peers
 The `.mcp.json` entry sets `OPENAI_API_KEY` to an empty value so the upstream
 auto-summary path does not call an external provider by default.
 
-Use `synapse-peers` for cross-tool coordination between Codex, AdoneX, Ruflo,
+Use `synapse-peers` for cross-tool coordination between Codex, Ruflo,
 Ollama, Claude, and human operator sessions.

@@ -231,7 +231,7 @@ def test_peer_messaging_service_routes_short_local_messages(tmp_path, monkeypatc
         service.send_message(from_id=codex["id"], to_id=claude["id"], message="x" * 81)
 
 
-def test_peer_messaging_supports_adonex_ruflo_and_local_task_routes(tmp_path, monkeypatch):
+def test_peer_messaging_supports_codex_ruflo_and_local_task_routes(tmp_path, monkeypatch):
     monkeypatch.setattr(PeerMessagingService, "_pid_alive", staticmethod(lambda _pid: True))
     settings = Settings(
         peer_messaging_db_path=str(tmp_path / "peers.db"),
@@ -240,10 +240,10 @@ def test_peer_messaging_supports_adonex_ruflo_and_local_task_routes(tmp_path, mo
     )
     service = PeerMessagingService(settings)
 
-    adonex = service.register(
-        peer_type="adonex",
+    codex = service.register(
+        peer_type="codex",
         cwd=str(tmp_path),
-        summary="AdoneX answering Synapse questions locally.",
+        summary="Codex answering Synapse questions locally.",
         pid=201,
         capabilities=["synapse-system-questions", "ollama-local-models"],
         model_profile="ollama:qwen2.5-coder:3b+qwen3:8b",
@@ -259,22 +259,22 @@ def test_peer_messaging_supports_adonex_ruflo_and_local_task_routes(tmp_path, mo
     )
 
     published = service.publish_context(
-        adonex["id"],
-        summary="AdoneX routes simple Synapse questions through Ruflo and Ollama local.",
-        role="AdoneX local assistant",
+        codex["id"],
+        summary="Codex routes simple Synapse questions through Ruflo and Ollama local.",
+        role="Codex local assistant",
         capabilities=["synapse-system-questions", "ruflo-60-agent-routing"],
         model_profile="ollama-local",
         active_agents=60,
     )
     announced = service.announce_task(
-        from_id=adonex["id"],
+        from_id=codex["id"],
         objective="Responder quais modelos a Synapse usa.",
         target_peer_type="ruflo",
         required_agents=["orchestration-manager", "llm-engineering"],
     )
     inbox = service.check_messages(ruflo["id"])
 
-    assert published["peer_type"] == "adonex"
+    assert published["peer_type"] == "codex"
     assert published["capabilities"] == ["synapse-system-questions", "ruflo-60-agent-routing"]
     assert published["active_agents"] == 60
     assert announced["targeted_count"] == 1
@@ -940,7 +940,6 @@ def test_runtime_manifest_matches_required_agent_count():
     assert manifest["assistant_channels"]["enabled"] is True
     assert manifest["assistant_channels"]["authorized_user_request_channels"] == [
         "VS Code Chat",
-        "AdoneX",
         "Claude Code",
         "Codex",
     ]
@@ -948,7 +947,6 @@ def test_runtime_manifest_matches_required_agent_count():
     assert manifest["assistant_channels"]["shared_solution_factory_access"]["technology_catalog"] == "config/ai_framework_selection.json"
     assert manifest["assistant_channels"]["shared_solution_factory_access"]["business_analyzer"] == "backend/app/services/business_solution_analyzer.py"
     assert manifest["assistant_channels"]["shared_solution_factory_access"]["ml_foundations_policy"] == "config/ml_foundations_policy.json"
-    assert manifest["assistant_channels"]["shared_solution_factory_access"]["shared_dialog_memory"] == ".adonex/memory/SHARED_DIALOG_MEMORY.md"
 
 
 def test_llm_solution_factory_policy_guides_all_dialog_assistants():
@@ -958,13 +956,10 @@ def test_llm_solution_factory_policy_guides_all_dialog_assistants():
     agents = (root / "AGENTS.md").read_text(encoding="utf-8-sig")
     claude = (root / "CLAUDE.md").read_text(encoding="utf-8-sig")
     codex_config = (root / ".codex" / "config.toml").read_text(encoding="utf-8-sig")
-    adonex_orchestrator = (root / "adonex" / "src" / "agent" / "agentOrchestrator.ts").read_text(encoding="utf-8-sig")
-    adonex_memory = (root / "adonex" / "src" / "memory" / "memoryFiles.ts").read_text(encoding="utf-8-sig")
 
     assert policy["dialog_first"]["required"] is True
     assert policy["dialog_first"]["authorized_user_request_channels"] == [
         "VS Code Chat",
-        "AdoneX chat participant",
         "Claude Code chat/terminal",
         "Codex chat",
     ]
@@ -975,7 +970,6 @@ def test_llm_solution_factory_policy_guides_all_dialog_assistants():
     assert "success_metric_or_acceptance_criteria" in policy["missing_information_protocol"]["do_not_guess"]
     assert "Codex" in policy["applies_to"]
     assert "Claude Code" in policy["applies_to"]
-    assert "AdoneX" in policy["applies_to"]
     assert "VS Code chat" in policy["applies_to"]
     assert "scripts/analyze_business_solution.py" in policy["source_of_truth"]["analyzer_cli"]
     assert policy["source_of_truth"]["technology_catalog"] == "config/ai_framework_selection.json"
@@ -995,11 +989,6 @@ def test_llm_solution_factory_policy_guides_all_dialog_assistants():
     assert "config/llm_solution_factory_policy.json" in codex_config
     assert "canais autorizados para conteudo solicitado pelo usuario" in codex_config
     assert "pergunte ao usuario" in codex_config
-    assert "config/llm_solution_factory_policy.json" in adonex_orchestrator
-    assert "pergunte ao usuario" in adonex_orchestrator
-    assert "config/llm_solution_factory_policy.json" in adonex_memory
-    assert "Authorized channels for user-requested corporate solution content" in adonex_memory
-    assert "ask the user before implementation" in adonex_memory
 
 
 def test_enterprise_ai_ml_spec_declares_required_execution_contract():
@@ -1825,14 +1814,8 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert (project / "tests" / "test_data_contract.py").exists()
     assert (project / "AGENTS.md").exists()
     assert (project / "CLAUDE.md").exists()
-    assert (project / ".adonex" / "memory" / "SHARED_DIALOG_MEMORY.md").exists()
-    assert (project / ".adonex" / "memory" / "CHAT_TASKS.md").exists()
-    assert (project / ".adonex" / "memory" / "AGENT_CONTEXT.md").exists()
-    assert (project / ".adonex" / "memory" / "CURRENT_STATE.md").exists()
-    assert (project / "docs" / "runbooks" / "adonex.md").exists()
     assert (project / "docs" / "runbooks" / "peer_messaging.md").exists()
     assert (project / "scripts" / "synapse_solution_peers_mcp.py").exists()
-    assert (project / "scripts" / "start_vick.py").exists()
     assert not (project / "scripts" / "synapse_peers_mcp.py").exists()
     assert (project / "tests" / "test_project_contract.py").exists()
     assert (project / "tests" / "test_evals_contract.py").exists()
@@ -1841,9 +1824,6 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert (project / ".vscode" / "extensions.json").exists()
     tasks = json.loads((project / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     assert any(task["label"] == "Synapse: Rodar testes do projeto" for task in tasks["tasks"])
-    vick_task = next(task for task in tasks["tasks"] if task["label"] == "Vick: Abrir assistente web automaticamente")
-    assert vick_task["runOptions"]["runOn"] == "folderOpen"
-    assert "--open-browser" in vick_task["args"]
     env_example = (project / ".env.example").read_text(encoding="utf-8-sig")
     assert "PROJECT_DEFAULT_ACTIVE_AGENTS=1" in env_example
     assert "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8" in env_example
@@ -1851,32 +1831,8 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert mcp["mcpServers"]["synapse-peers"]["args"] == ["scripts/synapse_solution_peers_mcp.py"]
     assert mcp["mcpServers"]["synapse-peers"]["env"]["PEER_MESSAGING_MAX_MESSAGE_CHARS"] == "1200"
     settings = json.loads((project / ".vscode" / "settings.json").read_text(encoding="utf-8-sig"))
-    assert settings["adonex.agent.defaultMode"] == "local"
-    assert settings["adonex.ollama.model"] == "qwen2.5-coder:3b"
-    assert settings["adonex.ollama.modelReasoning"] == "deepseek-coder-v2:lite"
-    assert settings["adonex.ollama.modelGeneral"] == "qwen3:8b"
-    assert settings["adonex.ollama.modelCodeStrong"] == "qwen2.5-coder:14b"
-    assert settings["adonex.ollama.modelPlanningStrong"] == "qwen3:14b"
-    assert settings["adonex.ollama.modelReasoningStrong"] == "deepseek-r1:14b"
-    assert settings["adonex.ollama.modelCodeCritical"] == "qwen2.5-coder:32b"
-    assert settings["adonex.ollama.embeddingModel"] == "nomic-embed-text:latest"
-    assert settings["adonex.synapse.rufloCouncil.maxAgents"] == 8
-    assert settings["adonex.synapse.rufloCouncil.maxChars"] == 8000
-    assert settings["adonex.synapse.llmGateway.enabled"] is True
-    assert settings["adonex.synapse.llmGateway.projectId"] == project_name
-    assert settings["adonex.voice.startWithVSCode"] is True
-    assert settings["adonex.voice.autoOpenCockpit"] is True
-    assert settings["adonex.voice.wakeWord"] == "Vick"
-    assert (project / "adonex" / "package.json").exists()
-    assert (project / "adonex" / "src" / "extension.ts").exists()
-    assert (project / "adonex" / "src" / "agent" / "agentOrchestrator.ts").exists()
-    assert (project / "adonex" / "src" / "patch" / "patchEngine.ts").exists()
-    assert (project / "adonex" / "src" / "patch" / "patchUtils.ts").exists()
-    assert (project / "adonex" / "src" / "llm" / "localModels.ts").exists()
-    assert (project / "adonex" / "src" / "tasks" / "taskFinalizer.ts").exists()
-    assert (project / "adonex" / "test").exists()
-    assert not (project / "adonex" / "node_modules").exists()
-    assert not (project / "adonex" / "dist").exists()
+    assert settings["task.allowAutomaticTasks"] == "on"
+    assert not (project / "adonex").exists()
     assert not (project / "config" / "workflows" / "ruflo" / "new-ai-project.json").exists()
     solution_contract = json.loads(
         (project / "config" / "synapse_solution_contract.json").read_text(encoding="utf-8-sig")
@@ -1919,11 +1875,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert "llm_solution_factory_policy" in diagnostics
     assert "llm_solution_factory_governance" in diagnostics
     assert "runtime_assistant_inheritance" in diagnostics
-    assert "runtime_shared_dialog_memory" in diagnostics
-    assert "shared_dialog_memory" in diagnostics
-    assert "chat_tasks_memory" in diagnostics
     assert "mcp_peer_standalone_script" in diagnostics
-    assert "adonex_local_mode" in diagnostics
     assert "master_data_treatment_prompt" in diagnostics
 
 
@@ -1997,23 +1949,13 @@ def test_generated_solution_project_matches_selected_universe(
     assert (project / "prompts" / "master_data_treatment.md").exists()
     assert (project / "AGENTS.md").exists()
     assert (project / "CLAUDE.md").exists()
-    assert (project / ".adonex" / "memory" / "SHARED_DIALOG_MEMORY.md").exists()
-    assert (project / ".adonex" / "memory" / "CHAT_TASKS.md").exists()
-    assert (project / "docs" / "runbooks" / "adonex.md").exists()
     assert (project / "docs" / "runbooks" / "peer_messaging.md").exists()
     assert (project / "scripts" / "synapse_solution_peers_mcp.py").exists()
-    assert (project / "scripts" / "start_vick.py").exists()
     assert not (project / "scripts" / "synapse_peers_mcp.py").exists()
     assert (project / ".vscode" / "settings.json").exists()
     assert (project / ".vscode" / "extensions.json").exists()
     tasks = json.loads((project / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     assert any(task["label"] == "Synapse: Rodar testes do projeto" for task in tasks["tasks"])
-    assert any(
-        task["label"] == "Vick: Abrir assistente web automaticamente"
-        and task["runOptions"]["runOn"] == "folderOpen"
-        and "--open-browser" in task["args"]
-        for task in tasks["tasks"]
-    )
     env_example = (project / ".env.example").read_text(encoding="utf-8-sig")
     assert "PROJECT_DEFAULT_ACTIVE_AGENTS=1" in env_example
     assert "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8" in env_example
@@ -2024,65 +1966,27 @@ def test_generated_solution_project_matches_selected_universe(
     assert runtime["assistant_inheritance"]["enabled"] is True
     assert runtime["assistant_inheritance"]["user_request_channels"] == [
         "VS Code Chat",
-        "AdoneX",
         "Claude Code",
         "Codex",
     ]
     assert "chats autorizados antes de usar tasks" in runtime["assistant_inheritance"]["content_collection_rule"]
     assert runtime["assistant_inheritance"]["shared_solution_factory_access"]["policy"] == "config/llm_solution_factory_policy.json"
     assert runtime["assistant_inheritance"]["shared_solution_factory_access"]["technology_catalog"] == "config/ai_framework_selection.json"
-    assert runtime["assistant_inheritance"]["shared_solution_factory_access"]["shared_dialog_memory"] == ".adonex/memory/SHARED_DIALOG_MEMORY.md"
     assert runtime["assistant_inheritance"]["peer_messaging"]["script"] == "scripts/synapse_solution_peers_mcp.py"
-    assert runtime["assistant_inheritance"]["shared_dialog_memory"]["enabled"] is True
-    assert runtime["assistant_inheritance"]["shared_dialog_memory"]["persistent_context"] == ".adonex/memory/SHARED_DIALOG_MEMORY.md"
-    assert runtime["assistant_inheritance"]["shared_dialog_memory"]["chat_tasks"] == ".adonex/memory/CHAT_TASKS.md"
-    assert runtime["assistant_inheritance"]["vick"]["enabled"] is True
-    assert runtime["assistant_inheritance"]["vick"]["browser_assistant"] == "scripts/start_vick.py"
-    assert runtime["assistant_inheritance"]["vick"]["wake_word"] == "Vick"
     assert "config/business_solution_analysis.json" in runtime["validation"]["required_practice_paths"]
-    assert "scripts/start_vick.py" in runtime["validation"]["required_practice_paths"]
-    assert ".adonex/memory/SHARED_DIALOG_MEMORY.md" in runtime["validation"]["required_practice_paths"]
-    assert ".adonex/memory/CHAT_TASKS.md" in runtime["validation"]["required_practice_paths"]
     assert "config/llm_solution_factory_policy.json" in runtime["validation"]["required_practice_paths"]
     assert "docs/specifications/llm_solution_factory_governance.md" in runtime["validation"]["required_practice_paths"]
     generated_agents = (project / "AGENTS.md").read_text(encoding="utf-8-sig")
     generated_claude = (project / "CLAUDE.md").read_text(encoding="utf-8-sig")
-    generated_adonex = (project / "docs" / "runbooks" / "adonex.md").read_text(encoding="utf-8-sig")
     assert "Canais autorizados para conteudo solicitado pelo usuario" in generated_agents
     assert "Canais autorizados para conteudo solicitado pelo usuario" in generated_claude
-    assert "Canais autorizados para conteudo solicitado pelo usuario" in generated_adonex
     analysis = json.loads((project / "config" / "business_solution_analysis.json").read_text(encoding="utf-8-sig"))
     assert analysis["requested_universe"] in {"ml", "ia", "chatbolt", "hybrid"}
     assert analysis["architecture_decision"]
     assert "tests/test_project_contract.py" in analysis["test_strategy"]
     settings = json.loads((project / ".vscode" / "settings.json").read_text(encoding="utf-8-sig"))
-    assert settings["adonex.agent.defaultMode"] == "local"
-    assert settings["adonex.ollama.model"] == "qwen2.5-coder:3b"
-    assert settings["adonex.ollama.modelReasoning"] == "deepseek-coder-v2:lite"
-    assert settings["adonex.ollama.modelGeneral"] == "qwen3:8b"
-    assert settings["adonex.ollama.modelCodeReview"] == "deepseek-coder-v2:lite"
-    assert settings["adonex.ollama.modelCodeStrong"] == "qwen2.5-coder:14b"
-    assert settings["adonex.ollama.modelPlanningStrong"] == "qwen3:14b"
-    assert settings["adonex.ollama.modelReasoningStrong"] == "deepseek-r1:14b"
-    assert settings["adonex.ollama.modelCodeCritical"] == "qwen2.5-coder:32b"
-    assert settings["adonex.ollama.embeddingModel"] == "nomic-embed-text:latest"
-    assert settings["adonex.synapse.rufloCouncil.maxAgents"] == 8
-    assert settings["adonex.synapse.llmGateway.enabled"] is True
-    assert settings["adonex.synapse.llmGateway.projectId"] == project_name
-    assert settings["adonex.voice.startWithVSCode"] is True
-    assert settings["adonex.voice.autoOpenCockpit"] is True
-    assert settings["adonex.voice.wakeWord"] == "Vick"
-    assert runtime["assistant_inheritance"]["adonex"]["complete_runtime"] is True
-    assert runtime["assistant_inheritance"]["adonex"]["package"] == "adonex/package.json"
-    assert "incremental_patch_operations" in runtime["assistant_inheritance"]["adonex"]["coding_capabilities"]
-    assert "adonex/package.json" in runtime["validation"]["required_practice_paths"]
-    assert "adonex/src/patch/patchEngine.ts" in runtime["validation"]["required_practice_paths"]
-    assert (project / "adonex" / "package.json").exists()
-    assert (project / "adonex" / "src" / "extension.ts").exists()
-    assert (project / "adonex" / "src" / "patch" / "patchUtils.ts").exists()
-    assert (project / "adonex" / "test").exists()
-    assert not (project / "adonex" / "node_modules").exists()
-    assert not (project / "adonex" / "dist").exists()
+    assert settings["task.allowAutomaticTasks"] == "on"
+    assert not (project / "adonex").exists()
 
     if expected_capabilities["ai"]:
         assert (project / "config" / "ai_framework_selection.json").exists()
@@ -2140,7 +2044,6 @@ def test_managed_project_artifact_manifest_inherits_assistant_and_cost_contracts
     assert manifest["assistant_inheritance"]["claude"]["instructions"] == "CLAUDE.md"
     assert manifest["assistant_inheritance"]["user_request_channels"] == [
         "VS Code Chat",
-        "AdoneX",
         "Claude Code",
         "Codex",
     ]
@@ -2149,19 +2052,7 @@ def test_managed_project_artifact_manifest_inherits_assistant_and_cost_contracts
     assert manifest["assistant_inheritance"]["shared_solution_factory_access"]["technology_catalog"] == "config/ai_framework_selection.json"
     assert manifest["assistant_inheritance"]["shared_solution_factory_access"]["ml_foundations_policy"] == "config/ml_foundations_policy.json"
     assert manifest["assistant_inheritance"]["shared_solution_factory_access"]["business_analysis"] == "config/business_solution_analysis.json"
-    assert manifest["assistant_inheritance"]["adonex"]["default_mode"] == "local"
-    assert manifest["assistant_inheritance"]["adonex"]["complete_runtime"] is True
-    assert manifest["assistant_inheritance"]["adonex"]["package"] == "adonex/package.json"
-    assert manifest["assistant_inheritance"]["adonex"]["source"] == "adonex/src"
-    assert "workspace_conflict_detection" in manifest["assistant_inheritance"]["adonex"]["coding_capabilities"]
-    assert "adonex/dist" in manifest["assistant_inheritance"]["adonex"]["excluded_runtime_paths"]
-    assert manifest["assistant_inheritance"]["vick"]["enabled"] is True
-    assert manifest["assistant_inheritance"]["vick"]["browser_assistant"] == "scripts/start_vick.py"
-    assert manifest["assistant_inheritance"]["vick"]["wake_word"] == "Vick"
     assert manifest["assistant_inheritance"]["peer_messaging"]["script"] == "scripts/synapse_solution_peers_mcp.py"
-    assert manifest["assistant_inheritance"]["shared_dialog_memory"]["enabled"] is True
-    assert manifest["assistant_inheritance"]["shared_dialog_memory"]["persistent_context"] == ".adonex/memory/SHARED_DIALOG_MEMORY.md"
-    assert manifest["assistant_inheritance"]["shared_dialog_memory"]["chat_tasks"] == ".adonex/memory/CHAT_TASKS.md"
     assert manifest["local_model_policy"]["allowed_models"] == [
         "nomic-embed-text:latest",
         "qwen2.5-coder:3b",
@@ -2174,17 +2065,8 @@ def test_managed_project_artifact_manifest_inherits_assistant_and_cost_contracts
     ]
     assert manifest["cost_policy"]["default_active_agents"] == 1
     assert manifest["cost_policy"]["enterprise_active_agents"] == 8
-    assert "docs/runbooks/adonex.md" in manifest["required_paths"]
-    assert "adonex/package.json" in manifest["required_paths"]
-    assert "adonex/src/extension.ts" in manifest["required_paths"]
-    assert "adonex/src/patch/patchEngine.ts" in manifest["required_paths"]
-    assert "adonex/src/llm/localModels.ts" in manifest["required_paths"]
-    assert "adonex/test" in manifest["required_paths"]
     assert "docs/runbooks/peer_messaging.md" in manifest["required_paths"]
     assert ".vscode/tasks.json" in manifest["required_paths"]
-    assert "scripts/start_vick.py" in manifest["required_paths"]
-    assert ".adonex/memory/SHARED_DIALOG_MEMORY.md" in manifest["required_paths"]
-    assert ".adonex/memory/CHAT_TASKS.md" in manifest["required_paths"]
     assert "config/agentic_architectural_patterns.json" in manifest["required_paths"]
     assert "docs/specifications/agentic_architectural_patterns.md" in manifest["required_paths"]
     assert "lifecycle-callbacks" in manifest["agentic_architectural_patterns"]["patterns"]
@@ -3154,12 +3036,10 @@ def test_assistant_provider_boundaries_are_fixed():
     expected = {
         'codex': {'provider': 'openai', 'direct_generation': True, 'ollama_allowed': False},
         'claude_code': {'provider': 'anthropic', 'direct_generation': True, 'ollama_allowed': False},
-        'adonex': {'provider': 'ollama', 'exclusive': True, 'cloud_allowed': False},
     }
     assert policy['assistant_provider_boundaries'] == expected
     assert providers['assistant_provider_boundaries'] == expected
     assert runtime['assistant_provider_boundaries'] == expected
     assert 'codex_mcp_server' not in runtime['local_llm']
     assert 'SYNAPSE_ollama' not in (root / '.codex' / 'config.toml').read_text(encoding='utf-8')
-    package = json.loads((root / 'adonex' / 'package.json').read_text(encoding='utf-8-sig'))
-    assert all(not key.startswith('adonex.anthropic') for key in package['contributes']['configuration']['properties'])
+    assert not (root / 'adonex').exists()

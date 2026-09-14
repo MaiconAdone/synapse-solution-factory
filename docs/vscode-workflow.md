@@ -16,10 +16,10 @@ navegador.
 O caminho principal agora e a caixa de dialogo no VS Code, sem navegador:
 
 ```text
-@adonex /projeto crie uma solucao de IA/RAG para atendimento ao cliente
+crie uma solucao de IA/RAG para atendimento ao cliente
 ```
 
-Tambem funciona pela conversa do Codex ou Claude Code no VS Code. Antes de
+Basta pedir pela conversa do Codex ou Claude Code no VS Code. Antes de
 implementar, o assistente deve confirmar no proprio chat:
 
 - objetivo do projeto;
@@ -35,17 +35,11 @@ governanca e custo local-first. Tasks continuam existindo apenas como atalhos.
 
 ## Memoria Compartilhada Entre Chats
 
-VS Code Chat, Codex, Claude Code e AdoneX compartilham contexto local por:
-
-- `.adonex/memory/SHARED_DIALOG_MEMORY.md`;
-- `.adonex/memory/CHAT_TASKS.md`;
-- `.adonex/memory/CURRENT_STATE.md`;
-- MCP local `synapse-peers`, com SQLite em `artifacts/peers/synapse-peers.db`.
-
-O `@adonex` registra automaticamente pedidos recebidos pelo chat. Codex e
-Claude Code devem ler esses arquivos antes de pedir contexto novamente ao
-usuario e registrar um resumo curto quando uma tarefa for concluida, bloqueada
-ou ficar aguardando resposta.
+VS Code Chat, Codex e Claude Code compartilham contexto local pelo MCP
+`synapse-peers`, com SQLite em `artifacts/peers/synapse-peers.db`. Codex e
+Claude Code devem consultar mensagens pendentes antes de pedir contexto
+novamente ao usuario e registrar um resumo curto quando uma tarefa for
+concluida, bloqueada ou ficar aguardando resposta.
 
 ## Criar Projeto Por Task
 
@@ -76,7 +70,7 @@ O fluxo recomendado e:
 2. Rodar `SYNAPSE: Preparar runtime VS Code sem navegador`.
 3. Rodar `AI Factory: Menu interativo`.
 4. Escolher criar projeto; o padrao ativa um subconjunto economico dos core agents e mantem o pool de 60 disponivel.
-5. Abrir a pasta gerada com `code C:\Users\malves\Documents\Projetos\nome_do_projeto`.
+5. Abrir a pasta gerada com `code C:\Users\<seu_usuario>\Documents\Projetos\nome_do_projeto`.
 
 ## Criar Via Terminal Integrado
 

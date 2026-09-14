@@ -31,7 +31,7 @@ reviewer or human approval gate.
 
 ### Agent To Agent Message Contract
 
-Codex, Claude, AdoneX, Ruflo and humans should exchange short structured local
+Codex, Claude, Ruflo and humans should exchange short structured local
 messages through `synapse-peers`. Messages should include objective, source,
 target, context summary, evidence, requested decision, risk level, token budget
 and status.

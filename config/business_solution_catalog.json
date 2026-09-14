@@ -62,9 +62,9 @@
     {
       "id": "voice_coding_agent",
       "label": "Voice-driven agentic coding assistant",
-      "keywords": ["adonex", "vick", "coding agent", "edicao de codigo", "editar codigo", "programacao por voz", "comando de voz", "ide", "terminal", "rollback", "patch"],
+      "keywords": ["coding agent", "edicao de codigo", "editar codigo", "programacao por voz", "comando de voz", "ide", "terminal", "rollback", "patch"],
       "best_for": ["voice-driven software engineering", "context-aware code changes", "governed terminal and IDE workflows", "human-approved patches"],
-      "required_artifacts": ["docs/specifications/voice_agentic_coding.md", "config/voice_agent_quality_gates.json", "evals/voice_agent_cases.jsonl", "evals/agentic_coding_cases.jsonl"],
+      "required_artifacts": ["docs/specifications/voice_agentic_coding.md", "config/voice_agent_quality_gates.json", "evals/agentic_coding_cases.jsonl"],
       "metrics": ["task_success_rate", "patch_test_pass_rate", "human_approval_rate", "rollback_success_rate", "p95_task_latency_ms"]
     },
     {
@@ -101,7 +101,7 @@
     }
   ],
   "domains": [
-    {"id": "developer_productivity", "keywords": ["codigo", "coding", "programacao", "desenvolvedor", "ide", "terminal", "patch", "adonex", "vick", "synapse"]},
+    {"id": "developer_productivity", "keywords": ["codigo", "coding", "programacao", "desenvolvedor", "ide", "terminal", "patch", "synapse"]},
     {"id": "sales_revenue", "keywords": ["vendas", "receita", "lead", "cliente", "cross-sell", "upsell", "proposta", "crm", "carrinho"]},
     {"id": "marketing_customer", "keywords": ["marketing", "campanha", "sentimento", "conteudo", "personalizacao", "conversao", "marca"]},
     {"id": "operations_supply_chain", "keywords": ["operacao", "logistica", "estoque", "entrega", "rota", "fornecedor", "compras", "suprimentos"]},

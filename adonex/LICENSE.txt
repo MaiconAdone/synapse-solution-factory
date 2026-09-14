@@ -1,5 +1,0 @@
-Copyright (c) 2026. All rights reserved.
-
-This software is proprietary. No permission is granted to copy, modify,
-distribute, sublicense, or sell this software without an explicit written
-license from the copyright holder.
