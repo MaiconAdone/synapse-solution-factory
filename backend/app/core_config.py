@@ -1,6 +1,12 @@
 ﻿from functools import lru_cache
+from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _default_project_factory_base_path() -> str:
+    return str(Path.home() / "Documents" / "Projetos")
 
 
 class Settings(BaseSettings):
@@ -9,7 +15,9 @@ class Settings(BaseSettings):
     app_api_key: str = ""
     allow_insecure_local_auth: bool = True
     cors_origins: str = "http://localhost:3000"
-    project_factory_base_path: str = "C:\\Users\\malves\\Documents\\Projetos"
+    project_factory_base_path: str = Field(
+        default_factory=_default_project_factory_base_path
+    )
     project_factory_timeout_seconds: int = 600
     synapse_project_index_path: str = "./artifacts/projects/synapse-projects.json"
     ruflo_mcp_server: str = "ruflo"

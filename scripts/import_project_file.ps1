@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string]$InputPath,
 
-    [string]$DestinoBase = "C:\Users\malves\Documents\Projetos"
+    [string]$DestinoBase = (Join-Path $env:USERPROFILE "Documents\Projetos")
 )
 
 $ErrorActionPreference = "Stop"

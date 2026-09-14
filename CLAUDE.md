@@ -28,9 +28,8 @@ Anthropic API, Claude Agent SDK ou fluxos assistidos por Ruflo.
   memoria compartilhada, `config/llm_solution_factory_policy.json`,
   `config/ai_framework_selection.json`, analisador de solucoes, governanca,
   testes e evals.
-- Para continuidade entre chats, leia `.adonex/memory/SHARED_DIALOG_MEMORY.md`,
-  `.adonex/memory/CHAT_TASKS.md` e use `synapse-peers` para mensagens curtas
-  locais quando outro peer estiver ativo.
+- Para continuidade entre chats, leia `.adonex/memory/SHARED_DIALOG_MEMORY.md`
+  e `.adonex/memory/CHAT_TASKS.md`.
 - Ao concluir, bloquear ou deixar pergunta pendente, registre resumo curto na
   memoria compartilhada sem copiar secrets, datasets completos ou diffs longos.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes disponiveis ou nivel de risco, pergunte ao usuario no chat antes de implementar. Nao invente essas informacoes.
@@ -60,9 +59,7 @@ Evite:
 O projeto tambem registra `claude-peers` em `.mcp.json`, instalado em
 `C:\Users\malves\.claude\mcp\claude-peers-mcp`.
 
-Use `claude-peers` somente para comunicacao entre sessoes Claude Code. Para
-coordenacao neutra entre Codex, AdoneX, Ruflo, Ollama e Claude, use
-`synapse-peers`.
+Use `claude-peers` somente para comunicacao entre sessoes Claude Code.
 
 Para receber mensagens instantaneas via `claude/channel`, inicie o Claude Code
 com development channels:

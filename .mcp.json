@@ -37,19 +37,6 @@
       },
       "autoStart": false
     },
-    "synapse-peers": {
-      "command": "python",
-      "args": [
-        "scripts/synapse_peers_mcp.py"
-      ],
-      "env": {
-        "SYNAPSE_PEER_TYPE": "codex",
-        "PEER_MESSAGING_DB_PATH": "./artifacts/peers/synapse-peers.db",
-        "PEER_MESSAGING_MAX_MESSAGE_CHARS": "1200",
-        "PEER_MESSAGING_MAX_SUMMARY_CHARS": "360"
-      },
-      "autoStart": false
-    },
     "claude-peers": {
       "command": "C:\\Users\\malves\\.bun\\bin\\bun.exe",
       "args": [

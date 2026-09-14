@@ -4,7 +4,7 @@
 
     [string]$TipoProjeto = "b2b2c-ai-ml-agentic-saas",
     [string]$Template = "",
-    [string]$DestinoBase = "C:\Users\malves\Documents\Projetos",
+    [string]$DestinoBase = (Join-Path $env:USERPROFILE "Documents\Projetos"),
     [string]$ProjectGoal = "",
     [string]$BusinessProblem = "",
     [string]$SolutionFocus = "",

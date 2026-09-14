@@ -283,17 +283,6 @@ def test_peer_messaging_supports_adonex_ruflo_and_local_task_routes(tmp_path, mo
     assert "provider=ollama cloud=false" in inbox["messages"][0]["text"]
 
 
-def test_synapse_peers_mcp_is_declared_as_manual_local_server():
-    config = json.loads(Path(".mcp.json").read_text(encoding="utf-8"))
-    peers = config["mcpServers"]["synapse-peers"]
-
-    assert peers["command"] == "python"
-    assert peers["args"] == ["scripts/synapse_peers_mcp.py"]
-    assert peers["autoStart"] is False
-    assert peers["env"]["SYNAPSE_PEER_TYPE"] == "codex"
-    assert peers["env"]["PEER_MESSAGING_MAX_MESSAGE_CHARS"] == "1200"
-
-
 def test_claude_peers_mcp_is_declared_for_claude_code_channels():
     config = json.loads(Path(".mcp.json").read_text(encoding="utf-8"))
     peers = config["mcpServers"]["claude-peers"]
