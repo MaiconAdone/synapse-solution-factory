@@ -62,7 +62,7 @@ Test-RelativePath "agent_fleets" "config\agent_fleets.json" "Agentic mesh fleets
 Test-RelativePath "agent_blueprint_contract" "config\agent_blueprint_contract.json" "Contrato de agent blueprint existe"
 Test-RelativePath "agentic_architectural_patterns" "config\agentic_architectural_patterns.json" "Catalogo de padroes arquiteturais agentic existe"
 Test-RelativePath "agent_improvement_loop" "config\agent_improvement_loop.json" "Loop de melhoria de agents existe"
-Test-RelativePath "model_providers" "config\model_providers.json" "Politica de provedores Ollama/OpenAI existe"
+Test-RelativePath "model_providers" "config\model_providers.json" "Politica de provedores OpenAI/Anthropic existe"
 Test-RelativePath "business_solution_analysis_json" "config\business_solution_analysis.json" "Analise de solucao de negocio existe"
 Test-RelativePath "business_solution_analysis_md" "docs\briefings\business_solution_analysis.md" "Briefing da analise de solucao de negocio existe"
 Test-RelativePath "llm_solution_factory_policy" "config\llm_solution_factory_policy.json" "Policy geral da fabrica de solucoes para LLMs existe"
@@ -71,8 +71,7 @@ Test-RelativePath "data_treatment_policy" "config\data_treatment_policy.json" "P
 Test-RelativePath "master_data_treatment_prompt" "prompts\master_data_treatment.md" "Prompt mestre de tratamento estatistico existe"
 Test-RelativePath "data_treatment_prompt" "prompts\codex_data_treatment_dialog.md" "Prompt de tratamento de dados existe"
 Test-RelativePath "data_treatment_script" "scripts\treat_dataset.py" "Script de tratamento de dados existe"
-Test-RelativePath "ruflo_runtime" "scripts\start_ruflo_swarm.ps1" "Runtime Ruflo do projeto existe"
-Test-RelativePath "ruflo_mcp" ".mcp.json" "Configuracao MCP Ruflo do projeto existe"
+Test-RelativePath "mcp_config" ".mcp.json" "Configuracao MCP do projeto existe"
 Test-RelativePath "codex_agents_instructions" "AGENTS.md" "Instrucoes Codex/agents do projeto existem"
 Test-RelativePath "claude_instructions" "CLAUDE.md" "Instrucoes Claude do projeto existem"
 Test-RelativePath "peer_messaging_runbook" "docs\runbooks\peer_messaging.md" "Runbook de peer messaging existe"
@@ -80,7 +79,7 @@ Test-RelativePath "peer_messaging_mcp" "scripts\synapse_solution_peers_mcp.py" "
 Test-RelativePath "vscode_settings" ".vscode\settings.json" "Settings VS Code existem"
 Test-RelativePath "vscode_extensions" ".vscode\extensions.json" "Recomendacoes de extensoes VS Code existem"
 Test-RelativePath "agents_yaml" "agents\definitions\enterprise_agents.yaml" "Catalogo de agentes do projeto existe"
-Test-RelativePath "attachment_manifest" "docs\briefings\codex_attachments_manifest.json" "Manifesto de anexos Codex/Ruflo existe"
+Test-RelativePath "attachment_manifest" "docs\briefings\codex_attachments_manifest.json" "Manifesto de anexos Codex existe"
 Test-RelativePath "execution_spec" "docs\specifications\ai_ml_execution_spec.md" "Especificacao de execucao existe"
 Test-RelativePath "agentic_mesh_spec" "docs\specifications\agentic_mesh_governance.md" "Especificacao agentic mesh existe"
 Test-RelativePath "agentic_patterns_spec" "docs\specifications\agentic_architectural_patterns.md" "Especificacao de padroes arquiteturais agentic existe"
@@ -100,7 +99,7 @@ if (Test-Path $SolutionContractPath) {
         Add-Check "solution_managed_by_synapse" "Solucao e gerenciada pelo Synapse" ($SolutionContract.managed_by -eq "synapse") "managed_by=$($SolutionContract.managed_by)"
         Add-Check "solution_not_factory" "Solucao nao pode criar projetos" (-not [bool]$SolutionContract.factory_capable) "factory_capable=$($SolutionContract.factory_capable)"
         Add-Check "solution_no_application_stack" "Solucao nao inclui backend ou frontend" (-not [bool]$SolutionContract.contains_backend -and -not [bool]$SolutionContract.contains_frontend) "backend=$($SolutionContract.contains_backend), frontend=$($SolutionContract.contains_frontend)"
-        Add-Check "solution_ruflo_inherited" "Solucao herda runtime Ruflo" ($SolutionContract.ruflo_runtime -eq "inherited") "ruflo_runtime=$($SolutionContract.ruflo_runtime)"
+        Add-Check "solution_swarm_inherited" "Solucao herda runtime do swarm" ($SolutionContract.swarm_runtime -eq "inherited") "swarm_runtime=$($SolutionContract.swarm_runtime)"
         Add-Check "solution_agents_inherited" "Solucao herda agentes" ($SolutionContract.agents_runtime -eq "inherited") "agents_runtime=$($SolutionContract.agents_runtime)"
     }
     catch {
@@ -113,9 +112,9 @@ if (Test-Path $RuntimePath) {
     try {
         $Runtime = Get-Content $RuntimePath -Raw | ConvertFrom-Json
         Add-Check "runtime_json" "Runtime manifest e JSON valido" $true "config/runtime_manifest.json"
-        Add-Check "ruflo_max_agents" "Ruflo max_agents=60" ([int]$Runtime.swarm.max_agents -eq 60) "max_agents=$($Runtime.swarm.max_agents)"
-        Add-Check "ruflo_core_agents" "Ruflo core_agent_count=15" ([int]$Runtime.swarm.core_agent_count -eq 15) "core_agent_count=$($Runtime.swarm.core_agent_count)"
-        Add-Check "ruflo_specialists" "Ruflo specialist_agent_count=45" ([int]$Runtime.swarm.specialist_agent_count -eq 45) "specialist_agent_count=$($Runtime.swarm.specialist_agent_count)"
+        Add-Check "swarm_max_agents" "Swarm max_agents=60" ([int]$Runtime.swarm.max_agents -eq 60) "max_agents=$($Runtime.swarm.max_agents)"
+        Add-Check "swarm_core_agents" "Swarm core_agent_count=15" ([int]$Runtime.swarm.core_agent_count -eq 15) "core_agent_count=$($Runtime.swarm.core_agent_count)"
+        Add-Check "swarm_specialists" "Swarm specialist_agent_count=45" ([int]$Runtime.swarm.specialist_agent_count -eq 45) "specialist_agent_count=$($Runtime.swarm.specialist_agent_count)"
         Add-Check "runtime_required_agents" "Runtime declara 15 core agents" (@($Runtime.validation.required_agents).Count -eq 15) "required_agents=$(@($Runtime.validation.required_agents).Count)"
         Add-Check "runtime_specialist_agents" "Runtime declara 45 especialistas" (@($Runtime.validation.specialist_agents).Count -eq 45) "specialist_agents=$(@($Runtime.validation.specialist_agents).Count)"
         Add-Check "runtime_cost_policy_enabled" "Runtime ativa orquestracao economica" ([bool]$Runtime.cost_optimization.enabled) "enabled=$($Runtime.cost_optimization.enabled)"
@@ -128,19 +127,12 @@ if (Test-Path $RuntimePath) {
         Add-Check "runtime_agentic_mesh_fleets" "Runtime declara fleets de solucao" ([int]$Runtime.agentic_mesh.fleet_count -ge 5) "fleet_count=$($Runtime.agentic_mesh.fleet_count)"
         Add-Check "runtime_blueprint_contract_path" "Runtime aponta para agent blueprint contract" ($Runtime.agentic_mesh.agent_blueprint_contract_file -eq "config/agent_blueprint_contract.json") "agent_blueprint_contract_file=$($Runtime.agentic_mesh.agent_blueprint_contract_file)"
         Add-Check "runtime_improvement_loop_path" "Runtime aponta para improvement loop" ($Runtime.agentic_mesh.improvement_loop_file -eq "config/agent_improvement_loop.json") "improvement_loop_file=$($Runtime.agentic_mesh.improvement_loop_file)"
-        Add-Check "runtime_ollama_enabled" "Runtime ativa Ollama local" ([bool]$Runtime.local_llm.enabled) "enabled=$($Runtime.local_llm.enabled)"
-        Add-Check "runtime_ollama_model" "Runtime usa qwen2.5-coder:3b como modelo rapido" ($Runtime.local_llm.default_model -eq "qwen2.5-coder:3b") "model=$($Runtime.local_llm.default_model)"
-        Add-Check "runtime_ollama_general_model" "Runtime integra qwen3:8b para respostas gerais" ($Runtime.local_llm.general_model -eq "qwen3:8b") "general_model=$($Runtime.local_llm.general_model)"
-        Add-Check "runtime_ollama_balanced_model" "Runtime integra deepseek-coder-v2:lite como modelo equilibrado" ($Runtime.local_llm.balanced_model -eq "deepseek-coder-v2:lite") "balanced_model=$($Runtime.local_llm.balanced_model)"
-        Add-Check "runtime_ollama_code_review_model" "Runtime integra DeepSeek Coder V2 Lite para revisao" ($Runtime.local_llm.code_review_model -eq "deepseek-coder-v2:lite") "code_review_model=$($Runtime.local_llm.code_review_model)"
-        Add-Check "runtime_ollama_code_strong_model" "Runtime integra qwen2.5-coder:14b para codigo forte" ($Runtime.local_llm.code_strong_model -eq "qwen2.5-coder:14b") "code_strong_model=$($Runtime.local_llm.code_strong_model)"
-        Add-Check "runtime_ollama_planning_strong_model" "Runtime integra qwen3:14b para planejamento forte" ($Runtime.local_llm.planning_strong_model -eq "qwen3:14b") "planning_strong_model=$($Runtime.local_llm.planning_strong_model)"
-        Add-Check "runtime_ollama_reasoning_strong_model" "Runtime integra deepseek-r1:14b para raciocinio forte" ($Runtime.local_llm.reasoning_strong_model -eq "deepseek-r1:14b") "reasoning_strong_model=$($Runtime.local_llm.reasoning_strong_model)"
-        Add-Check "runtime_ollama_large_model" "Runtime usa qwen2.5-coder:32b como alias avancado local" ($Runtime.local_llm.large_model -eq "qwen2.5-coder:32b") "large_model=$($Runtime.local_llm.large_model)"
-        Add-Check "runtime_cloud_default" "Cloud fica desativada por padrao" (-not [bool]$Runtime.local_llm.cloud_default_enabled) "cloud_default=$($Runtime.local_llm.cloud_default_enabled)"
-        Add-Check "runtime_output_limit" "Resposta local padrao limitada a 512 tokens" ([int]$Runtime.local_llm.default_max_output_tokens -eq 512) "max_output=$($Runtime.local_llm.default_max_output_tokens)"
+        Add-Check "runtime_cloud_provider" "Runtime usa OpenAI como provedor direto" ($Runtime.local_llm.provider -eq "openai") "provider=$($Runtime.local_llm.provider)"
+        Add-Check "runtime_cloud_routing" "Runtime roteia direto para a nuvem" ($Runtime.local_llm.routing_strategy -eq "cloud_only") "routing_strategy=$($Runtime.local_llm.routing_strategy)"
+        Add-Check "runtime_cloud_default" "Cloud fica ativada por padrao" ([bool]$Runtime.local_llm.cloud_default_enabled) "cloud_default=$($Runtime.local_llm.cloud_default_enabled)"
+        Add-Check "runtime_output_limit" "Resposta padrao limitada a 512 tokens" ([int]$Runtime.local_llm.default_max_output_tokens -eq 512) "max_output=$($Runtime.local_llm.default_max_output_tokens)"
         Add-Check "runtime_governed_model_access" "60 agentes usam acesso governado aos modelos" ($Runtime.local_llm.all_60_agents_model_access -eq "governed_on_demand") "access=$($Runtime.local_llm.all_60_agents_model_access)"
-        Add-Check "runtime_sensitive_local" "Dados sensiveis ficam no provedor local" ([bool]$Runtime.local_llm.sensitive_content_local_only) "sensitive_content_local_only=$($Runtime.local_llm.sensitive_content_local_only)"
+        Add-Check "runtime_sensitive_blocked" "Dados sensiveis sao bloqueados em vez de roteados" ([bool]$Runtime.local_llm.sensitive_content_blocked) "sensitive_content_blocked=$($Runtime.local_llm.sensitive_content_blocked)"
         Add-Check "runtime_continual_learning" "Aprendizagem continua por memoria esta ativa" ([bool]$Runtime.continual_learning.enabled) "enabled=$($Runtime.continual_learning.enabled)"
         Add-Check "runtime_no_auto_weight_update" "Pesos do modelo nao mudam automaticamente" (-not [bool]$Runtime.continual_learning.automatic_weight_updates) "automatic_weight_updates=$($Runtime.continual_learning.automatic_weight_updates)"
         Add-Check "runtime_learning_approval" "Promocao de aprendizado exige evals e aprovacao humana" ([bool]$Runtime.continual_learning.promotion_requires_evals_and_human_approval) "approval=$($Runtime.continual_learning.promotion_requires_evals_and_human_approval)"
@@ -162,10 +154,10 @@ if (Test-Path $ModelProvidersPath) {
     try {
         $Providers = Get-Content $ModelProvidersPath -Raw | ConvertFrom-Json
         Add-Check "model_providers_json" "Politica de provedores e JSON valido" $true "config/model_providers.json"
-        Add-Check "model_providers_local_first" "Politica de provedores e local-first" ($Providers.routing_strategy -eq "local_first") "routing_strategy=$($Providers.routing_strategy)"
-        Add-Check "model_providers_ruflo_bridge" "Ponte Ruflo governada esta ativa" ([bool]$Providers.ruflo_bridge.enabled) "enabled=$($Providers.ruflo_bridge.enabled)"
-        Add-Check "model_providers_all_60" "Todos os 60 agentes podem acessar o roteador governado" ([bool]$Providers.ruflo_bridge.all_60_agents_have_governed_router_access) "all_60=$($Providers.ruflo_bridge.all_60_agents_have_governed_router_access)"
-        Add-Check "model_providers_cloud_opt_in" "Provedor cloud exige opt-in e aprovacao" ((-not [bool]$Providers.automatic_routing.cloud_default_enabled) -and [bool]$Providers.automatic_routing.cloud_requires_human_approval) "cloud_default=$($Providers.automatic_routing.cloud_default_enabled)"
+        Add-Check "model_providers_assistant_boundaries" "Politica de provedores usa fronteiras por assistente" ($Providers.routing_strategy -eq "assistant_boundaries") "routing_strategy=$($Providers.routing_strategy)"
+        Add-Check "model_providers_swarm_bridge" "Ponte de swarm governada esta ativa" ([bool]$Providers.swarm_bridge.enabled) "enabled=$($Providers.swarm_bridge.enabled)"
+        Add-Check "model_providers_all_60" "Todos os 60 agentes podem acessar o roteador governado" ([bool]$Providers.swarm_bridge.all_60_agents_have_governed_router_access) "all_60=$($Providers.swarm_bridge.all_60_agents_have_governed_router_access)"
+        Add-Check "model_providers_cloud_no_friction" "Chamadas de rotina nao exigem aprovacao humana" ([bool]$Providers.automatic_routing.cloud_default_enabled -and (-not [bool]$Providers.automatic_routing.cloud_requires_human_approval)) "cloud_default=$($Providers.automatic_routing.cloud_default_enabled)"
     }
     catch {
         Add-Check "model_providers_json" "Politica de provedores e JSON valido" $false $_.Exception.Message
@@ -178,8 +170,8 @@ if (Test-Path $UniversePath) {
         $Universe = Get-Content $UniversePath -Raw | ConvertFrom-Json
         Add-Check "universe_json" "Project universe e JSON valido" $true "config/project_universe.json"
         Add-Check "data_treatment_enabled" "Tratamento de dados ativo" ([bool]$Universe.capabilities.data_treatment) "data_treatment=$($Universe.capabilities.data_treatment)"
-        Add-Check "ruflo_core_capability" "Capacidade Ruflo core agents=15" ([int]$Universe.capabilities.ruflo_core_agents -eq 15) "ruflo_core_agents=$($Universe.capabilities.ruflo_core_agents)"
-        Add-Check "ruflo_max_capability" "Capacidade Ruflo max agents=60" ([int]$Universe.capabilities.ruflo_max_agents -eq 60) "ruflo_max_agents=$($Universe.capabilities.ruflo_max_agents)"
+        Add-Check "swarm_core_capability" "Capacidade swarm core agents=15" ([int]$Universe.capabilities.swarm_core_agents -eq 15) "swarm_core_agents=$($Universe.capabilities.swarm_core_agents)"
+        Add-Check "swarm_max_capability" "Capacidade swarm max agents=60" ([int]$Universe.capabilities.swarm_max_agents -eq 60) "swarm_max_agents=$($Universe.capabilities.swarm_max_agents)"
     }
     catch {
         Add-Check "universe_json" "Project universe e JSON valido" $false $_.Exception.Message

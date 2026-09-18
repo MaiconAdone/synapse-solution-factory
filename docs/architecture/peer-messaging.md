@@ -1,6 +1,6 @@
 ﻿# SYNAPSE Peer Messaging
 
-SYNAPSE Peers is a local MCP mailbox for Codex, Claude, Ruflo, Ollama, and human
+SYNAPSE Peers is a local MCP mailbox for Codex, Claude, and human
 operator sessions. It adapts the useful part of peer-to-peer Claude session
 coordination while staying compatible with Codex and the SYNAPSE local-first
 contract.
@@ -12,8 +12,8 @@ contract.
 - Persist task continuity across VS Code Chat, Codex, and Claude Code.
 - Send targeted local messages instead of repeating large prompts, manifests,
   catalogs, diffs, or memory blocks.
-- Route Synapse system questions through Ruflo/Ollama without calling an
-  external LLM.
+- Route Synapse system questions through the swarm without repeating large
+  context to a model.
 - Keep coordination local in SQLite with no cloud summary generation.
 
 ## MCP Tools
@@ -25,9 +25,9 @@ contract.
   active agent budget, and status.
 - `send_message`: send a short local message to another peer.
 - `check_messages`: read pending local messages.
-- `announce_task`: publish a local task message to a peer type such as `ruflo`.
-- `route_to_ruflo_agents`: prepare a local route to up to 60 Ruflo agents while
-  keeping Ollama calls consolidated.
+- `announce_task`: publish a local task message to a peer type such as `claude`.
+- `route_to_swarm_agents`: prepare a local route to up to 60 swarm agents while
+  keeping cloud calls consolidated.
 
 ## Claude and Codex
 
@@ -44,12 +44,12 @@ but the portable path is polling with `check_messages`.
 - `list_peers` returns summaries and estimated token impact.
 - No `OPENAI_API_KEY` or cloud provider is used for auto-summary or routing.
 - Scoping defaults to `repo` to avoid broad cross-project chatter.
-- Ruflo 60-agent routing is a coordination budget, not 60 parallel LLM calls.
+- Swarm 60-agent routing is a coordination budget, not 60 parallel LLM calls.
 
 ## Governance
 
 - The MCP server is declared in `.mcp.json` with `autoStart=false`.
-- Peer messaging does not activate Ruflo, agents, cloud, or external tools.
+- Peer messaging does not activate the swarm, agents, cloud, or external tools.
 - Messages are local coordination artifacts, not approval records.
 - Secrets, credentials, full files, large diffs, and private data should not be
   sent through peer messages.

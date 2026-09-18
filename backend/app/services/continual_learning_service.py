@@ -7,7 +7,6 @@ from threading import Lock
 from typing import Any
 
 from app.core_config import Settings, get_settings
-from app.services.ruflo_service import RufloService
 
 
 class ContinualLearningError(ValueError):
@@ -22,13 +21,8 @@ class ContinualLearningService:
         (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "[EMAIL_REDACTED]"),
     )
 
-    def __init__(
-        self,
-        settings: Settings | None = None,
-        ruflo: RufloService | None = None,
-    ) -> None:
+    def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
-        self.ruflo = ruflo or RufloService()
         self.events_path = Path(self.settings.learning_events_path)
         self.dataset_path = Path(self.settings.local_training_dataset_path)
         self._lock = Lock()
@@ -41,13 +35,21 @@ class ContinualLearningService:
         limit: int = 3,
     ) -> dict[str, Any]:
         namespace = self._namespace(project_id)
-        runtime = self.ruflo.search_memory(query, namespace, limit=limit)
-        examples = self._normalize_search_results(runtime.get("data", {}))
+        terms = [term for term in re.findall(r"[a-z0-9]+", query.lower()) if len(term) > 2]
+        examples = []
+        for event in reversed(self._read_jsonl(self.events_path)):
+            if event.get("project_id") != project_id or "prompt" not in event:
+                continue
+            haystack = f"{event.get('prompt', '')} {event.get('response', '')}".lower()
+            if not terms or any(term in haystack for term in terms):
+                examples.append(event)
+            if len(examples) >= limit:
+                break
         return {
             "namespace": namespace,
-            "available": bool(runtime.get("available")),
-            "examples": examples[:limit],
-            "runtime": runtime,
+            "available": bool(examples),
+            "examples": examples,
+            "runtime": {"source": "local", "available": True},
         }
 
     def capture_execution(
@@ -83,30 +85,12 @@ class ContinualLearningService:
         }
         self._append_jsonl(self.events_path, event)
 
-        memory = {"available": False, "reason": "quality_not_approved"}
-        if quality_passed:
-            memory = self.ruflo.store_memory(
-                self._namespace(project_id),
-                f"experience.{execution_id}",
-                json.dumps(
-                    {
-                        "prompt": sanitized_prompt,
-                        "response": sanitized_response,
-                        "fleet": fleet,
-                        "agents": agents,
-                        "provider": provider,
-                    },
-                    ensure_ascii=True,
-                ),
-            )
-        outcome = self.ruflo.record_task_outcome(
-            execution_id,
-            sanitized_prompt,
-            agent=agents[0] if agents else "orchestration-manager",
-            success=quality_passed,
-            quality=1.0 if quality_passed else 0.0,
+        memory = (
+            {"available": True, "source": "local"}
+            if quality_passed
+            else {"available": False, "reason": "quality_not_approved"}
         )
-        return {"event": event, "memory": memory, "outcome": outcome}
+        return {"event": event, "memory": memory}
 
     def apply_feedback(
         self,

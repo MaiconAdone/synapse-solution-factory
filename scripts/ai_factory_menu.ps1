@@ -4,10 +4,10 @@ Set-Location $Root
 function Show-Header {
     Write-Host ""
     Write-Host "Synapse AI/ML Factory" -ForegroundColor Cyan
-    Write-Host "1. Criar projeto IA/ML completo com Ruflo real + 60 agents"
+    Write-Host "1. Criar projeto IA/ML completo com swarm de 60 agents"
     Write-Host "2. Criar projeto IA/ML offline apenas com memoria local"
     Write-Host "3. Validar stack atual"
-    Write-Host "4. Tratar dados com Codex + Ruflo economico"
+    Write-Host "4. Tratar dados com Codex + swarm economico"
     Write-Host "5. Abrir manifesto runtime"
     Write-Host "6. Abrir agentes"
     Write-Host "7. Abrir workflows"
@@ -43,7 +43,7 @@ while ($true) {
                 break
             }
             $TipoProjeto = Read-ProjectUniverse
-            & "$PSScriptRoot\create_ai_project.ps1" -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto -ActivateRuflo
+            & "$PSScriptRoot\create_ai_project.ps1" -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto
         }
         "2" {
             $NomeProjeto = Read-Host "Nome do novo projeto"

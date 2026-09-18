@@ -16,21 +16,13 @@
       PROJECT_CREATION_MODE: managed
       ALLOW_INSECURE_LOCAL_AUTH: "false"
       PROJECT_FACTORY_BASE_PATH: /projects
-      LOCAL_LLM_ENABLED: ${LOCAL_LLM_ENABLED:-true}
-      OLLAMA_BASE_URL: ${OLLAMA_DOCKER_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:3b}
-      OLLAMA_BALANCED_MODEL: ${OLLAMA_BALANCED_MODEL:-deepseek-coder-v2:lite}
-      OLLAMA_CODE_REVIEW_MODEL: ${OLLAMA_CODE_REVIEW_MODEL:-deepseek-coder-v2:lite}
-      OLLAMA_LARGE_MODEL: ${OLLAMA_LARGE_MODEL:-deepseek-coder-v2:lite}
-      OLLAMA_CONTEXT_WINDOW: ${OLLAMA_CONTEXT_WINDOW:-4096}
-      OLLAMA_MAX_OUTPUT_TOKENS: ${OLLAMA_MAX_OUTPUT_TOKENS:-512}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.5}
       LLM_ROUTING_METRICS_PATH: /artifacts/llm-routing/events.jsonl
       GOVERNED_SWARM_AUDIT_PATH: /artifacts/governance/swarm-executions.jsonl
       BUSINESS_TRANSFORMATION_STORE_PATH: /artifacts/business-transformations
       LEARNING_EVENTS_PATH: /artifacts/learning/synapse_learning_memory.jsonl
-      LOCAL_TRAINING_DATASET_PATH: /artifacts/learning/ollama_training.jsonl
+      LOCAL_TRAINING_DATASET_PATH: /artifacts/learning/training_examples.jsonl
     ports:
       - "8000:8000"
     volumes:

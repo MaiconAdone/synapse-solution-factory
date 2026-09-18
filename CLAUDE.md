@@ -1,7 +1,7 @@
 # Synapse - Claude Code Configuration
 
 Este arquivo orienta o uso do Synapse quando a execucao passa por Claude Code,
-Anthropic API, Claude Agent SDK ou fluxos assistidos por Ruflo.
+Anthropic API, Claude Agent SDK ou fluxos assistidos pelo swarm de agentes.
 
 ## Regras Gerais
 
@@ -76,7 +76,7 @@ Referencias oficiais:
 - https://code.claude.com/docs/en/prompt-caching
 - https://platform.claude.com/docs/en/about-claude/pricing
 
-## Ruflo 60 Agents com Baixo Custo
+## Swarm de 60 Agents com Baixo Custo
 
 O Synapse mantem 60 agentes disponiveis, mas nao deve ativar todos por padrao.
 
@@ -150,9 +150,8 @@ Perfis:
 | enterprise | ate 8 | producao, seguranca, LGPD, arquitetura critica |
 | extreme | ate 15 | auditoria; 60 somente com aprovacao explicita |
 
-Claude Code usa Anthropic diretamente para analisar, editar e revisar o Synapse e
-nunca delega geracao ao Ollama. Edicoes e comandos
-continuam sujeitos aos gates de aprovacao humana e seguranca.
+Claude Code usa Anthropic diretamente para analisar, editar e revisar o Synapse.
+Edicoes e comandos continuam sujeitos aos gates de aprovacao humana e seguranca.
 
 Regra de arquitetura:
 
@@ -160,7 +159,7 @@ Regra de arquitetura:
 - Use multiagent quando houver RAG, MCP, seguranca, compliance, producao, dominios multiplos ou conflito.
 - Use fleet governada quando a solucao exigir release corporativo, auditoria ou coordenacao de varios papeis.
 
-## Context Filter antes de LLM/Ruflo
+## Context Filter antes de LLM
 
 Antes de enviar arquivos grandes, logs, diffs ou saidas de comandos para Claude:
 
@@ -171,7 +170,7 @@ python .\scripts\context_filter.py --input caminho\arquivo.txt --output .\output
 Use a task:
 
 ```text
-Synapse: Filtrar contexto para LLM/Ruflo
+Synapse: Filtrar contexto para LLM
 ```
 
 O filtro remove ruido e preserva:
@@ -276,7 +275,7 @@ Ao criar projeto novo, confirme ou infira o universo:
 Em todos os universos:
 
 - Aplicar o analisador de solucao de negocio antes de definir arquitetura.
-- Ruflo ativo.
+- Swarm ativo.
 - Tratamento de dados ativo.
 - Cost-aware orchestration ativa.
 - Agentic mesh governance ativa.

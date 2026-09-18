@@ -13,5 +13,5 @@ managed by SYNAPSE and cannot create other projects.
 They contain data, experiments, prompts, evals, governance, treatment scripts,
 model artifacts and documentation selected for ML, IA or hybrid projects.
 They do not contain SYNAPSE's backend, frontend, database platform or
-project-factory scripts. Each project does inherit its own Ruflo runtime, MCP
+project-factory scripts. Each project does inherit its own swarm runtime, MCP
 configuration, workflows, memory namespace and agent catalog.

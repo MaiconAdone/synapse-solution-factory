@@ -12,8 +12,8 @@ VS Code neste workspace.
   apenas o caminho e o resumo.
 - Nao cole catalogos grandes de agentes, manifests longos, `.claude-flow`,
   `output/`, artifacts ou memoria completa sem necessidade direta.
-- Use Ollama/Ruflo local-first conforme `AGENTS.md`; cloud somente com pedido
-  explicito e aprovacao humana.
+- Use Codex/OpenAI e Claude/Anthropic conforme `AGENTS.md`; aprovacao
+  humana explicita e exigida somente para ativar os 60 agentes.
 
 ## Estado Atual
 

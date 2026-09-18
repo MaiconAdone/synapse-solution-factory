@@ -59,7 +59,7 @@ class TransformationWorkflow:
                 state,
                 "agent_completed",
                 agent.name,
-                {"ruflo_agent_id": agent.ruflo_agent_id, "task_id": task.id},
+                {"agent_id": agent.agent_id, "task_id": task.id},
             )
 
         state.diagnosis = self._diagnosis(objective)

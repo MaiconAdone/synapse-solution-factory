@@ -101,7 +101,7 @@ class AiFrameworkSelector:
             defaults = set(self.catalog.get("default_technology_recommendation", []))
             matched = [technology for technology in technologies if technology["id"] in defaults]
         if universe in {"ia", "chatbolt", "hybrid"}:
-            for required_id in ["fastapi", "ollama", "mcp-servers"]:
+            for required_id in ["fastapi", "mcp-servers"]:
                 matched = self._with_required_technology(matched, technologies, required_id)
 
         technology_ids = self._dedupe(technology["id"] for technology in matched)

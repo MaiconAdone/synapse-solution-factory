@@ -1,34 +1,15 @@
 # MCP Integration
 
-Ruflo, Synapse Peers, and Claude Peers are configured in `.mcp.json` as local
-MCP servers.
-
-The expected server command is:
-
-```powershell
-cmd /c npm exec -- ruflo mcp start
-```
-
-The current enterprise defaults are:
-
-- `CLAUDE_FLOW_MODE=v3`
-- `CLAUDE_FLOW_TOPOLOGY=hierarchical-mesh`
-- `CLAUDE_FLOW_MAX_AGENTS=60`
-- `CLAUDE_FLOW_MEMORY_BACKEND=hybrid`
-- `CODEX_MODEL=gpt-5.5`
-
-## Backend Adapter
-
-The backend adapter in `backend/app/adapters/ruflo_mcp.py` starts the configured
-MCP server over `stdio`, performs the MCP initialize handshake, and calls Ruflo
-tools through `tools/call`.
+Synapse Peers and Claude Peers are configured in `.mcp.json` as local MCP
+servers. There is no external swarm-execution MCP server; the swarm runtime
+tracked in `config/runtime_manifest.json` is descriptive governance data
+consumed directly by backend services (`SwarmService`, `MemoryService`,
+`ContinualLearningService`), not an MCP client.
 
 Runtime endpoints:
 
-- `GET /swarm/status` calls `swarm_status`
-- `GET /agents/runtime` calls `agent_list`
-- `GET /memory/stats` calls `memory_stats`
-- `POST /workflows/{workflow_id}/execute` calls `daa_workflow_execute`
+- `GET /swarm` returns swarm status from the local runtime manifest.
+- `GET /memory` returns memory status from the local runtime manifest.
 
 ## Claude Peers
 
@@ -61,5 +42,5 @@ claude --dangerously-load-development-channels server:claude-peers
 The `.mcp.json` entry sets `OPENAI_API_KEY` to an empty value so the upstream
 auto-summary path does not call an external provider by default.
 
-Use `synapse-peers` for cross-tool coordination between Codex, Ruflo,
-Ollama, Claude, and human operator sessions.
+Use `synapse-peers` for cross-tool coordination between Codex, Claude,
+and human operator sessions.

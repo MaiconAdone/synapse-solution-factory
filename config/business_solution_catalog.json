@@ -6,7 +6,7 @@
     "prefer data contracts, baselines, model cards, evals, tests, monitoring, and release gates",
     "separate deterministic tests from probabilistic evals",
     "prefer chatbot for conversation, RAG for trusted knowledge, and agents for multi-step execution",
-    "use local-first governed routing and activate Ruflo specialists on demand"
+    "use local-first governed routing and activate swarm specialists on demand"
   ],
   "ml_archetypes": [
     {

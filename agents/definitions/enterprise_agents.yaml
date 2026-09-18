@@ -68,7 +68,7 @@ agents:
     domain: integration
     cognitive_pattern: adaptive
     memory: episodic
-    mission: conecta Codex, Ruflo, MCP, APIs, automacoes e ferramentas dos agentes
+    mission: conecta Codex, MCP, APIs, automacoes e ferramentas dos agentes
   - id: security-compliance
     tier: core
     domain: security
@@ -86,7 +86,7 @@ agents:
     domain: platform
     cognitive_pattern: critical
     memory: episodic
-    mission: ativa Ruflo, paraleliza execucoes e controla custo, latencia e tokens
+    mission: ativa o swarm, paraleliza execucoes e controla custo, latencia e tokens
   - id: testing-qa
     tier: core
     domain: quality

@@ -1,36 +1,36 @@
 version: 1
 workflow: business-transformation
-execution: ruflo-governed
+execution: swarm-governed
 profiles:
   - id: orchestrator
     class: OrchestratorAgent
-    ruflo_agent: orchestration-manager
+    agent_id: orchestration-manager
     tools: []
   - id: business-transformation
     class: BusinessTransformationAgent
-    ruflo_agent: product-strategy
+    agent_id: product-strategy
     tools: [kpi_tool]
   - id: process-mapping
     class: ProcessMappingAgent
-    ruflo_agent: business-value-analyst
+    agent_id: business-value-analyst
     tools: [process_tool]
   - id: data-analysis
     class: DataAnalysisAgent
-    ruflo_agent: data-science
+    agent_id: data-science
     tools: [data_tool]
   - id: automation-architect
     class: AutomationArchitectAgent
-    ruflo_agent: integration-automation
+    agent_id: integration-automation
     tools: [automation_tool]
   - id: kpi-monitor
     class: KPIMonitorAgent
-    ruflo_agent: metrics-instrumentation
+    agent_id: metrics-instrumentation
     tools: [kpi_tool]
   - id: risk-governance
     class: RiskGovernanceAgent
-    ruflo_agent: security-compliance
+    agent_id: security-compliance
     tools: []
   - id: human-approval
     class: HumanApprovalAgent
-    ruflo_agent: policy-guardrails-engineer
+    agent_id: policy-guardrails-engineer
     tools: []

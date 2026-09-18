@@ -18,8 +18,8 @@ SYNAPSE AI stack and the items that still require an external runtime decision.
 - GitHub Actions CI validates the enterprise stack, runs backend tests, and
   builds the frontend.
 - Backend contract tests cover required agents, memory, swarm, workflows,
-  runtime manifest, and Ruflo adapter behavior.
-- Ruflo agent activation runs in parallel by default during project activation,
+  and runtime manifest behavior.
+- Swarm agent activation runs in parallel by default during project activation,
   with sequential activation available only as a debug option.
 
 ## Local Commands
@@ -47,7 +47,7 @@ npm run build
 - `API_BASE_URL` controls server-side frontend calls to the backend.
 - `NEXT_PUBLIC_API_BASE_URL` is available for browser-side calls if interactive
   client components are added later.
-- `ENVIRONMENT`, `RUFLO_MCP_SERVER`, `SWARM_TOPOLOGY`, `SWARM_CONSENSUS`,
+- `ENVIRONMENT`, `SWARM_TOPOLOGY`, `SWARM_CONSENSUS`,
   `MEMORY_BACKEND`, and `VECTOR_DB_PATH` configure the backend.
 
 ## External Decisions Still Required
@@ -56,7 +56,6 @@ npm run build
   or a managed platform environment.
 - Deployment target, such as container platform, VM, PaaS, or Kubernetes.
 - Managed observability sink for logs, metrics, traces, and alerts.
-- Real Ruflo MCP availability in the target environment.
 - Authentication and authorization provider.
 - Persistent database choice if runtime state grows beyond manifest and file
   backed artifacts.

@@ -23,10 +23,10 @@ function Resolve-ProjectUniverse {
                 ai_enabled = $false
                 rag_enabled = $false
                 data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
+                swarm_15_agents_enabled = $true
+                swarm_core_agents = 15
+                swarm_max_agents = 60
+                swarm_specialist_agents = 45
                 description = "Projeto focado em Machine Learning, dados, features, treino, avaliacao, monitoramento e producao."
             }
         }
@@ -40,10 +40,10 @@ function Resolve-ProjectUniverse {
                 ai_enabled = $true
                 rag_enabled = $true
                 data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
+                swarm_15_agents_enabled = $true
+                swarm_core_agents = 15
+                swarm_max_agents = 60
+                swarm_specialist_agents = 45
                 description = "Projeto focado em LLMs, agentes, RAG, tool calling, MCP, memoria, guardrails e observabilidade de IA."
             }
         }
@@ -57,10 +57,10 @@ function Resolve-ProjectUniverse {
                 ai_enabled = $true
                 rag_enabled = $true
                 data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
+                swarm_15_agents_enabled = $true
+                swarm_core_agents = 15
+                swarm_max_agents = 60
+                swarm_specialist_agents = 45
                 description = "Projeto hibrido que combina ML, LLMs, agentes, RAG, automacao, observabilidade e producao."
             }
         }
@@ -74,10 +74,10 @@ function Resolve-ProjectUniverse {
                 ai_enabled = $true
                 rag_enabled = $true
                 data_treatment_enabled = $true
-                ruflo_15_agents_enabled = $true
-                ruflo_core_agents = 15
-                ruflo_max_agents = 60
-                ruflo_specialist_agents = 45
+                swarm_15_agents_enabled = $true
+                swarm_core_agents = 15
+                swarm_max_agents = 60
+                swarm_specialist_agents = 45
                 description = "Projeto focado em assistentes conversacionais, chatbots com RAG, MCP, memoria e guardrails."
             }
         }

@@ -34,14 +34,14 @@
     "CRITICAL": "explicit_human_approval_and_no_external_automatic_action"
   },
   "functional_agents": [
-    {"id": "orchestrator", "class": "OrchestratorAgent", "ruflo_agent": "orchestration-manager"},
-    {"id": "business_transformation", "class": "BusinessTransformationAgent", "ruflo_agent": "product-strategy"},
-    {"id": "process_mapping", "class": "ProcessMappingAgent", "ruflo_agent": "business-value-analyst"},
-    {"id": "data_analysis", "class": "DataAnalysisAgent", "ruflo_agent": "data-science"},
-    {"id": "automation_architect", "class": "AutomationArchitectAgent", "ruflo_agent": "integration-automation"},
-    {"id": "kpi_monitor", "class": "KPIMonitorAgent", "ruflo_agent": "metrics-instrumentation"},
-    {"id": "risk_governance", "class": "RiskGovernanceAgent", "ruflo_agent": "security-compliance"},
-    {"id": "human_approval", "class": "HumanApprovalAgent", "ruflo_agent": "policy-guardrails-engineer"}
+    {"id": "orchestrator", "class": "OrchestratorAgent", "agent_id": "orchestration-manager"},
+    {"id": "business_transformation", "class": "BusinessTransformationAgent", "agent_id": "product-strategy"},
+    {"id": "process_mapping", "class": "ProcessMappingAgent", "agent_id": "business-value-analyst"},
+    {"id": "data_analysis", "class": "DataAnalysisAgent", "agent_id": "data-science"},
+    {"id": "automation_architect", "class": "AutomationArchitectAgent", "agent_id": "integration-automation"},
+    {"id": "kpi_monitor", "class": "KPIMonitorAgent", "agent_id": "metrics-instrumentation"},
+    {"id": "risk_governance", "class": "RiskGovernanceAgent", "agent_id": "security-compliance"},
+    {"id": "human_approval", "class": "HumanApprovalAgent", "agent_id": "policy-guardrails-engineer"}
   ],
   "initial_business_areas": [
     "sales",
@@ -64,6 +64,6 @@
     "langgraph_when": "durable checkpoints, cycles, distributed resume or complex handoffs are required",
     "langchain_when": "a maintained chain, retriever or integration component reduces implementation risk",
     "mcp_required_for_external_tools": true,
-    "ruflo_control_plane": true
+    "swarm_control_plane": true
   }
 }

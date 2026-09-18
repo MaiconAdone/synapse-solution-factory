@@ -32,7 +32,6 @@ class ProjectRepository:
             business_problem=request.business_problem,
             solution_focus=request.solution_focus,
             metadata_json={
-                "activate_ruflo": request.activate_ruflo,
                 "require_business_problem": request.require_business_problem,
                 "success_metric_or_acceptance_criteria": request.success_metric_or_acceptance_criteria,
                 "available_data_or_knowledge_sources": request.available_data_or_knowledge_sources,

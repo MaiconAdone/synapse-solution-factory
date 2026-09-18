@@ -2,7 +2,7 @@
 # Governance source of truth: config/llm_solution_factory_policy.json
 # canais autorizados para conteudo solicitado pelo usuario: Codex chat, Claude Code chat/terminal e VS Code Chat.
 # Se faltar contexto obrigatorio da Solution Factory, pergunte ao usuario antes de implementar.
-# Codex usa OpenAI diretamente e nao registra ferramentas Ollama.
+# Codex usa OpenAI diretamente.
 # Root keys MUST come before TOML tables.
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"

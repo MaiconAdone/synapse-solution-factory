@@ -33,13 +33,12 @@ class ProjectBriefingResponse(BaseModel):
     business_solution_analysis: dict[str, object]
     enterprise_spec: dict[str, object]
     ai_framework_selection: dict[str, object]
-    ruflo: dict[str, object]
+    swarm: dict[str, object]
 
 
 class ProjectCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     project_type: str = "b2b2c-ai-ml-agentic-saas"
-    activate_ruflo: bool = True
     project_goal: str | None = Field(default=None, max_length=4000)
     business_problem: str | None = Field(default=None, max_length=4000)
     solution_focus: str = "ai-ml-agents"
@@ -69,7 +68,6 @@ class ProjectCreateResponse(BaseModel):
     agentic_mesh: dict[str, object] | None = None
     agent_blueprint: dict[str, object] | None = None
     business_solution_analysis: dict[str, object] | None = None
-    ruflo_activation: dict[str, object] | None = None
     synapse_project_index: dict[str, object] | None = None
 
 

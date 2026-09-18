@@ -42,7 +42,7 @@
     "project_memory_namespace_prefix": "synapse-learning-",
     "automatic_project_scope_capture": true,
     "automatic_weight_updates": false,
-    "training_dataset": "data/learning/ollama_training.jsonl",
+    "training_dataset": "data/learning/training_examples.jsonl",
     "training_example_requires_human_score": 0.8,
     "global_promotion_requires_human_approval": true
   },

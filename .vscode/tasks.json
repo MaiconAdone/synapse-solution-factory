@@ -41,43 +41,10 @@
     {
       "id": "contextFile",
       "type": "promptString",
-      "description": "Arquivo grande para filtrar antes de enviar ao LLM/Ruflo"
-    },
-    {
-      "id": "ollamaModel",
-      "type": "pickString",
-      "description": "Modelo local instalado no Ollama",
-      "options": [
-        "qwen2.5-coder:3b",
-        "qwen2.5-coder:14b",
-        "deepseek-coder-v2:lite",
-        "qwen2.5-coder:32b"
-      ],
-      "default": "qwen2.5-coder:3b"
+      "description": "Arquivo grande para filtrar antes de enviar ao LLM"
     }
   ],
   "tasks": [
-    {
-      "label": "Synapse: Testar LLM local Ollama",
-      "detail": "Valida o Ollama e executa uma solicitacao real do Synapse no VS Code, sem navegador e sem custo por token de API.",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "python ${workspaceFolder}\\scripts\\test_local_llm.py --model \"${input:ollamaModel}\""
-      ],
-      "group": "test",
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true,
-        "focus": true
-      }
-    },
     {
       "label": "Synapse: Market Radar + Context Filter",
       "detail": "Busca sinais em HN Show/Product Hunt, classifica oportunidades para o Synapse e gera relatorio com contexto filtrado.",
@@ -99,8 +66,8 @@
       }
     },
     {
-      "label": "Synapse: Filtrar contexto para LLM/Ruflo",
-      "detail": "Remove ruido, duplicacao e excesso de contexto para reduzir tokens antes de acionar OpenAI, Anthropic ou Ruflo.",
+      "label": "Synapse: Filtrar contexto para LLM",
+      "detail": "Remove ruido, duplicacao e excesso de contexto para reduzir tokens antes de acionar OpenAI ou Anthropic.",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -119,8 +86,8 @@
       }
     },
     {
-      "label": "AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados",
-      "detail": "Cria projeto com contexto economico para Codex, ativa Ruflo real com poucos agentes ativos, mantem pool escalavel ate 60 sob demanda e inclui tratamento de dados.",
+      "label": "AI Factory: Criar projeto com Codex + swarm economico + tratamento dados",
+      "detail": "Cria projeto com contexto economico para Codex, mantem pool escalavel ate 60 agentes sob demanda e inclui tratamento de dados.",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -138,8 +105,7 @@
         "-BusinessProblem",
         "${input:businessProblem}",
         "-ActiveAgentLimit",
-        "3",
-        "-ActivateRuflo"
+        "3"
       ],
       "group": {
         "kind": "build",
@@ -155,7 +121,7 @@
     },
     {
       "label": "AI Factory: Anexar foto ou arquivo ao projeto",
-      "detail": "Copia uma foto ou arquivo para o projeto criado e registra manifesto para Codex, Ruflo e o pool de agentes.",
+      "detail": "Copia uma foto ou arquivo para o projeto criado e registra manifesto para Codex e o pool de agentes.",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -179,7 +145,7 @@
     },
     {
       "label": "Synapse: Diagnosticar projeto criado",
-      "detail": "Audita um projeto criado pelo Synapse e valida universo, Ruflo 60 agents, tratamento de dados, anexos e frameworks IA quando aplicavel.",
+      "detail": "Audita um projeto criado pelo Synapse e valida universo, swarm de 60 agents, tratamento de dados, anexos e frameworks IA quando aplicavel.",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -245,8 +211,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        "${workspaceFolder}\\scripts\\bootstrap_enterprise_stack.ps1",
-        "-SkipRuflo"
+        "${workspaceFolder}\\scripts\\bootstrap_enterprise_stack.ps1"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -256,25 +221,7 @@
       }
     },
     {
-      "label": "Enterprise: Start Ruflo Swarm",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\scripts\\start_ruflo_swarm.ps1"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "Codex: Tratar dados com Ruflo economico",
+      "label": "Codex: Tratar dados com swarm economico",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -341,25 +288,6 @@
         "Bypass",
         "-File",
         "${workspaceFolder}\\scripts\\run_ai_evals.ps1"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      }
-    },
-    {
-      "label": "Enterprise: Preparar memoria local sem Ruflo CLI",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\scripts\\start_ruflo_swarm.ps1",
-        "-SkipRufloCli"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -467,8 +395,7 @@
     {
       "label": "Synapse: Preparar runtime VS Code sem navegador",
       "dependsOn": [
-        "Enterprise: Validar stack",
-        "Enterprise: Start Ruflo Swarm"
+        "Enterprise: Validar stack"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": [],

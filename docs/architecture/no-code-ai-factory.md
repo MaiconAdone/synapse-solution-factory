@@ -12,7 +12,7 @@ generated behind it.
    metrics.
 3. SYNAPSE applies the book-inspired playbooks in `playbooks/` and
    `docs/books/implementation_map.md`.
-4. Ruflo activates the specialized agents in parallel.
+4. The swarm activates the specialized agents in parallel.
 5. The orchestration manager consolidates the answer for the user.
 6. The created project includes a managed `data/` area for CSV, Excel, JSON,
    JSONL and Parquet uploads.
@@ -38,7 +38,7 @@ agent:
 - Cognitive-state signals: confidence, uncertainty, risk and blocked state are
   operational controls, not claims of human-like emotion.
 
-## Parallel Ruflo Execution
+## Parallel Swarm Execution
 
 The default workflow is `new-ai-project`. It must run with
 `parallelAgentActivation=true` and route work by domain:
@@ -51,10 +51,10 @@ The default workflow is `new-ai-project`. It must run with
 - `backend-engineering`: APIs and secure runtime integration.
 - `frontend-engineering`: no-code dialog and project/data panels.
 - `product-strategy`: business objective, success metrics and acceptance criteria.
-- `integration-automation`: Codex, Ruflo, MCP, APIs and local tool wiring.
+- `integration-automation`: Codex, MCP, APIs and local tool wiring.
 - `security-compliance`: auth, privacy, LGPD, policies and safe autonomy limits.
 - `observability-ops`: traces, cost, latency, token budget, drift and health.
-- `devops`: Ruflo activation, deployment, cost and token strategy.
+- `devops`: swarm activation, deployment, cost and token strategy.
 - `testing-qa`: ML, IA, RAG, security and regression gates.
 - `documentation`: user-facing summary and operational records.
 - `orchestration-manager`: task routing, consolidation and final answer.

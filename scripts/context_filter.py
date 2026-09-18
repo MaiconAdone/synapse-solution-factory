@@ -134,7 +134,7 @@ def write_report(report: FilterReport, output_path: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Filter noisy context before LLM/Ruflo calls.")
+    parser = argparse.ArgumentParser(description="Filter noisy context before LLM calls.")
     parser.add_argument("--input", help="Input file. Reads stdin when omitted.")
     parser.add_argument("--output", default="output/context_filter/filtered_context.txt")
     parser.add_argument("--max-chars", type=int, default=12000)

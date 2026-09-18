@@ -16,7 +16,7 @@ use o fluxo abaixo:
 
 1. Confirmar arquivo em `data/raw/` ou caminho informado pelo usuario.
 2. Rodar `Enterprise: Validar stack` quando a validacao ainda nao foi feita.
-3. Acionar Ruflo com os 15 core agents em paralelo e registrar especialistas sob demanda se necessario.
+3. Consultar o swarm com os 15 core agents em paralelo e registrar especialistas sob demanda se necessario.
 4. Executar `scripts/codex_data_treatment_dialog.ps1`.
 5. Ler o relatorio em `output/data_treatment/`.
 6. Explicar ao usuario:
@@ -37,7 +37,7 @@ use o fluxo abaixo:
 - `rag-engineering`: avalia se a base alimenta busca, chunks ou conhecimento.
 - `backend-engineering`: preserva contratos de entrada/saida.
 - `frontend-engineering`: ignora UI web; foco e terminal VS Code.
-- `integration-automation`: conecta Codex, Ruflo, scripts e tasks.
+- `integration-automation`: conecta Codex, scripts e tasks.
 - `security-compliance`: revisa privacidade, PII e riscos de dados sensiveis.
 - `observability-ops`: registra artefatos, custo, tempo e rastreabilidade.
 - `devops`: garante execucao local e reproducivel.

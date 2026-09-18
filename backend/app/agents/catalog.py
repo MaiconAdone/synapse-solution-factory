@@ -34,7 +34,7 @@ def _agent(
 
 
 CORE_AGENT_CATALOG: list[dict[str, object]] = [
-    _agent("orchestration-manager", "orchestration", "Routes work, owns swarm governance, anti-drift gates, and escalation.", ["ruflo_mcp", "workflow_registry", "memory_stats"], "semantic"),
+    _agent("orchestration-manager", "orchestration", "Routes work, owns swarm governance, anti-drift gates, and escalation.", ["agent_orchestration", "workflow_registry", "memory_stats"], "semantic"),
     _agent("product-strategy", "product", "Business outcome, success metrics, acceptance criteria, and no-code project framing.", ["briefing", "acceptance_criteria"], "semantic"),
     _agent("data-engineering", "data", "Pipelines, ingestion, validation, lineage, and feature/data contracts.", ["data_contract", "dataset_treatment"], "semantic"),
     _agent("data-science", "analytics", "EDA, statistics, hypotheses, leakage checks, feature strategy, and metric interpretation.", ["statistics", "quality_gates"], "semantic"),
@@ -43,7 +43,7 @@ CORE_AGENT_CATALOG: list[dict[str, object]] = [
     _agent("rag-engineering", "rag", "Chunking, retrieval, reranking, citations, and knowledge freshness.", ["rag_pipeline", "vector_index", "retrieval_evals"], "semantic"),
     _agent("backend-engineering", "backend", "FastAPI, service boundaries, repositories, API contracts, and reliability.", ["fastapi", "pydantic", "repositories"], "episodic"),
     _agent("frontend-engineering", "frontend", "Next.js, TypeScript, dashboards, agent/workflow/memory/swarm UX.", ["nextjs", "typescript", "dashboard"], "episodic"),
-    _agent("integration-automation", "integration", "Codex, Ruflo, MCP, API connectors, local tools, and automation wiring.", ["ruflo_cli", "mcp", "api_connectors"], "episodic"),
+    _agent("integration-automation", "integration", "Codex, MCP, API connectors, local tools, and automation wiring.", ["cli_automation", "mcp", "api_connectors"], "episodic"),
     _agent("security-compliance", "security", "Auth, permissions, LGPD/privacy, policy checks, and safe autonomy limits.", ["api_key", "guardrails", "policy"], "semantic"),
     _agent("observability-ops", "operations", "Traces, cost, latency, token budget, drift, quality signals, and run health.", ["structured_logs", "metrics", "experiment_tracking"], "episodic"),
     _agent("devops", "platform", "CI/CD, environments, secrets, observability, and deployment readiness.", ["docker", "validation_scripts", "deployment"], "episodic"),
@@ -56,7 +56,7 @@ SPECIALIST_AGENT_CATALOG: list[dict[str, object]] = [
     _agent("prompt-versioning", "llm", "Maintains prompt versions, changelogs, rollback points, and evaluation lineage.", ["prompt_registry", "release_checklist"], "episodic", "specialist"),
     _agent("tool-calling-engineer", "llm", "Designs safe tool calling flows, tool permissions, and tool result validation.", ["tool_registry", "guardrails"], "semantic", "specialist"),
     _agent("function-schema-designer", "llm", "Designs typed function schemas, input validation, and output contracts.", ["pydantic", "json_schema"], "semantic", "specialist"),
-    _agent("mcp-integration-specialist", "integration", "Designs MCP tool adapters, handshakes, fallbacks, and runtime diagnostics.", ["mcp", "ruflo_mcp"], "episodic", "specialist"),
+    _agent("mcp-integration-specialist", "integration", "Designs MCP tool adapters, handshakes, fallbacks, and runtime diagnostics.", ["mcp", "agent_orchestration"], "episodic", "specialist"),
     _agent("agent-a2a-coordinator", "orchestration", "Defines agent-to-agent handoff contracts, conflict rules, and shared context boundaries.", ["workflow_registry", "memory_stats"], "semantic", "specialist"),
     _agent("crewai-architect", "orchestration", "Assesses when CrewAI is the right implementation layer for role-based agent teams.", ["agent_blueprints", "crewai"], "semantic", "specialist"),
     _agent("swarms-architect", "orchestration", "Assesses when Swarms is the right implementation layer for large parallel agent groups.", ["agent_blueprints", "swarms"], "semantic", "specialist"),

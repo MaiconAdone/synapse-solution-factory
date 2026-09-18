@@ -18,7 +18,6 @@ from app.services.agentic_mesh_governance import AgenticMeshGovernanceService
 from app.services.business_solution_analyzer import BusinessSolutionAnalyzer
 from app.services.cost_aware_router import CostAwareRouter
 from app.services.enterprise_spec_service import EnterpriseSpecService
-from app.services.ruflo_service import RufloService
 
 
 PROJECT_SWARM_AGENTS = list(REQUIRED_PARALLEL_AGENTS)
@@ -64,28 +63,28 @@ PROJECT_UNIVERSES: dict[str, dict[str, object]] = {
         "label": "ML",
         "project_type": "enterprise-ml-system",
         "solution_focus": "ml",
-        "capabilities": {"ml": True, "ai": False, "rag": False, "data_treatment": True, "ruflo_15_agents": True, "ruflo_core_agents": 15, "ruflo_max_agents": 60, "ruflo_specialist_agents": 45},
+        "capabilities": {"ml": True, "ai": False, "rag": False, "data_treatment": True, "swarm_15_agents": True, "swarm_core_agents": 15, "swarm_max_agents": 60, "swarm_specialist_agents": 45},
     },
     "ia": {
         "universe": "ia",
         "label": "IA",
         "project_type": "enterprise-ai-agentic-system",
         "solution_focus": "agents",
-        "capabilities": {"ml": False, "ai": True, "rag": True, "data_treatment": True, "ruflo_15_agents": True, "ruflo_core_agents": 15, "ruflo_max_agents": 60, "ruflo_specialist_agents": 45},
+        "capabilities": {"ml": False, "ai": True, "rag": True, "data_treatment": True, "swarm_15_agents": True, "swarm_core_agents": 15, "swarm_max_agents": 60, "swarm_specialist_agents": 45},
     },
     "chatbolt": {
         "universe": "chatbolt",
         "label": "Chatbolt",
         "project_type": "enterprise-chatbolt-agentic-system",
         "solution_focus": "chatbots",
-        "capabilities": {"ml": False, "ai": True, "rag": True, "data_treatment": True, "ruflo_15_agents": True, "ruflo_core_agents": 15, "ruflo_max_agents": 60, "ruflo_specialist_agents": 45},
+        "capabilities": {"ml": False, "ai": True, "rag": True, "data_treatment": True, "swarm_15_agents": True, "swarm_core_agents": 15, "swarm_max_agents": 60, "swarm_specialist_agents": 45},
     },
     "hybrid": {
         "universe": "hybrid",
         "label": "ML + IA (Hibrido)",
         "project_type": "enterprise-hybrid-ml-ai-system",
         "solution_focus": "ai-ml-agents",
-        "capabilities": {"ml": True, "ai": True, "rag": True, "data_treatment": True, "ruflo_15_agents": True, "ruflo_core_agents": 15, "ruflo_max_agents": 60, "ruflo_specialist_agents": 45},
+        "capabilities": {"ml": True, "ai": True, "rag": True, "data_treatment": True, "swarm_15_agents": True, "swarm_core_agents": 15, "swarm_max_agents": 60, "swarm_specialist_agents": 45},
     },
 }
 
@@ -99,7 +98,6 @@ class ProjectFactoryService:
         self,
         root: Path | None = None,
         settings: Settings | None = None,
-        ruflo: RufloService | None = None,
         enterprise_spec: EnterpriseSpecService | None = None,
         cost_router: CostAwareRouter | None = None,
         mesh_governance: AgenticMeshGovernanceService | None = None,
@@ -108,7 +106,6 @@ class ProjectFactoryService:
     ) -> None:
         self.root = root or Path(__file__).resolve().parents[3]
         self.settings = settings or get_settings()
-        self.ruflo = ruflo or RufloService()
         self.enterprise_spec = enterprise_spec or EnterpriseSpecService()
         self.cost_router = cost_router or CostAwareRouter()
         self.mesh_governance = mesh_governance or AgenticMeshGovernanceService()
@@ -188,8 +185,6 @@ class ProjectFactoryService:
             "-ActiveAgentLimit",
             str(len(cost_aware_activation["core_agents"])),
         ]
-        if request.activate_ruflo:
-            command.append("-ActivateRuflo")
 
         try:
             completed = subprocess.run(
@@ -220,13 +215,6 @@ class ProjectFactoryService:
             context_path = self._write_project_context(destination, request)
             self._write_business_solution_analysis(destination, business_solution_analysis)
 
-        ruflo_activation = {
-            "requested": request.activate_ruflo,
-            "workflow": "new-ai-project",
-            "parallel_execution": request.activate_ruflo,
-            "source": "generated_project_runtime",
-        }
-
         result = {
             "project": project_name,
             "project_type": project_type,
@@ -247,7 +235,6 @@ class ProjectFactoryService:
             "agentic_mesh": agentic_mesh,
             "agent_blueprint": agent_blueprint,
             "business_solution_analysis": business_solution_analysis,
-            "ruflo_activation": ruflo_activation,
         }
         if result["created"]:
             result["synapse_project_index"] = self._register_synapse_project(
@@ -327,27 +314,11 @@ class ProjectFactoryService:
         except ValueError as error:
             raise ProjectFactoryError(str(error)) from error
 
-        ruflo_activation = {
-            "requested": managed_request.activate_ruflo,
-            "workflow": "new-ai-project",
-            "parallel_execution": True,
-            "agents": cost_aware_activation["core_agents"],
-            "active_agent_limit": cost_aware_activation["active_agent_limit"],
-        }
-        if managed_request.activate_ruflo:
-            ruflo_activation.update(
-                self.ruflo.execute_workflow(
-                    "new-ai-project",
-                    agent_ids=cost_aware_activation["core_agents"],
-                    parallel=True,
-                )
-            )
-
         result = {
             "project": project.name,
             "project_type": project.project_type,
             "destination": f"{storage_backend}://{storage_bucket}/{storage_prefix}",
-            "context_path": f"{storage_prefix}/docs/briefings/llm_ruflo_project_brief.md",
+            "context_path": f"{storage_prefix}/docs/briefings/llm_project_brief.md",
             "returncode": 0,
             "created": True,
             "stdout": "Managed project registered in database. Storage artifact generation is ready for Supabase/GitHub integration.",
@@ -364,7 +335,6 @@ class ProjectFactoryService:
             "agent_blueprint": agent_blueprint,
             "business_solution_analysis": business_solution_analysis,
             "managed_artifact_manifest": self._managed_artifact_manifest(project_name, universe),
-            "ruflo_activation": ruflo_activation,
         }
         result["synapse_project_index"] = self._register_synapse_project(
             name=project.name,
@@ -670,7 +640,6 @@ class ProjectFactoryService:
             "prompts/master_data_treatment.md",
             "prompts/codex_data_treatment_dialog.md",
             "scripts/synapse_solution_peers_mcp.py",
-            "scripts/start_ruflo_swarm.ps1",
             "scripts/treat_dataset.py",
             "tests/test_project_contract.py",
             "tests/test_evals_contract.py",
@@ -743,26 +712,9 @@ class ProjectFactoryService:
                     "max_summary_chars": 360,
                 },
             },
-            "local_model_policy": {
-                "allowed_models": [
-                    "nomic-embed-text:latest",
-                    "qwen2.5-coder:3b",
-                    "qwen3:8b",
-                    "deepseek-coder-v2:lite",
-                    "qwen2.5-coder:14b",
-                    "qwen3:14b",
-                    "deepseek-r1:14b",
-                    "qwen2.5-coder:32b",
-                ],
-                "fast": "qwen2.5-coder:3b",
-                "general": "qwen3:8b",
-                "balanced": "deepseek-coder-v2:lite",
-                "code_review": "deepseek-coder-v2:lite",
-                "code_strong": "qwen2.5-coder:14b",
-                "planning_strong": "qwen3:14b",
-                "reasoning_strong": "deepseek-r1:14b",
-                "code_critical": "qwen2.5-coder:32b",
-                "embeddings": "nomic-embed-text:latest",
+            "cloud_model_policy": {
+                "codex": "openai (assistant-configured model)",
+                "claude": "anthropic (assistant-configured model)",
             },
             "agentic_architectural_patterns": {
                 "catalog": "config/agentic_architectural_patterns.json",
@@ -784,7 +736,7 @@ class ProjectFactoryService:
                 "max_available_agents": 60,
                 "activate_all_60_requires_explicit_high_complexity": True,
             },
-            "ruflo_strategy": {
+            "swarm_strategy": {
                 "inheritance_mode": "solution_runtime",
                 "default_activation": "one_orchestrator_first",
                 "available_agents": 60,
@@ -824,12 +776,12 @@ class ProjectFactoryService:
 
         context_dir = destination / "docs" / "briefings"
         context_dir.mkdir(parents=True, exist_ok=True)
-        context_path = context_dir / "llm_ruflo_project_brief.md"
+        context_path = context_dir / "llm_project_brief.md"
         content = "\n".join(
             [
-                "# Briefing LLM + Ruflo",
+                "# Briefing LLM",
                 "",
-                "Este arquivo orienta o LLM, o Ruflo e os agentes autonomos antes de criar modelos de ML ou agentes de IA.",
+                "Este arquivo orienta o LLM e os agentes autonomos antes de criar modelos de ML ou agentes de IA.",
                 "",
                 "## Pedido inicial",
                 (request.project_goal or "Nao informado.").strip(),
@@ -851,7 +803,7 @@ class ProjectFactoryService:
                 "",
                 "## Regras de execucao",
                 f"- SDD gate: {self.enterprise_spec.sdd_gate()['gate']}",
-                "- Ruflo mantem 15 core agents e 45 especialistas disponiveis, ativando apenas o subconjunto necessario conforme custo e complexidade.",
+                "- Mantenha 15 core agents e 45 especialistas disponiveis, ativando apenas o subconjunto necessario conforme custo e complexidade.",
                 "- Cada solicitacao no dialogo do Codex deve seguir estes passos:",
                 *[f"  - {step}" for step in self.enterprise_spec.required_request_steps()],
                 "- Antes de treinar modelos de ML, confirmar objetivo de negocio, metrica de sucesso, dados disponiveis e criterio de aceite.",
@@ -863,7 +815,7 @@ class ProjectFactoryService:
                 "- Usar cache, compressao de contexto, deduplicacao e roteamento por tier de modelo para reduzir tokens OpenAI/Anthropic.",
                 "- Registrar experimentos no registry local quando houver treino, avaliacao ou promocao de modelo.",
                 "- Rodar testes separados de ML e IA antes de liberar qualquer fluxo.",
-                "- Manter este briefing como fonte de contexto para Ruflo, Codex e agentes autonomos.",
+                "- Manter este briefing como fonte de contexto para Codex e agentes autonomos.",
                 "",
             ]
         )

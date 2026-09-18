@@ -24,7 +24,7 @@ O workflow `business-transformation` executa:
 7. aprovacao humana quando exigida;
 8. execucao simulada e avaliacao de impacto.
 
-O workflow e deterministico por padrao. Ruflo e o roteador governado de LLMs
+O workflow e deterministico por padrao. O swarm e o roteador governado de LLMs
 podem enriquecer etapas, mas os testes e controles de risco nao dependem de
 cloud.
 
@@ -73,13 +73,13 @@ Projetos IA, ML e Hibridos recebem:
 - configuracao e politica de transformacao empresarial;
 - prompt de orquestracao;
 - perfis dos agentes funcionais;
-- workflow Ruflo;
+- workflow do swarm;
 - documentacao operacional;
 - declaracao no manifesto e no contrato de solucao.
 
 Os projetos continuam sem backend, frontend ou fabrica propria. O SYNAPSE
 permanece o plano de controle e os projetos executam sua inteligencia pelo
-Ruflo, agentes, memoria, prompts, workflows e tools MCP autorizadas.
+swarm, agentes, memoria, prompts, workflows e tools MCP autorizadas.
 
 ## Evolucao para LangGraph e MCP
 

@@ -20,8 +20,8 @@ Conceptual references without copied text:
 
 SYNAPSE application:
 
-- Keep Ollama as the default triage and review layer.
-- Keep cloud disabled unless the user explicitly asks and a human approves.
+- Use Codex/OpenAI or Claude Code/Anthropic directly for triage and review.
+- Require human approval only to activate all 60 agents.
 - Promote prompts, models, agents, or datasets only after eval evidence exists.
 
 ## Prompt Engineering
@@ -115,7 +115,7 @@ SYNAPSE application:
 
 ## Agentic Coding
 
-- Codex + Ruflo control plane.
+- Codex + Claude Code control plane.
 - Specialized swarm agents.
 - Persistent memory.
 - Workflow validation.
@@ -142,7 +142,7 @@ SYNAPSE application:
 - Model agent roles as contracts: goal, tools, memory, permissions, evals, and
   stop conditions.
 - Treat multiagent collaboration as a routing choice, not as the default answer.
-- Keep Ruflo as the local router instead of embedding large agent catalogs in
+- Keep the swarm as the local router instead of embedding large agent catalogs in
   prompts.
 - Use `config/agentic_architectural_patterns.json` as the reusable pattern
   catalog for orchestrator-specialist routing, critic gates, A2A messages,
@@ -212,7 +212,7 @@ Implemented contracts:
 
 - `config/business_transformation.json`
 - `agents/definitions/business_transformation_agents.yaml`
-- `config/workflows/ruflo/business-transformation.json`
+- `config/workflows/synapse/business-transformation.json`
 - `prompts/business_transformation.md`
 - `backend/app/orchestration/transformation_workflow.py`
 - `backend/app/governance/business_transformation.py`

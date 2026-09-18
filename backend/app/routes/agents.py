@@ -11,11 +11,6 @@ def list_agents() -> list[dict[str, object]]:
     return service.list_agents()
 
 
-@router.get("/runtime")
-def runtime_agent_list() -> dict[str, object]:
-    return service.runtime_agents()
-
-
 @router.get("/trust-framework")
 def agent_trust_framework() -> dict[str, object]:
     return service.trust_framework()

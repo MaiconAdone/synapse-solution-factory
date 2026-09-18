@@ -3,7 +3,7 @@
 ## Bootstrap
 
 ```powershell
-.\scripts\bootstrap_enterprise_stack.ps1 -SkipRuflo
+.\scripts\bootstrap_enterprise_stack.ps1
 ```
 
 Use `-InstallPythonDeps` and `-InstallFrontendDeps` when dependency installation

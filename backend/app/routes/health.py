@@ -2,8 +2,7 @@ from fastapi import APIRouter, Response, status
 
 from app.core_config import get_settings
 from app.db import get_engine
-from app.services.ollama_service import OllamaService
-from app.services.ruflo_service import RufloService
+from app.services.openai_service import OpenAiService
 
 router = APIRouter()
 
@@ -22,13 +21,9 @@ def health_check() -> dict[str, str]:
 @router.get("/ready")
 def readiness_check(response: Response) -> dict[str, object]:
     settings = get_settings()
-    ollama = OllamaService(settings)
-    try:
-        ollama_status = ollama.status()
-    finally:
-        ollama.close()
+    openai = OpenAiService(settings)
+    openai_status = {"provider": "openai", "configured": openai.configured}
 
-    ruflo_status = RufloService().swarm_status()
     database = {"required": settings.project_creation_mode == "managed", "available": True}
     if database["required"]:
         try:
@@ -38,13 +33,11 @@ def readiness_check(response: Response) -> dict[str, object]:
             database = {"required": True, "available": False, "error": str(error)}
 
     checks = {
-        "ollama": bool(ollama_status.get("available")),
-        "ruflo_mcp": bool(ruflo_status.get("available")),
+        "openai": bool(openai_status.get("configured")),
         "database": bool(database["available"]),
     }
     required_checks = {
-        "ollama": checks["ollama"] if settings.local_llm_enabled else True,
-        "ruflo_mcp": checks["ruflo_mcp"] if settings.readiness_require_ruflo else True,
+        "openai": checks["openai"],
         "database": checks["database"],
     }
     ready = all(required_checks.values())
@@ -55,8 +48,7 @@ def readiness_check(response: Response) -> dict[str, object]:
         "checks": checks,
         "required_checks": required_checks,
         "details": {
-            "ollama": ollama_status,
-            "ruflo_mcp": ruflo_status,
+            "openai": openai_status,
             "database": database,
         },
     }

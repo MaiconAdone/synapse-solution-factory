@@ -168,7 +168,7 @@ def _managed_project_archive(project) -> bytes:
             json.dumps(service.enterprise_spec.spec(), indent=2, ensure_ascii=False),
         )
         zip_file.writestr(f"{project.name}/data/README.md", "Envie CSV, Excel, JSON, JSONL ou Parquet pelo painel /synapse.\n")
-        zip_file.writestr(f"{project.name}/docs/briefings/llm_ruflo_project_brief.md", project.project_goal or "Briefing pendente.\n")
+        zip_file.writestr(f"{project.name}/docs/briefings/llm_project_brief.md", project.project_goal or "Briefing pendente.\n")
     archive.seek(0)
     return archive.getvalue()
 

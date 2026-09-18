@@ -36,12 +36,12 @@ def objective(**updates) -> BusinessObjective:
     return BusinessObjective(**values)
 
 
-def test_agents_share_base_contract_and_map_to_ruflo_catalog():
+def test_agents_share_base_contract_and_map_to_agent_catalog():
     agents = transformation_agents(default_transformation_tools())
 
     assert len(agents) == 8
     assert len({agent.name for agent in agents}) == 8
-    assert all(agent.ruflo_agent_id for agent in agents)
+    assert all(agent.agent_id for agent in agents)
     assert all(agent.plan(objective()) for agent in agents)
 
 
@@ -190,7 +190,7 @@ def test_generated_project_inherits_business_transformation_assets(tmp_path):
     project = tmp_path / project_name
     required = [
         "config/business_transformation.json",
-        "config/workflows/ruflo/business-transformation.json",
+        "config/workflows/synapse/business-transformation.json",
         "agents/definitions/business_transformation_agents.yaml",
         "prompts/business_transformation.md",
         "docs/AGENTIC_AI_TRANSFORMATION.md",

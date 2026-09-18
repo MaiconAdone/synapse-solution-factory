@@ -10,4 +10,4 @@ Default topology: hierarchical-mesh.
 
 Default coordination: distributed.
 
-Default consensus mechanism: majority, matching the Ruflo runtime.
+Default consensus mechanism: majority, matching the swarm runtime.

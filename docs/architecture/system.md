@@ -2,8 +2,9 @@
 
 ## Control Plane
 
-Codex is the engineering operator. Ruflo provides MCP-backed swarm state,
-coordination, durable memory, and semantic retrieval.
+Codex and Claude Code are the engineering operators. The swarm runtime tracks
+governed agent state, coordination, durable memory, and semantic retrieval
+locally, with no external MCP swarm executor.
 
 The machine-readable runtime contract lives in `config/runtime_manifest.json`.
 Backend services read this manifest so API responses, validation scripts, and

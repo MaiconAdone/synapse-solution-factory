@@ -37,26 +37,21 @@ Require-Path "ml_systems\data_contract.yaml"
 Require-Path "rag_pipelines\pipeline.yaml"
 Require-Path "guardrails\policy.yaml"
 Require-Path "docs\books\implementation_map.md"
-Require-Path "scripts\start_ruflo_swarm.ps1"
 Require-Path "scripts\diagnose_project.ps1"
 Require-Path "scripts\context_filter.py"
 Require-Path "scripts\market_radar.py"
-Require-Path "scripts\synapse_ollama_mcp.py"
 Require-Path "backend\app\services\hybrid_llm_router.py"
-Require-Path "backend\app\services\governed_swarm_execution.py"
 Require-Path "backend\app\services\continual_learning_service.py"
 Require-Path ".codex\config.toml"
-Require-Path "scripts\test_local_llm.py"
 Require-Path "scripts\codex_data_treatment_dialog.ps1"
 Require-Path "scripts\import_project_file.ps1"
 Require-Path "scripts\treat_dataset.py"
-Require-Path "scripts\verify_codex_ruflo_integration.ps1"
 Require-Path "prompts\master_data_treatment.md"
 Require-Path "prompts\codex_data_treatment_dialog.md"
 Require-Path "config\data_treatment_policy.json"
-Require-Path "config\workflows\ruflo\new-ai-project.json"
-Require-Path "config\workflows\ruflo\rag-build.json"
-Require-Path "config\workflows\ruflo\ml-release.json"
+Require-Path "config\workflows\synapse\new-ai-project.json"
+Require-Path "config\workflows\synapse\rag-build.json"
+Require-Path "config\workflows\synapse\ml-release.json"
 
 $env:PYTHONPATH = "backend"
 python -m compileall backend\app tests | Out-Host
@@ -74,7 +69,7 @@ if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha na validacao dos artefatos inspirados nos livros")
 }
 
-python -c "from app.services.enterprise_spec_service import EnterpriseSpecService; s=EnterpriseSpecService(); spec=s.spec(); assert spec['execution_policy']['ruflo_required_for_project_creation'] is True; assert spec['execution_policy']['ruflo_15_agents_required_for_all_universes'] is True; assert spec['execution_policy']['data_treatment_required_for_all_universes'] is True; assert spec['execution_policy']['parallel_agent_count']==15; assert spec['execution_policy']['max_agent_count']==60; assert spec['execution_policy']['specialist_agent_count']==45; assert spec['execution_policy']['cost_aware_orchestration_required'] is True; assert spec['execution_policy']['default_active_agent_count']==1; assert spec['execution_policy']['activate_all_60_requires_explicit_high_complexity'] is True; assert spec['sdd']['required_outputs']; assert 'multi_query_retrieval' in spec['rag_advanced']['strategies']; assert 'drift_monitoring' in spec['ml_systems']['required_design_fields']; assert 'autogen' in spec['ai_framework_selection']['required_frameworks']; assert s.validate_runtime_alignment()['aligned'] is True; print('enterprise_ai_ml_spec_ok')" | Out-Host
+python -c "from app.services.enterprise_spec_service import EnterpriseSpecService; s=EnterpriseSpecService(); spec=s.spec(); assert spec['execution_policy']['ruflo_required_for_project_creation'] is True; assert spec['execution_policy']['swarm_15_agents_required_for_all_universes'] is True; assert spec['execution_policy']['data_treatment_required_for_all_universes'] is True; assert spec['execution_policy']['parallel_agent_count']==15; assert spec['execution_policy']['max_agent_count']==60; assert spec['execution_policy']['specialist_agent_count']==45; assert spec['execution_policy']['cost_aware_orchestration_required'] is True; assert spec['execution_policy']['default_active_agent_count']==1; assert spec['execution_policy']['activate_all_60_requires_explicit_high_complexity'] is True; assert spec['sdd']['required_outputs']; assert 'multi_query_retrieval' in spec['rag_advanced']['strategies']; assert 'drift_monitoring' in spec['ml_systems']['required_design_fields']; assert 'autogen' in spec['ai_framework_selection']['required_frameworks']; assert s.validate_runtime_alignment()['aligned'] is True; print('enterprise_ai_ml_spec_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha no contrato enterprise IA/ML")
 }
@@ -94,9 +89,9 @@ if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha no contrato de agentic mesh governance")
 }
 
-python -c "from app.agents.catalog import AGENT_CATALOG; from app.repositories.runtime_manifest import load_runtime_manifest; m=load_runtime_manifest(); assert len(AGENT_CATALOG)==60; assert all('governed_llm_router' in a['tools'] for a in AGENT_CATALOG); assert m['local_llm']['all_60_agents_model_access']=='governed_on_demand'; assert m['local_llm']['ruflo_shared_memory_namespace']=='synapse-governed-execution'; print('governed_ruflo_ollama_bridge_ok')" | Out-Host
+python -c "from app.agents.catalog import AGENT_CATALOG; from app.repositories.runtime_manifest import load_runtime_manifest; m=load_runtime_manifest(); assert len(AGENT_CATALOG)==60; assert all('governed_llm_router' in a['tools'] for a in AGENT_CATALOG); assert m['local_llm']['all_60_agents_model_access']=='governed_on_demand'; print('governed_swarm_cloud_bridge_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Falha no contrato da ponte governada Ruflo/Ollama")
+    $Errors.Add("Falha no contrato da ponte governada do swarm com OpenAI/Anthropic")
 }
 
 python -c "from app.repositories.runtime_manifest import load_runtime_manifest; m=load_runtime_manifest(); c=m['continual_learning']; assert c['enabled'] is True; assert c['automatic_weight_updates'] is False; assert c['promotion_requires_evals_and_human_approval'] is True; print('continual_learning_governance_ok')" | Out-Host
@@ -109,24 +104,19 @@ if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha no contrato de agent blueprint e improvement loop")
 }
 
-python -c "from app.services.ruflo_service import RufloService; C=type('C',(),{'call_tool':lambda self, tool_name, arguments=None: {'tool': tool_name, 'arguments': arguments}}); s=RufloService(client=C()); r=s.execute_workflow('rag-build', ['rag-engineering'], True); assert r['available'] is True; assert r['data']['tool']=='daa_workflow_execute'; print('ruflo_adapter_contract_ok')" | Out-Host
+python -m json.tool config\workflows\synapse\new-ai-project.json | Out-Null
+python -m json.tool config\workflows\synapse\rag-build.json | Out-Null
+python -m json.tool config\workflows\synapse\ml-release.json | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Falha no contrato do adaptador Ruflo")
+    $Errors.Add("Falha na validacao JSON dos workflows do swarm")
 }
 
-python -m json.tool config\workflows\ruflo\new-ai-project.json | Out-Null
-python -m json.tool config\workflows\ruflo\rag-build.json | Out-Null
-python -m json.tool config\workflows\ruflo\ml-release.json | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Falha na validacao JSON dos workflows Ruflo")
-}
-
-python -c "import json; from pathlib import Path; w=json.loads(Path('config/workflows/ruflo/new-ai-project.json').read_text(encoding='utf-8-sig')); assert w['execution']['parallelAgentActivation'] is True; print('new_project_parallel_activation_ok')" | Out-Host
+python -c "import json; from pathlib import Path; w=json.loads(Path('config/workflows/synapse/new-ai-project.json').read_text(encoding='utf-8-sig')); assert w['execution']['parallelAgentActivation'] is True; print('new_project_parallel_activation_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Workflow new-ai-project nao declara ativacao paralela de agentes")
 }
 
-python -c "import json, re; from pathlib import Path; m=json.loads(Path('config/runtime_manifest.json').read_text(encoding='utf-8-sig')); required=m['validation']['required_agents']; specialists=m['validation']['specialist_agents']; workflow=json.loads(Path('config/workflows/ruflo/new-ai-project.json').read_text(encoding='utf-8-sig')); groups=workflow['execution']['parallelGroups']; parallel=[agent for group in groups for agent in group]; steps={step['agent'] for step in workflow['steps']}; yaml_ids=re.findall(r'(?m)^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$', Path('agents/definitions/enterprise_agents.yaml').read_text(encoding='utf-8-sig')); assert len(required)==15, required; assert len(specialists)==45, specialists; assert len(yaml_ids)==60 and len(set(yaml_ids))==60, yaml_ids; assert len(parallel)==15 and len(set(parallel))==15, parallel; assert set(parallel)==set(required), {'parallel': parallel, 'required': required}; assert set(required).issubset(steps), {'missing_step_agents': sorted(set(required)-steps)}; assert set(yaml_ids)==set(required+specialists), {'yaml_ids': yaml_ids, 'expected': required+specialists}; print('new_project_60_agent_contract_ok')" | Out-Host
+python -c "import json, re; from pathlib import Path; m=json.loads(Path('config/runtime_manifest.json').read_text(encoding='utf-8-sig')); required=m['validation']['required_agents']; specialists=m['validation']['specialist_agents']; workflow=json.loads(Path('config/workflows/synapse/new-ai-project.json').read_text(encoding='utf-8-sig')); groups=workflow['execution']['parallelGroups']; parallel=[agent for group in groups for agent in group]; steps={step['agent'] for step in workflow['steps']}; yaml_ids=re.findall(r'(?m)^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$', Path('agents/definitions/enterprise_agents.yaml').read_text(encoding='utf-8-sig')); assert len(required)==15, required; assert len(specialists)==45, specialists; assert len(yaml_ids)==60 and len(set(yaml_ids))==60, yaml_ids; assert len(parallel)==15 and len(set(parallel))==15, parallel; assert set(parallel)==set(required), {'parallel': parallel, 'required': required}; assert set(required).issubset(steps), {'missing_step_agents': sorted(set(required)-steps)}; assert set(yaml_ids)==set(required+specialists), {'yaml_ids': yaml_ids, 'expected': required+specialists}; print('new_project_60_agent_contract_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Workflow new-ai-project deve conter 15 core agents em paralelo e YAML deve conter 60 agentes")
 }

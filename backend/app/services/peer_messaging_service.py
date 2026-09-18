@@ -15,7 +15,7 @@ class PeerMessagingError(RuntimeError):
 
 
 class PeerMessagingService:
-    """Local SQLite peer registry and mailbox for Codex, Claude, and Ruflo."""
+    """Local SQLite peer registry and mailbox for Codex and Claude Code."""
 
     def __init__(self, settings: Settings | None = None, db_path: str | None = None) -> None:
         self.settings = settings or get_settings()
@@ -216,7 +216,7 @@ class PeerMessagingService:
         *,
         from_id: str,
         objective: str,
-        target_peer_type: str = "ruflo",
+        target_peer_type: str = "claude",
         required_agents: list[str] | None = None,
     ) -> dict[str, Any]:
         normalized_type = self._validate_peer_type(target_peer_type)
@@ -256,7 +256,7 @@ class PeerMessagingService:
             "targeted_count": len(targets),
             "required_agents": required_agents or [],
             "estimated_tokens": self._estimate_tokens(text),
-            "cost_control": "Task announcement stayed local; Ruflo/Ollama execution is not triggered automatically.",
+            "cost_control": "Task announcement stayed local; no cloud provider is triggered automatically.",
         }
 
     def check_messages(self, peer_id: str, *, mark_delivered: bool = True, limit: int = 10) -> dict[str, Any]:
@@ -387,8 +387,8 @@ class PeerMessagingService:
     @staticmethod
     def _validate_peer_type(peer_type: str) -> str:
         normalized = peer_type.strip().lower().replace("_", "-")
-        if normalized not in {"codex", "claude", "ruflo", "ollama", "human", "other"}:
-            raise PeerMessagingError("peer_type must be codex, claude, ruflo, ollama, human, or other")
+        if normalized not in {"codex", "claude", "human", "other"}:
+            raise PeerMessagingError("peer_type must be codex, claude, human, or other")
         return normalized
 
     @staticmethod
@@ -432,7 +432,7 @@ class PeerMessagingService:
             "SYNAPSE_TASK "
             f"objective={objective.strip()} "
             f"required_agents={agents} "
-            "routing=local_first provider=ollama cloud=false"
+            "routing=cloud provider=openai cloud=true"
         )
 
     @staticmethod

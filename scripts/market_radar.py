@@ -128,7 +128,7 @@ def recommend_action(categories: Iterable[str], title: str) -> str:
     if "cost_optimization" in category_set:
         return "Evaluate as input to the Context Filter and cost-aware routing policy."
     if "observability" in category_set:
-        return "Evaluate for Ruflo agent telemetry, read-only AI SRE, and operational dashboards."
+        return "Evaluate for swarm agent telemetry, read-only AI SRE, and operational dashboards."
     if "rag_mcp" in category_set:
         return "Evaluate for MCP registry, web knowledge maps, and RAG connector design."
     if "web_automation" in category_set:

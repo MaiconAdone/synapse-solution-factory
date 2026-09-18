@@ -3,7 +3,7 @@
 O SYNAPSE oferece duas interfaces independentes sobre o mesmo nucleo:
 
 - navegador: Next.js + FastAPI;
-- VS Code: tasks, terminal, Codex, PowerShell e Ruflo CLI.
+- VS Code: tasks, terminal, Codex, Claude Code e PowerShell.
 
 Nenhuma interface depende da outra para executar suas funcoes principais.
 
@@ -12,7 +12,7 @@ Nenhuma interface depende da outra para executar suas funcoes principais.
 | Capacidade | Navegador | VS Code |
 |---|---|---|
 | Criar projetos ML, IA e hibridos | Dialogo em `/ops` | Task AI Factory |
-| Ativar Ruflo com limite economico | API de projetos/workflows | Scripts Ruflo |
+| Ativar swarm com limite economico | API de projetos/workflows | Scripts locais |
 | Consultar agentes, memoria e swarm | Painel web | Manifestos e tasks |
 | Tratar dados | `/ops` | Task de tratamento |
 | Filtrar contexto | `/ops` | Task de filtro |

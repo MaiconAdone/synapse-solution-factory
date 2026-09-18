@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "synapse-agentic-mesh-fleets",
-  "description": "Governed fleets that compose Synapse's 60-agent Ruflo swarm into reusable AI, ML, RAG, MCP, security, cost, and project-factory teams.",
+  "description": "Governed fleets that compose Synapse's 60-agent swarm into reusable AI, ML, RAG, MCP, security, cost, and project-factory teams.",
   "fleet_defaults": {
     "activation_policy": "cost_aware_on_demand",
     "max_available_agents": 60,

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "synapse-cost-aware-orchestration",
-  "goal": "Keep Ruflo capable of 60 agents while activating only the minimum useful agent set and model tier for each ML, IA, or hybrid request.",
+  "goal": "Keep the swarm capable of 60 agents while activating only the minimum useful agent set and model tier for each ML, IA, or hybrid request.",
   "ruflo": {
     "max_available_agents": 60,
     "core_agent_count": 15,

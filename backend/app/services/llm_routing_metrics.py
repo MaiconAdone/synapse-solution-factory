@@ -20,9 +20,8 @@ class LlmRoutingMetrics:
         if not self.path.exists():
             return {
                 "requests": 0,
-                "local_requests": 0,
                 "cloud_requests": 0,
-                "fallbacks": 0,
+                "retries": 0,
                 "cloud_tokens": 0,
             }
         events = []
@@ -34,9 +33,8 @@ class LlmRoutingMetrics:
                     continue
         return {
             "requests": len(events),
-            "local_requests": sum(event.get("provider") == "ollama" for event in events),
             "cloud_requests": sum(event.get("provider") == "openai" for event in events),
-            "fallbacks": sum(bool(event.get("fallback_used")) for event in events),
+            "retries": sum(bool(event.get("retried")) for event in events),
             "cloud_tokens": sum(
                 int(event.get("total_tokens", 0))
                 for event in events

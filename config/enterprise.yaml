@@ -1,7 +1,7 @@
 ﻿project:
   name: synapse-ai
   type: enterprise-ai-ml-saas
-  core: codex-ruflo
+  core: codex-claude
 backend:
   framework: fastapi
   path: backend/app

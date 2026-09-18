@@ -5,7 +5,6 @@ param(
     [string]$TipoProjeto = "b2b2c-ai-ml-agentic-saas",
     [switch]$SkipValidation,
     [switch]$SkipActivation,
-    [switch]$ActivateRuflo,
     [switch]$LocalMemoryOnly
 )
 
@@ -16,4 +15,4 @@ if (!(Test-Path $Script)) {
     exit 1
 }
 
-& $Script -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto -Template $PSScriptRoot -SkipValidation:$SkipValidation -SkipActivation:$SkipActivation -ActivateRuflo:$ActivateRuflo -LocalMemoryOnly:$LocalMemoryOnly
+& $Script -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto -Template $PSScriptRoot -SkipValidation:$SkipValidation -SkipActivation:$SkipActivation -LocalMemoryOnly:$LocalMemoryOnly

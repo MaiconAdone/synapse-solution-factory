@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import json
 import time
 import uuid
@@ -19,9 +19,11 @@ class LlmGatewayError(RuntimeError):
 class LlmGateway:
     """Central production boundary for all LLM generation.
 
-    The gateway keeps low-level providers behind one policy surface: routing,
-    token limits, cloud budget, cache, fallback telemetry and audit records.
+    The gateway keeps the provider behind one policy surface: routing, token
+    limits, cloud budget, cache, and audit records.
     """
+
+    ESTIMATED_OUTPUT_TOKENS = 512
 
     def __init__(
         self,
@@ -40,33 +42,16 @@ class LlmGateway:
     def close(self) -> None:
         self.router.close()
 
-    def decide(
-        self,
-        prompt: str,
-        *,
-        allow_cloud: bool = False,
-        force_provider: str | None = None,
-        local_model_profile: str = "auto",
-        human_approved: bool = False,
-    ) -> dict[str, Any]:
+    def decide(self, prompt: str) -> dict[str, Any]:
         self._validate_input_budget(prompt)
-        if allow_cloud:
-            self._require_cloud_approval(allow_cloud=allow_cloud, human_approved=human_approved)
-        decision = self.router.decide(
-            prompt,
-            allow_cloud=allow_cloud,
-            force_provider=force_provider,
-            local_model_profile=local_model_profile,
-        )
-        if decision["provider"] == "openai":
-            self._enforce_cloud_budget(prompt)
+        decision = self.router.decide(prompt)
+        self._enforce_cloud_budget(prompt)
         return {
             **decision,
             "gateway": "llm_gateway",
             "policy": {
                 "single_entrypoint": True,
                 "cache_enabled": True,
-                "cloud_requires_human_approval": True,
                 "max_input_tokens": self.settings.llm_gateway_max_input_tokens,
                 "daily_cloud_token_budget": self.settings.llm_gateway_daily_cloud_token_budget,
             },
@@ -77,32 +62,19 @@ class LlmGateway:
         prompt: str,
         *,
         system: str | None = None,
-        allow_cloud: bool = False,
-        force_provider: str | None = None,
-        local_model_profile: str = "auto",
-        local_model: str | None = None,
         json_mode: bool = False,
         temperature: float = 0.0,
         min_response_chars: int = 40,
-        human_approved: bool = False,
         project_id: str = "synapse-ai",
         agent_id: str = "unassigned",
         tool_name: str = "llm.generate",
         request_id: str | None = None,
     ) -> dict[str, Any]:
         request_id = request_id or str(uuid.uuid4())
-        profile = self._profile_for_local_model(local_model, local_model_profile)
-        decision = self.decide(
-            prompt,
-            allow_cloud=allow_cloud,
-            force_provider=force_provider,
-            local_model_profile=profile,
-            human_approved=human_approved,
-        )
+        decision = self.decide(prompt)
         cache_key = self._cache_key(
             prompt=prompt,
             system=system,
-            decision=decision,
             json_mode=json_mode,
             temperature=temperature,
         )
@@ -137,9 +109,6 @@ class LlmGateway:
             result = self.router.generate(
                 prompt,
                 system=system,
-                allow_cloud=allow_cloud,
-                force_provider=force_provider,
-                local_model_profile=profile,
                 json_mode=json_mode,
                 temperature=temperature,
                 min_response_chars=min_response_chars,
@@ -186,27 +155,6 @@ class LlmGateway:
         )
         return result
 
-    def _profile_for_local_model(self, local_model: str | None, local_model_profile: str) -> str:
-        if not local_model:
-            return local_model_profile
-        profiles = {
-            self.settings.ollama_model: "fast",
-            self.settings.ollama_general_model: "general",
-            self.settings.ollama_balanced_model: "balanced",
-            self.settings.ollama_code_review_model: "code_review",
-            self.settings.ollama_code_strong_model: "code_strong",
-            self.settings.ollama_planning_strong_model: "planning_strong",
-            self.settings.ollama_reasoning_strong_model: "reasoning_strong",
-            self.settings.ollama_code_critical_model: "code_critical",
-            self.settings.ollama_large_model: "large",
-            self.settings.ollama_embedding_model: "embeddings",
-        }
-        try:
-            return profiles[local_model]
-        except KeyError as error:
-            allowed = sorted(set(profiles))
-            raise LlmGatewayError(f"local_model must be one of {allowed}") from error
-
     def _validate_input_budget(self, prompt: str) -> None:
         estimated = self._estimate_tokens(prompt)
         if estimated > self.settings.llm_gateway_max_input_tokens:
@@ -214,12 +162,8 @@ class LlmGateway:
                 f"Input exceeds gateway token budget: {estimated}>{self.settings.llm_gateway_max_input_tokens}"
             )
 
-    def _require_cloud_approval(self, *, allow_cloud: bool, human_approved: bool) -> None:
-        if not allow_cloud or not human_approved:
-            raise LlmGatewayError("Cloud LLM usage requires explicit allow_cloud and human_approved")
-
     def _enforce_cloud_budget(self, prompt: str) -> None:
-        estimated = self._estimate_tokens(prompt) + self.settings.ollama_max_output_tokens
+        estimated = self._estimate_tokens(prompt) + self.ESTIMATED_OUTPUT_TOKENS
         if estimated > self.settings.llm_gateway_per_request_cloud_token_budget:
             raise LlmGatewayError("Request exceeds per-request cloud token budget")
         used = self.metrics.summary().get("cloud_tokens", 0)
@@ -227,27 +171,19 @@ class LlmGateway:
             raise LlmGatewayError("Daily cloud token budget exceeded")
 
     def _cache_allowed(self, decision: dict[str, Any], temperature: float) -> bool:
-        return (
-            decision["provider"] == "ollama"
-            and not decision["sensitive"]
-            and temperature == 0.0
-        )
+        return not decision["sensitive"] and temperature == 0.0
 
     def _cache_key(
         self,
         *,
         prompt: str,
         system: str | None,
-        decision: dict[str, Any],
         json_mode: bool,
         temperature: float,
     ) -> str:
         payload = {
             "prompt": prompt,
             "system": system or "",
-            "provider": decision["provider"],
-            "model": decision.get("local_model"),
-            "profile": decision.get("local_model_profile"),
             "json_mode": json_mode,
             "temperature": temperature,
         }
@@ -279,8 +215,7 @@ class LlmGateway:
                 "prompt_tokens",
                 "completion_tokens",
                 "total_tokens",
-                "fallback_used",
-                "local_fallback_used",
+                "retried",
                 "quality",
                 "latency_ms",
             )
@@ -315,8 +250,7 @@ class LlmGateway:
             "prompt_tokens": result.get("prompt_tokens", 0),
             "completion_tokens": result.get("completion_tokens", 0),
             "total_tokens": result.get("total_tokens", 0),
-            "fallback_used": result.get("fallback_used", False),
-            "local_fallback_used": result.get("local_fallback_used", False),
+            "retried": result.get("retried", False),
             "quality_passed": result.get("quality", {}).get("passed", True),
             "complex": decision.get("complex", False),
             "sensitive": decision.get("sensitive", False),
@@ -333,8 +267,6 @@ class LlmGateway:
                 **event,
                 "status": "completed",
                 "routing_reason": decision.get("reason"),
-                "local_model_profile": decision.get("local_model_profile"),
-                "cloud_allowed": decision.get("cloud_allowed"),
                 "prompt_hash": self._hash_text(str(result.get("gateway", {}).get("cache_key", ""))),
             }
         )

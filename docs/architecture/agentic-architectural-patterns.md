@@ -1,16 +1,16 @@
 ﻿# Agentic Architectural Patterns
 
 This document defines SYNAPSE's reusable patterns for enterprise multi-agent
-systems. It translates broad agentic architecture ideas into local-first,
-governed project contracts. It does not copy book content.
+systems. It translates broad agentic architecture ideas into governed project
+contracts. It does not copy book content.
 
 ## Operating Policy
 
 - Start with one orchestrator and escalate only when the task needs another
   domain.
 - Route all model calls through the LLM Gateway / Model Router.
-- Use local Ollama by default; cloud requires explicit user request and human
-  approval.
+- Use Codex/OpenAI or Claude Code/Anthropic directly; human approval is
+  required only to activate all 60 agents.
 - Share short local peer summaries before sending large context to a model.
 - Treat callbacks as audit events, not as extra model calls.
 - Keep high-risk actions simulation-first until a human approves execution.
@@ -31,7 +31,7 @@ reviewer or human approval gate.
 
 ### Agent To Agent Message Contract
 
-Codex, Claude, Ruflo and humans should exchange short structured local
+Codex, Claude and humans should exchange short structured local
 messages through `synapse-peers`. Messages should include objective, source,
 target, context summary, evidence, requested decision, risk level, token budget
 and status.

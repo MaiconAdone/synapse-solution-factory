@@ -80,7 +80,7 @@ class BusinessSolutionAnalyzer:
             "data_strategy": self._data_strategy(recommended, ml_match),
             "test_strategy": self._test_strategy(recommended),
             "eval_strategy": self._eval_strategy(recommended, ml_match, ai_match),
-            "ruflo_strategy": self._ruflo_strategy(recommended),
+            "swarm_strategy": self._swarm_strategy(recommended),
             "book_alignment": self._book_alignment(ml_match, ai_match),
             "required_artifacts": self._required_artifacts(recommended, ml_match, ai_match),
         }
@@ -269,7 +269,7 @@ class BusinessSolutionAnalyzer:
             evals.append("evals/tool_workflow_cases.jsonl")
         return evals
 
-    def _ruflo_strategy(self, universe: str) -> dict[str, Any]:
+    def _swarm_strategy(self, universe: str) -> dict[str, Any]:
         return {
             "default": "start_with_one_orchestrator",
             "core_agents": 15,

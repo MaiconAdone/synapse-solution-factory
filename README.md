@@ -1,7 +1,8 @@
 ﻿# synapse-solution-factory
 
-Enterprise AI/ML solution factory with Ruflo as the multi-agent core and three
-official dialog channels: VS Code Chat, Claude Code, and Codex.
+Enterprise AI/ML solution factory with a cloud-native 60-agent swarm as the
+multi-agent core and three official dialog channels: VS Code Chat, Claude
+Code, and Codex.
 Synapse is the control plane and the only project factory. Experiment tracking
 uses the local model registry in `artifacts/models/`.
 
@@ -20,7 +21,7 @@ sao o VS Code Chat, o Claude Code e o Codex. Consulte
 - Separacao de provedores: Claude Code usa Anthropic diretamente; Codex usa
   OpenAI. Nenhum canal delega geracao ao provedor do outro.
 - Memoria compartilhada entre canais pelo MCP `synapse-peers`.
-- Ruflo com swarm hierarchical-mesh, 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
+- Swarm hierarchical-mesh, 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
 - Project Factory em `scripts/create_ai_project.ps1`.
 - Memoria hibrida working/episodic/semantic.
 - RAG e Vector DB em `vector_db/`.
@@ -38,12 +39,12 @@ Projetos gerados:
 - nao possuem Supabase ou infraestrutura web do Synapse
 - nao possuem `scripts/create_ai_project.ps1`
 - nao podem criar outros projetos
-- possuem seu proprio runtime Ruflo, configuracao MCP, memoria e agentes
+- possuem seu proprio runtime de swarm, configuracao MCP, memoria e agentes
 - recebem dados, experimentos, prompts, evals, governanca, documentacao e
   scripts analiticos conforme o universo escolhido
 - registram esse contrato em `config/synapse_solution_contract.json`
 
-Cada projeto executa seu proprio Ruflo e seus agentes, com 15 agentes core e
+Cada projeto executa seu proprio swarm de agentes, com 15 agentes core e
 45 especialistas sob demanda. O Synapse cria e administra o projeto, mas a
 execucao multiagente ocorre no contexto e na memoria do proprio projeto.
 
@@ -61,7 +62,7 @@ objetivo -> diagnostico -> processo -> oportunidades -> priorizacao
 -> plano -> risco/aprovacao -> simulacao -> impacto
 ```
 
-O runtime usa oito perfis funcionais sobre os 60 agentes Ruflo existentes:
+O runtime usa oito perfis funcionais sobre os 60 agentes do swarm existentes:
 orquestracao, transformacao empresarial, processo, dados, automacao, KPIs,
 governanca de risco e aprovacao humana.
 
@@ -122,18 +123,18 @@ mensagens curtas entre sessoes ativas.
 Coloque arquivos brutos em `data/raw/` e converse com Codex no VS Code:
 
 ```text
-trate data/raw/clientes.csv com Ruflo economico e especialistas sob demanda
+trate data/raw/clientes.csv com o swarm economico e especialistas sob demanda
 ```
 
 O caminho integrado e:
 
 ```text
-Tasks: Run Task -> Codex: Tratar dados com Ruflo economico
+Tasks: Run Task -> Codex: Tratar dados com swarm economico
 ```
 
 Esse fluxo valida o stack, ativa um subconjunto economico dos 15 core agents, registra o contexto da
 conversa e executa o tratamento estatistico. Para rodar somente o script de
-tratamento sem ativar Ruflo, use:
+tratamento sem passar pelo diagnostico do swarm, use:
 
 ```text
 Tasks: Run Task -> Dados: Tratar dataset estatistico
@@ -162,7 +163,7 @@ The project factory configures `config/runtime_manifest.json`,
 the project name and selected universe.
 
 It also inherits `config/business_transformation.json`,
-`config/workflows/ruflo/business-transformation.json`,
+`config/workflows/synapse/business-transformation.json`,
 `agents/definitions/business_transformation_agents.yaml`,
 `prompts/business_transformation.md`, and
 `docs/AGENTIC_AI_TRANSFORMATION.md`.
@@ -175,15 +176,15 @@ an IA-only project does not receive an ML model card, while an ML-only project
 does not receive the RAG and AI framework layers.
 
 The generated project contains no application backend, frontend or factory
-script. It does contain its own Ruflo runtime, MCP configuration, memory,
+script. It does contain its own swarm runtime, MCP configuration, memory,
 workflows and agent catalog.
 
-## Ruflo Runtime Interno
+## Swarm Runtime Interno
 
-O Ruflo usa o MCP configurado em `.mcp.json` e os workflows versionados em
-`config/workflows/ruflo/*.json`. O fluxo principal e pelo VS Code/Codex, nao
+O swarm usa o MCP configurado em `.mcp.json` e os workflows versionados em
+`config/workflows/synapse/*.json`. O fluxo principal e pelo VS Code/Codex, nao
 por navegador. Cada projeto recebe `.mcp.json`,
-`scripts/start_ruflo_swarm.ps1`, `agents/definitions/enterprise_agents.yaml`
+`agents/definitions/enterprise_agents.yaml`
 e seus contratos de workflows e memoria.
 
 ## Local Model Layer
@@ -241,7 +242,7 @@ Or from PowerShell:
 
 Synapse's product goal is a no-code ML and AI agent factory: the user describes
 the desired outcome to Codex in VS Code, the LLM asks for missing context, and
-Ruflo routes the work to specialized agents in parallel. See
+the swarm routes the work to specialized agents in parallel. See
 `docs/architecture/no-code-ai-factory.md`.
 
 ## Enterprise Principles

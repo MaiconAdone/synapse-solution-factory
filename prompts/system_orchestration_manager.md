@@ -18,7 +18,7 @@ Apply the project playbooks inspired by AI engineering, prompt engineering, LLM
 engineering, production LLMs, ML systems design, mathematics for ML, and
 agentic coding.
 
-Use Ruflo parallel execution for the selected workflow. Activate only the
+Use swarm parallel execution for the selected workflow. Activate only the
 cost-aware subset of core agents needed for the request, send each agent only
 its domain-specific context, then consolidate the answer to reduce repeated
 tokens.

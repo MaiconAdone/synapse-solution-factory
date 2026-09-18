@@ -2,7 +2,7 @@
   "project": {
     "name": "synapse-ai",
     "type": "enterprise-ai-ml-saas",
-    "core": "codex-ruflo"
+    "core": "codex-claude"
   },
   "agentic_mesh": {
     "enabled": true,
@@ -31,7 +31,7 @@
     "generated_projects_inherit": true
   },
   "mcp": {
-    "server": "ruflo",
+    "server": "none",
     "transport": "stdio",
     "config_file": ".mcp.json",
     "peer_messaging_server": "synapse-peers",
@@ -53,7 +53,7 @@
     "consensus": "majority",
     "anti_drift": true
   },
-  "generated_project_ruflo_strategy": {
+  "generated_project_swarm_strategy": {
     "inheritance_mode": "solution_runtime",
     "available_agents": 60,
     "core_agents": 15,
@@ -74,13 +74,12 @@
       "hybrid": ["project_factory_fleet", "ml_fleet", "rag_fleet", "cost_optimization_fleet"]
     },
     "context_policy": "send_only_role_specific_context",
-    "local_model_policy": "ollama_local_first",
+    "cloud_model_policy": "openai_claude_direct",
     "inherited_artifacts": [
       "config/agent_fleets.json",
       "config/agent_trust_framework.json",
       "config/cost_optimization_policy.json",
       "config/model_providers.json",
-      "scripts/start_ruflo_swarm.ps1",
       "agents/definitions/enterprise_agents.yaml"
     ]
   },
@@ -95,59 +94,20 @@
     "send_only_role_specific_context": true
   },
   "local_llm": {
-    "enabled": true,
-    "provider": "ollama",
-    "routing_strategy": "local_first",
-    "default_model": "qwen2.5-coder:3b",
-    "general_model": "qwen3:8b",
-    "balanced_model": "deepseek-coder-v2:lite",
-    "code_review_model": "deepseek-coder-v2:lite",
-    "code_strong_model": "qwen2.5-coder:14b",
-    "planning_strong_model": "qwen3:14b",
-    "reasoning_strong_model": "deepseek-r1:14b",
-    "code_critical_model": "qwen2.5-coder:32b",
-    "large_model": "qwen2.5-coder:32b",
-    "embedding_model": "nomic-embed-text:latest",
-    "model_selection": "offline_profile_router",
-    "model_profiles": {
-      "fast": "qwen2.5-coder:3b",
-      "general": "qwen3:8b",
-      "balanced": "deepseek-coder-v2:lite",
-      "code_review": "deepseek-coder-v2:lite",
-      "code_strong": "qwen2.5-coder:14b",
-      "planning_strong": "qwen3:14b",
-      "reasoning_strong": "deepseek-r1:14b",
-      "code_critical": "qwen2.5-coder:32b",
-      "large": "qwen2.5-coder:32b",
-      "embeddings": "nomic-embed-text:latest"
-    },
-    "allowed_local_models": [
-      "nomic-embed-text:latest",
-      "qwen2.5-coder:3b",
-      "qwen3:8b",
-      "deepseek-coder-v2:lite",
-      "qwen2.5-coder:14b",
-      "qwen3:14b",
-      "deepseek-r1:14b",
-      "qwen2.5-coder:32b"
-    ],
-    "large_model_requires_explicit_request": true,
-    "recommended_context_tokens_on_16gb_ram": 4096,
+    "enabled": false,
+    "provider": "openai",
+    "routing_strategy": "cloud_only",
+    "default_model": "gpt-5.5",
     "provider_config_file": "config/model_providers.json",
-    "vscode_test_script": "scripts/test_local_llm.py",
     "hybrid_router": "backend/app/services/hybrid_llm_router.py",
     "routing_endpoint": "/llm/generate",
     "metrics_endpoint": "/llm/metrics",
-    "sensitive_content_local_only": true,
-    "ruflo_governed_bridge": "backend/app/services/governed_swarm_execution.py",
-    "ruflo_shared_memory_namespace": "synapse-governed-execution",
-    "all_60_agents_model_access": "governed_on_demand"
-    ,
-    "cloud_default_enabled": false,
-    "cloud_requires_human_approval": true,
+    "sensitive_content_blocked": true,
+    "all_60_agents_model_access": "governed_on_demand",
+    "cloud_default_enabled": true,
+    "cloud_requires_human_approval": false,
+    "human_approval_required_for": "activate_all_60_agents",
     "default_max_output_tokens": 512,
-    "default_context_window": 4096,
-    "deterministic_seed": 42,
     "default_temperature": 0.0
   },
   "continual_learning": {
@@ -155,7 +115,7 @@
     "mode": "memory_retrieval_first",
     "automatic_weight_updates": false,
     "events_path": "memory/synapse_learning_memory.jsonl",
-    "training_dataset_path": "data/learning/ollama_training.jsonl",
+    "training_dataset_path": "data/learning/training_examples.jsonl",
     "feedback_endpoint": "/learning/feedback",
     "summary_endpoint": "/learning/summary",
     "promotion_requires_evals_and_human_approval": true
@@ -164,7 +124,7 @@
     "enabled": true,
     "config_file": "config/business_transformation.json",
     "prompt_file": "prompts/business_transformation.md",
-    "workflow_file": "config/workflows/ruflo/business-transformation.json",
+    "workflow_file": "config/workflows/synapse/business-transformation.json",
     "agent_profiles_file": "agents/definitions/business_transformation_agents.yaml",
     "simulation_first": true,
     "human_approval_levels": ["HIGH", "CRITICAL"],
@@ -190,7 +150,7 @@
     "embeddings": {
       "enabled": true,
       "dimension": 384,
-      "provider": "ruflo-agentdb"
+      "provider": "local"
     },
     "semantic_search": {
       "enabled": true,
@@ -361,7 +321,7 @@
       "docs/radar/README.md",
       "docs/architecture/agentic-mesh-governance.md",
       "docs/architecture/agentic-architectural-patterns.md",
-      "docs/architecture/generated-project-ruflo-strategy.md",
+      "docs/architecture/generated-project-swarm-strategy.md",
       "notebooks/foundations/foundations_lab.ipynb",
       "playbooks/ai_engineering.md",
       "playbooks/prompt_engineering.md",
@@ -384,13 +344,9 @@
       "scripts/context_filter.py",
       "scripts/market_radar.py",
       "scripts/analyze_business_solution.py",
-      "scripts/test_local_llm.py",
-      "scripts/synapse_ollama_mcp.py",
       "agents/definitions/business_transformation_agents.yaml",
-      "config/workflows/ruflo/business-transformation.json",
+      "config/workflows/synapse/business-transformation.json",
       "docs/AGENTIC_AI_TRANSFORMATION.md",
-      "docs/ollama-offline-models.md",
-      "backend/app/services/governed_swarm_execution.py",
       "backend/app/services/continual_learning_service.py",
       ".codex/config.toml"
     ]
@@ -398,13 +354,11 @@
   "assistant_provider_boundaries": {
     "codex": {
       "provider": "openai",
-      "direct_generation": true,
-      "ollama_allowed": false
+      "direct_generation": true
     },
     "claude_code": {
       "provider": "anthropic",
-      "direct_generation": true,
-      "ollama_allowed": false
+      "direct_generation": true
     }
   }
 }

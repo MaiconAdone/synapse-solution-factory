@@ -25,7 +25,7 @@
 ## Multiagent Control
 
 - Represent tasks before routing them: objective, constraints, evidence, risk, and acceptance criteria.
-- Use Ruflo as the local router for specialist selection and workflow execution.
+- Use the swarm as the local router for specialist selection and workflow execution.
 - Resolve conflicting specialist outputs through the orchestration manager.
 - Stop for human approval when evidence is weak, risk is high, an action is irreversible, or cloud/external execution is requested.
 - Record feedback as memory or learning data only through the approved continual-learning path.

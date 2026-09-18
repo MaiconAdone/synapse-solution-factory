@@ -8,7 +8,7 @@ export const agents = [
   ["rag-engineering", "Recuperacao, indexacao, reranking e citacoes"],
   ["backend-engineering", "FastAPI e arquitetura de servicos"],
   ["frontend-engineering", "Dashboard corporativo em Next.js"],
-  ["integration-automation", "Codex, Ruflo, MCP, APIs e automacoes"],
+  ["integration-automation", "Codex, MCP, APIs e automacoes"],
   ["security-compliance", "Auth, privacidade, LGPD e policies"],
   ["observability-ops", "Traces, custo, latencia, tokens e drift"],
   ["devops", "CI/CD, deploy, segredos e operacao"],
@@ -17,7 +17,7 @@ export const agents = [
 ];
 
 export const workflows = [
-  ["new-ai-project", "Dialogo no-code, Codex, Ruflo 60 agents e validacao"],
+  ["new-ai-project", "Dialogo no-code, Codex, swarm de 60 agents e validacao"],
   ["rag-build", "Ingerir, quebrar, gerar embeddings, indexar, avaliar e publicar"],
   ["ml-release", "Desenhar, implementar, testar, avaliar, documentar e publicar"],
 ];

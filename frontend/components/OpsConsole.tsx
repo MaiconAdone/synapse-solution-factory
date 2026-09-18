@@ -29,17 +29,14 @@ type AgentBriefingResponse = {
   parallel_agents: string[];
   execution_plan: string[];
   token_strategy: string;
-  ruflo: {
-    source?: string;
-    available?: boolean;
-    tool?: string;
+  swarm: {
     parallel_default?: boolean;
     workflow?: string;
   };
 };
 
 type AgentMessage = {
-  role: "usuario" | "ruflo";
+  role: "usuario" | "assistente";
   text: string;
 };
 
@@ -115,11 +112,8 @@ export function OpsConsole() {
   const [contextLimit, setContextLimit] = useState(12000);
   const [radarOffline, setRadarOffline] = useState(false);
   const [modelId, setModelId] = useState("");
-  const [workflowId, setWorkflowId] = useState("rag-build");
-  const [parallelWorkflow, setParallelWorkflow] = useState(true);
   const [projectName, setProjectName] = useState("");
   const [projectType, setProjectType] = useState("ML + IA (Hibrido)");
-  const [activateRuflo, setActivateRuflo] = useState(true);
   const [creationStep, setCreationStep] = useState<CreationStep>("pedido");
   const [projectGoal, setProjectGoal] = useState("");
   const [businessProblem, setBusinessProblem] = useState("");
@@ -130,8 +124,8 @@ export function OpsConsole() {
   const [briefing, setBriefing] = useState<AgentBriefingResponse | null>(null);
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([
     {
-      role: "ruflo",
-      text: "Descreva o que voce quer criar. Eu vou transformar isso em um projeto de ML/agentes de IA sem codigo, usando os playbooks base e o swarm Ruflo.",
+      role: "assistente",
+      text: "Descreva o que voce quer criar. Eu vou transformar isso em um projeto de ML/agentes de IA sem codigo, usando os playbooks base e o swarm de agentes.",
     },
   ]);
 
@@ -150,8 +144,8 @@ export function OpsConsole() {
     }
   }
 
-  async function askRuflo(message: string, nextStep: CreationStep) {
-    setState({ name: "consultar Ruflo", loading: true, result: null, error: null });
+  async function askAssistant(message: string, nextStep: CreationStep) {
+    setState({ name: "consultar assistente", loading: true, result: null, error: null });
     try {
       const result = (await postSynapse("/projects/briefing", {
         message,
@@ -171,7 +165,7 @@ export function OpsConsole() {
         ...messages,
         { role: "usuario", text: message },
         {
-          role: "ruflo",
+          role: "assistente",
           text: [
             result.llm_response,
             "",
@@ -181,10 +175,10 @@ export function OpsConsole() {
           ].join("\n"),
         },
       ]);
-      setState({ name: "Ruflo respondeu", loading: false, result, error: null });
+      setState({ name: "assistente respondeu", loading: false, result, error: null });
     } catch (error) {
       setState({
-        name: "consultar Ruflo",
+        name: "consultar assistente",
         loading: false,
         result: null,
         error: error instanceof Error ? error.message : "erro desconhecido",
@@ -197,14 +191,14 @@ export function OpsConsole() {
       <section className="panel ops-panel ops-dialog">
         <div className="ops-dialog-header">
           <h2>Dialogo no-code para ML e agentes de IA</h2>
-          <span className="status">Ruflo paralelo / {creationStep}</span>
+          <span className="status">Swarm paralelo / {creationStep}</span>
         </div>
 
         <div className="dialog-layout">
           <div className="agent-thread" aria-live="polite">
             {agentMessages.map((message, index) => (
               <div className={`agent-message ${message.role}`} key={`${message.role}-${index}`}>
-                <strong>{message.role === "ruflo" ? "LLM / orchestration-manager" : "Voce"}</strong>
+                <strong>{message.role === "assistente" ? "LLM / orchestration-manager" : "Voce"}</strong>
                 <p>{message.text}</p>
               </div>
             ))}
@@ -259,10 +253,10 @@ export function OpsConsole() {
               <button
                 className="ops-button"
                 type="button"
-                onClick={() => askRuflo(projectGoal, "problema")}
+                onClick={() => askAssistant(projectGoal, "problema")}
                 disabled={!projectGoal.trim() || state.loading}
               >
-                Perguntar ao Ruflo
+                Perguntar ao assistente
               </button>
             </div>
           </>
@@ -335,14 +329,6 @@ export function OpsConsole() {
                 <option value="critico">Critico</option>
               </select>
             </label>
-            <label className="ops-check">
-              <input
-                checked={activateRuflo}
-                type="checkbox"
-                onChange={(event) => setActivateRuflo(event.target.checked)}
-              />
-              <span>Ativar Ruflo com roteamento economico</span>
-            </label>
             <div className="ops-actions">
               <button className="ops-button secondary" type="button" onClick={() => setCreationStep("pedido")}>
                 Voltar
@@ -350,7 +336,7 @@ export function OpsConsole() {
               <button
                 className="ops-button secondary"
                 type="button"
-                onClick={() => askRuflo(businessProblem, "problema")}
+                onClick={() => askAssistant(businessProblem, "problema")}
                 disabled={
                   !businessProblem.trim() ||
                   !successMetric.trim() ||
@@ -365,11 +351,10 @@ export function OpsConsole() {
                 className="ops-button"
                 type="button"
                 onClick={() =>
-                  run("criar projeto com LLM + Ruflo", () =>
+                  run("criar projeto com LLM + swarm", () =>
                     postSynapse("/projects/create", {
                       name: projectName,
                       project_type: projectType,
-                      activate_ruflo: activateRuflo,
                       project_goal: projectGoal,
                       business_problem: businessProblem,
                       solution_focus: solutionFocus,
@@ -558,36 +543,6 @@ export function OpsConsole() {
           onClick={() => run("market radar", () => postSynapse("/tools/market-radar", { offline: radarOffline }))}
         >
           Executar radar
-        </button>
-      </section>
-
-      <section className="panel ops-panel">
-        <h2>Executar workflow</h2>
-        <label className="ops-field">
-          <span>ID do workflow</span>
-          <input value={workflowId} onChange={(event) => setWorkflowId(event.target.value)} />
-        </label>
-        <label className="ops-check">
-          <input
-            checked={parallelWorkflow}
-            type="checkbox"
-            onChange={(event) => setParallelWorkflow(event.target.checked)}
-          />
-          <span>Execucao paralela</span>
-        </label>
-        <button
-          className="ops-button"
-          type="button"
-          onClick={() =>
-            run("executar workflow", () =>
-              postSynapse(`/workflows/${workflowId}/execute`, {
-                agent_ids: null,
-                parallel_execution: parallelWorkflow,
-              }),
-            )
-          }
-        >
-          Executar
         </button>
       </section>
 

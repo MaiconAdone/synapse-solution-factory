@@ -16,7 +16,7 @@ class BaseAgent(ABC):
     goal: str
     allowed_tools: set[str]
     risk_level: RiskLevel
-    ruflo_agent_id: str
+    agent_id: str
 
     def __init__(self, tools: dict[str, BaseTool]) -> None:
         self.tools = tools
@@ -61,7 +61,7 @@ class OrchestratorAgent(BaseAgent):
     goal = "Decompor o objetivo, coordenar agentes e consolidar o workflow."
     allowed_tools = set()
     risk_level = RiskLevel.MEDIUM
-    ruflo_agent_id = "orchestration-manager"
+    agent_id = "orchestration-manager"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         return self._task(
@@ -76,7 +76,7 @@ class BusinessTransformationAgent(BaseAgent):
     goal = "Diagnosticar e priorizar transformacao orientada a valor."
     allowed_tools = {"kpi_tool"}
     risk_level = RiskLevel.MEDIUM
-    ruflo_agent_id = "product-strategy"
+    agent_id = "product-strategy"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         return self._task(
@@ -96,7 +96,7 @@ class ProcessMappingAgent(BaseAgent):
     goal = "Mapear processo atual, gargalos e pontos automatizaveis."
     allowed_tools = {"process_tool"}
     risk_level = RiskLevel.LOW
-    ruflo_agent_id = "business-value-analyst"
+    agent_id = "business-value-analyst"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         result = self.tools["process_tool"].execute({"objective": objective.title})
@@ -109,7 +109,7 @@ class DataAnalysisAgent(BaseAgent):
     goal = "Avaliar dados e produzir evidencias interpretaveis."
     allowed_tools = {"data_tool"}
     risk_level = RiskLevel.MEDIUM
-    ruflo_agent_id = "data-science"
+    agent_id = "data-science"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         return self._task(
@@ -128,7 +128,7 @@ class AutomationArchitectAgent(BaseAgent):
     goal = "Projetar automacoes, tools e integracoes MCP governadas."
     allowed_tools = {"automation_tool"}
     risk_level = RiskLevel.HIGH
-    ruflo_agent_id = "integration-automation"
+    agent_id = "integration-automation"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         return self._task(
@@ -147,7 +147,7 @@ class KPIMonitorAgent(BaseAgent):
     goal = "Definir KPIs, baseline, metas, desvios e recomendacoes."
     allowed_tools = {"kpi_tool"}
     risk_level = RiskLevel.LOW
-    ruflo_agent_id = "metrics-instrumentation"
+    agent_id = "metrics-instrumentation"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         return self._task(
@@ -170,7 +170,7 @@ class RiskGovernanceAgent(BaseAgent):
     goal = "Avaliar risco, autonomia, privacidade e conformidade."
     allowed_tools = set()
     risk_level = RiskLevel.HIGH
-    ruflo_agent_id = "security-compliance"
+    agent_id = "security-compliance"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         assessment = context["risk_assessment"]
@@ -183,7 +183,7 @@ class HumanApprovalAgent(BaseAgent):
     goal = "Controlar decisoes que exigem validacao humana."
     allowed_tools = set()
     risk_level = RiskLevel.CRITICAL
-    ruflo_agent_id = "policy-guardrails-engineer"
+    agent_id = "policy-guardrails-engineer"
 
     def execute(self, objective: BusinessObjective, context: dict[str, Any]) -> AgentTask:
         assessment = context["risk_assessment"]

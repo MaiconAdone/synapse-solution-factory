@@ -1,17 +1,15 @@
 # Synapse - Limites de Provedores
 
 - Codex usa o modelo OpenAI configurado diretamente para analisar, editar e revisar codigo.
-- Codex nunca chama Ollama, `ask_ollama` ou o MCP `SYNAPSE_ollama`.
-- Claude Code usa Anthropic diretamente e nunca chama Ollama.
-- Use `execute_governed_swarm` com `allow_cloud=false` para fluxos Ruflo.
-- Cloud exige pedido explicito do usuario e aprovacao humana.
+- Claude Code usa Anthropic diretamente.
+- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
 - Comece com um agente; escale somente quando o problema exigir outros dominios.
 - Nunca ative os 60 agentes por padrao.
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
 - Limite respostas locais normalmente a 512 tokens e contexto a 4096 tokens.
 - Para economizar limite do Codex, nao carregue catalogos de agentes, manifests longos,
   output, artifacts, .claude-flow ou memoria completa sem necessidade direta.
-- Use Ruflo como artefato/roteador local; nao replique o raciocinio de 60 agentes dentro
+- Use o swarm como roteador local; nao replique o raciocinio de 60 agentes dentro
   do prompt do Codex.
 - Compartilhe memoria entre VS Code Chat, Codex e Claude Code pelo MCP local
   `synapse-peers`.

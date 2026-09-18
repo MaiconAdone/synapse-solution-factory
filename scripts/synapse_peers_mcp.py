@@ -39,9 +39,8 @@ registered_peer = service.register(
 mcp = FastMCP(
     "synapse-peers",
     instructions=(
-        "Use these local peer tools to coordinate Codex, Claude, Ruflo, and human "
-        "operator sessions while reducing repeated context. Route Synapse system "
-        "questions through Ruflo/Ollama local-first. Prefer list_peers and short "
+        "Use these local peer tools to coordinate Codex, Claude Code, and human "
+        "operator sessions while reducing repeated context. Prefer list_peers and short "
         "summaries before requesting details. "
         "Do not send secrets or large file contents. All messages stay local in SQLite."
     ),
@@ -103,7 +102,7 @@ def publish_context(
     active_agents: int = 0,
     status: str = "active",
 ):
-    """Publica contexto estruturado desta sessao para AdoneX, Ruflo e Codex."""
+    """Publica contexto estruturado desta sessao para outros peers locais (Codex, Claude Code)."""
     try:
         capabilities = [
             item.strip()
@@ -158,7 +157,7 @@ def check_messages(mark_delivered: bool = True, limit: int = 10):
 
 
 @mcp.tool()
-def announce_task(objective: str, target_peer_type: str = "ruflo", required_agents_csv: str = ""):
+def announce_task(objective: str, target_peer_type: str = "claude", required_agents_csv: str = ""):
     """Anuncia uma tarefa local para peers de um tipo, sem disparar cloud ou LLM externo."""
     try:
         required_agents = [
@@ -177,8 +176,8 @@ def announce_task(objective: str, target_peer_type: str = "ruflo", required_agen
 
 
 @mcp.tool()
-def route_to_ruflo_agents(objective: str, required_agents_csv: str = "", max_agents: int = 60):
-    """Prepara a rota AdoneX -> Ruflo local para ate 60 agentes com Ollama consolidado."""
+def route_to_swarm_agents(objective: str, required_agents_csv: str = "", max_agents: int = 60):
+    """Prepara a rota governada para ate 60 agentes do swarm com chamadas cloud consolidadas."""
     try:
         requested = [
             item.strip()
@@ -190,18 +189,18 @@ def route_to_ruflo_agents(objective: str, required_agents_csv: str = "", max_age
         announcement = service.announce_task(
             from_id=registered_peer["id"],
             objective=objective,
-            target_peer_type="ruflo",
+            target_peer_type="claude",
             required_agents=selected if selected != ["auto"] else [],
         )
         return {
             "ok": True,
-            "route": "ruflo-local",
-            "provider": "ollama",
-            "cloud_used": False,
+            "route": "swarm-cloud",
+            "provider": "openai",
+            "cloud_used": True,
             "max_agents": 60,
             "active_agent_budget": agent_count,
             "selected_agents": selected,
-            "llm_policy": "Consolidar o conselho Ruflo em poucas chamadas Ollama locais; nao executar 60 geracoes paralelas.",
+            "llm_policy": "Consolidar o conselho de agentes em poucas chamadas cloud; nao executar 60 geracoes paralelas.",
             "announcement": announcement,
         }
     except PeerMessagingError as error:

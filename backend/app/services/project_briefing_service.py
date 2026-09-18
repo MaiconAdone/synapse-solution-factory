@@ -9,13 +9,11 @@ from app.services.ai_framework_selector import AiFrameworkSelector
 from app.services.business_solution_analyzer import BusinessSolutionAnalyzer
 from app.services.cost_aware_router import CostAwareRouter
 from app.services.enterprise_spec_service import EnterpriseSpecService
-from app.services.ruflo_service import RufloService
 
 
 class ProjectBriefingService:
     def __init__(
         self,
-        ruflo: RufloService | None = None,
         enterprise_spec: EnterpriseSpecService | None = None,
         framework_selector: AiFrameworkSelector | None = None,
         cost_router: CostAwareRouter | None = None,
@@ -23,7 +21,6 @@ class ProjectBriefingService:
         blueprint_service: AgentBlueprintService | None = None,
         solution_analyzer: BusinessSolutionAnalyzer | None = None,
     ) -> None:
-        self.ruflo = ruflo or RufloService()
         self.enterprise_spec = enterprise_spec or EnterpriseSpecService()
         self.framework_selector = framework_selector or AiFrameworkSelector()
         self.cost_router = cost_router or CostAwareRouter()
@@ -41,7 +38,6 @@ class ProjectBriefingService:
         missing = self._missing_fields(goal, business_problem, focus, success_metric, data_sources, risk_level)
         ready = not missing
         phase = "validacao_de_negocio" if business_problem else "descoberta"
-        status = self.ruflo.swarm_status()
         project_defaults = self.enterprise_spec.project_creation_defaults()
         framework_selection = self.framework_selector.select(
             f"{goal} {business_problem}",
@@ -93,7 +89,7 @@ class ProjectBriefingService:
                 "version": self.enterprise_spec.spec()["version"],
                 "sdd_gate": project_defaults["sdd_gate"],
                 "required_request_steps": self.enterprise_spec.required_request_steps(),
-                "ruflo_required": project_defaults["ruflo_required"],
+                "swarm_required": project_defaults["ruflo_required"],
                 "parallel_agent_count": project_defaults["parallel_agent_count"],
                 "max_agent_count": project_defaults["max_agent_count"],
                 "specialist_agent_count": project_defaults["specialist_agent_count"],
@@ -101,10 +97,7 @@ class ProjectBriefingService:
                 "specialist_agents": project_defaults["specialist_agents"],
             },
             "ai_framework_selection": framework_selection,
-            "ruflo": {
-                "source": status.get("source", "ruflo_mcp"),
-                "available": bool(status.get("available")),
-                "tool": status.get("tool"),
+            "swarm": {
                 "parallel_default": True,
                 "workflow": "new-ai-project",
             },
@@ -113,17 +106,17 @@ class ProjectBriefingService:
     def _compose_message(self, goal: str, business_problem: str, focus: str, ready: bool) -> str:
         if ready:
             return (
-                "Ruflo recebeu o objetivo e o problema de negocio. O swarm pode criar o projeto completo "
+                "Synapse recebeu o objetivo e o problema de negocio. O projeto pode ser criado completo "
                 "com dados, experimentos, testes ML/IA, governanca e briefing operacional."
             )
         if business_problem:
-            return "Ruflo entendeu o problema inicial. Antes de implementar, preciso fechar as informacoes faltantes pela conversa."
+            return "Synapse entendeu o problema inicial. Antes de implementar, preciso fechar as informacoes faltantes pela conversa."
         if goal:
             return (
-                "Ruflo entendeu o tipo de projeto solicitado. Antes de criar modelos de ML ou agentes de IA, "
+                "Synapse entendeu o tipo de projeto solicitado. Antes de criar modelos de ML ou agentes de IA, "
                 "precisamos registrar o problema de negocio que a solucao deve resolver."
             )
-        return "Descreva o projeto para que o swarm Ruflo consiga iniciar o briefing."
+        return "Descreva o projeto para que o Synapse consiga iniciar o briefing."
 
     def _compose_llm_response(self, goal: str, business_problem: str, focus: str, ready: bool) -> str:
         if not ready:
@@ -227,7 +220,7 @@ class ProjectBriefingService:
             ]
         plan = [
             "Criar projeto local no VS Code com pasta data/ para CSV, Excel e outros dados.",
-            "Acionar Ruflo no workflow new-ai-project com Codex, subconjunto economico de core agents em paralelo e pool escalavel ate 60 agentes.",
+            "Ativar Codex com subconjunto economico de agentes em paralelo e pool escalavel ate 60 agentes.",
             "Gerar contrato de dados, casos de avaliacao, model card e guardrails.",
         ]
         if focus in {"ml", "ai-ml-agents"}:

@@ -35,16 +35,10 @@ from app.services.swarm_service import SwarmService
 from app.repositories.runtime_manifest import load_runtime_manifest
 from app.security import require_api_key
 from app.security import AuthContext, _require_approved_supabase_user
-from app.services.ruflo_service import RufloService
-from app.services.ollama_service import OllamaService
 from app.services.hybrid_llm_router import HybridLlmRouter, HybridLlmRouterError
 from app.services.llm_gateway import LlmGateway, LlmGatewayError
 from app.services.llm_routing_metrics import LlmRoutingMetrics
 from app.services.peer_messaging_service import PeerMessagingError, PeerMessagingService
-from app.services.governed_swarm_execution import (
-    GovernedSwarmExecutionError,
-    GovernedSwarmExecutionService,
-)
 from app.services.continual_learning_service import (
     ContinualLearningError,
     ContinualLearningService,
@@ -63,132 +57,6 @@ def _read_factory_sources(root: Path) -> str:
     sources = [root / "scripts" / "create_ai_project.ps1"]
     sources.extend(sorted((root / "scripts" / "project_factory").glob("*.ps1")))
     return "\n".join(path.read_text(encoding="utf-8-sig") for path in sources)
-
-
-class FailingClient:
-    def call_tool(self, tool_name, arguments=None):
-        raise OSError("mcp unavailable")
-
-
-class RecordingClient:
-    def __init__(self):
-        self.calls = []
-
-    def call_tool(self, tool_name, arguments=None):
-        self.calls.append((tool_name, arguments))
-        return {"ok": True, "tool": tool_name, "arguments": arguments}
-
-
-class MissingWorkflowClient:
-    def call_tool(self, tool_name, arguments=None):
-        raise OSError("Workflow not found")
-
-
-def test_ollama_service_reports_models_and_generation_metrics():
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/api/version":
-            return httpx.Response(200, json={"version": "0.30.6"})
-        if request.url.path == "/api/tags":
-            return httpx.Response(200, json={"models": [{"name": "qwen2.5-coder:3b"}]})
-        if request.url.path == "/api/generate":
-            payload = json.loads(request.content)
-            assert payload["model"] == "qwen2.5-coder:3b"
-            assert payload["format"] == "json"
-            assert payload["options"]["temperature"] == 0.0
-            assert payload["options"]["seed"] == 42
-            assert payload["options"]["num_ctx"] == 4096
-            assert payload["options"]["num_predict"] == 512
-            return httpx.Response(
-                200,
-                json={
-                    "model": payload["model"],
-                    "response": '{"universe":"ML"}',
-                    "done": True,
-                    "prompt_eval_count": 12,
-                    "eval_count": 20,
-                    "eval_duration": 2_000_000_000,
-                    "total_duration": 3_000_000_000,
-                },
-            )
-        return httpx.Response(404)
-
-    settings = Settings(
-        ollama_base_url="http://ollama.test",
-        ollama_model="qwen2.5-coder:3b",
-    )
-    client = httpx.Client(
-        base_url=settings.ollama_base_url,
-        transport=httpx.MockTransport(handler),
-    )
-    service = OllamaService(settings=settings, client=client)
-
-    status = service.status()
-    result = service.generate("planeje", json_mode=True)
-
-    assert status["available"] is True
-    assert status["default_model_installed"] is True
-    assert status["general_model"] == "qwen3:8b"
-    assert status["large_model"] == "qwen2.5-coder:32b"
-    assert status["large_model_installed"] is False
-    assert status["balanced_model"] == "deepseek-coder-v2:lite"
-    assert status["code_review_model"] == "deepseek-coder-v2:lite"
-    assert status["embedding_model"] == "nomic-embed-text:latest"
-    assert result["provider"] == "ollama"
-    assert result["prompt_tokens"] == 12
-    assert result["completion_tokens"] == 20
-    assert result["tokens_per_second"] == 10.0
-
-
-def test_ollama_service_does_not_seed_open_temperature_questions():
-    captured_payloads = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == "/api/generate":
-            payload = json.loads(request.content)
-            captured_payloads.append(payload)
-            return httpx.Response(
-                200,
-                json={
-                    "model": payload["model"],
-                    "response": "resposta aberta",
-                    "done": True,
-                    "prompt_eval_count": 1,
-                    "eval_count": 2,
-                    "eval_duration": 1_000_000_000,
-                },
-            )
-        return httpx.Response(404)
-
-    settings = Settings(
-        ollama_base_url="http://ollama.test",
-        ollama_model="qwen2.5-coder:3b",
-    )
-    client = httpx.Client(
-        base_url=settings.ollama_base_url,
-        transport=httpx.MockTransport(handler),
-    )
-    service = OllamaService(settings=settings, client=client)
-
-    service.generate("explique o Synapse", temperature=0.2, json_mode=False)
-    service.generate("retorne json", temperature=0.2, json_mode=True)
-
-    assert "seed" not in captured_payloads[0]["options"]
-    assert captured_payloads[1]["options"]["seed"] == 42
-
-
-def test_local_llm_status_endpoint_is_available(monkeypatch):
-    monkeypatch.setattr(
-        "app.routes.local_llm.OllamaService.status",
-        lambda _self: {
-            "enabled": True,
-            "provider": "ollama",
-            "available": True,
-            "models": ["qwen2.5-coder:3b", "deepseek-coder-v2:lite"],
-        },
-    )
-    response = TestClient(app).get("/local-llm/status")
-    assert response.status_code == 200
-    assert response.json()["provider"] == "ollama"
 
 
 def test_peer_messaging_service_routes_short_local_messages(tmp_path, monkeypatch):
@@ -231,7 +99,7 @@ def test_peer_messaging_service_routes_short_local_messages(tmp_path, monkeypatc
         service.send_message(from_id=codex["id"], to_id=claude["id"], message="x" * 81)
 
 
-def test_peer_messaging_supports_codex_ruflo_and_local_task_routes(tmp_path, monkeypatch):
+def test_peer_messaging_supports_codex_claude_and_local_task_routes(tmp_path, monkeypatch):
     monkeypatch.setattr(PeerMessagingService, "_pid_alive", staticmethod(lambda _pid: True))
     settings = Settings(
         peer_messaging_db_path=str(tmp_path / "peers.db"),
@@ -245,14 +113,14 @@ def test_peer_messaging_supports_codex_ruflo_and_local_task_routes(tmp_path, mon
         cwd=str(tmp_path),
         summary="Codex answering Synapse questions locally.",
         pid=201,
-        capabilities=["synapse-system-questions", "ollama-local-models"],
-        model_profile="ollama:qwen2.5-coder:3b+qwen3:8b",
+        capabilities=["synapse-system-questions", "cloud-models"],
+        model_profile="openai:gpt-5.5",
         active_agents=60,
     )
-    ruflo = service.register(
-        peer_type="ruflo",
+    claude = service.register(
+        peer_type="claude",
         cwd=str(tmp_path),
-        summary="Ruflo 60-agent council ready.",
+        summary="Claude Code 60-agent council ready.",
         pid=202,
         capabilities=["60-agent-council", "local-routing"],
         active_agents=60,
@@ -260,27 +128,27 @@ def test_peer_messaging_supports_codex_ruflo_and_local_task_routes(tmp_path, mon
 
     published = service.publish_context(
         codex["id"],
-        summary="Codex routes simple Synapse questions through Ruflo and Ollama local.",
+        summary="Codex routes simple Synapse questions through Claude Code and the cloud provider.",
         role="Codex local assistant",
-        capabilities=["synapse-system-questions", "ruflo-60-agent-routing"],
-        model_profile="ollama-local",
+        capabilities=["synapse-system-questions", "claude-60-agent-routing"],
+        model_profile="openai",
         active_agents=60,
     )
     announced = service.announce_task(
         from_id=codex["id"],
         objective="Responder quais modelos a Synapse usa.",
-        target_peer_type="ruflo",
+        target_peer_type="claude",
         required_agents=["orchestration-manager", "llm-engineering"],
     )
-    inbox = service.check_messages(ruflo["id"])
+    inbox = service.check_messages(claude["id"])
 
     assert published["peer_type"] == "codex"
-    assert published["capabilities"] == ["synapse-system-questions", "ruflo-60-agent-routing"]
+    assert published["capabilities"] == ["synapse-system-questions", "claude-60-agent-routing"]
     assert published["active_agents"] == 60
     assert announced["targeted_count"] == 1
     assert announced["cost_control"].startswith("Task announcement stayed local")
     assert inbox["message_count"] == 1
-    assert "provider=ollama cloud=false" in inbox["messages"][0]["text"]
+    assert "provider=openai cloud=true" in inbox["messages"][0]["text"]
 
 
 def test_claude_peers_mcp_is_declared_for_claude_code_channels():
@@ -321,84 +189,19 @@ class FakeLlmProvider:
         return None
 
 
-class FakeHybridRouter:
-    def __init__(self, provider="ollama"):
-        self.provider = provider
-        self.calls = []
-
-    def decide(
-        self,
-        prompt,
-        allow_cloud=True,
-        force_provider=None,
-        local_model_profile="auto",
-        human_approved=False,
-    ):
-        return {
-            "provider": force_provider or self.provider,
-            "reason": "test route",
-            "sensitive": False,
-            "complex": self.provider == "openai",
-            "complexity_signals": [],
-            "cloud_allowed": allow_cloud,
-            "cloud_configured": True,
-            "local_model_profile": (
-                "fast" if local_model_profile == "auto" else local_model_profile
-            ),
-            "local_model": "test-local-model",
-        }
-
-    def generate(self, prompt, **kwargs):
-        self.calls.append((prompt, kwargs))
-        return {
-            "provider": kwargs.get("force_provider") or self.provider,
-            "model": "test-model",
-            "response": "Resposta governada suficientemente completa para validacao.",
-            "quality": {"passed": True, "reasons": []},
-            "fallback_used": False,
-            "prompt_tokens": 10,
-            "completion_tokens": 20,
-        }
-
-
-class FakeGovernedRuflo:
-    def __init__(self):
-        self.routes = []
-        self.memories = []
-
-    def route_task(self, task, context, top_k=5):
-        self.routes.append((task, context, top_k))
-        return {"available": True, "source": "ruflo_mcp", "data": {"agent": "orchestration-manager"}}
-
-    def store_memory(self, namespace, key, value, upsert=True):
-        self.memories.append((namespace, key, value, upsert))
-        return {"available": True, "source": "ruflo_mcp", "data": {"stored": True}}
-
-    def search_memory(self, query, namespace, limit=5, threshold=0.35):
-        return {"available": True, "source": "ruflo_mcp", "data": {"results": []}}
-
-    def record_task_outcome(self, task_id, task, agent, success, quality):
-        return {
-            "available": True,
-            "source": "ruflo_mcp",
-            "data": {"task_id": task_id, "success": success, "quality": quality},
-        }
-
-
 def test_continual_learning_sanitizes_and_requires_feedback_for_training(tmp_path):
-    ruflo = FakeGovernedRuflo()
     settings = Settings(
         learning_events_path=str(tmp_path / "learning.jsonl"),
         local_training_dataset_path=str(tmp_path / "training.jsonl"),
     )
-    service = ContinualLearningService(settings, ruflo)
+    service = ContinualLearningService(settings)
     captured = service.capture_execution(
         execution_id="run-1",
         project_id="project-a",
         prompt="Use api_key=super-secret e email pessoa@example.com",
         response="Solucao aprovada sem segredo.",
-        provider="ollama",
-        model="qwen2.5-coder:3b",
+        provider="openai",
+        model="gpt-5.5",
         fleet="project_factory_fleet",
         agents=["orchestration-manager"],
         quality_passed=True,
@@ -426,14 +229,14 @@ def test_continual_learning_rejects_unidentified_global_promotion(tmp_path):
         learning_events_path=str(tmp_path / "learning.jsonl"),
         local_training_dataset_path=str(tmp_path / "training.jsonl"),
     )
-    service = ContinualLearningService(settings, FakeGovernedRuflo())
+    service = ContinualLearningService(settings)
     service.capture_execution(
         execution_id="run-global",
         project_id="project-a",
         prompt="Projeto aprovado",
         response="Resposta aprovada e detalhada.",
-        provider="ollama",
-        model="qwen2.5-coder:3b",
+        provider="openai",
+        model="gpt-5.5",
         fleet="project_factory_fleet",
         agents=["orchestration-manager"],
         quality_passed=True,
@@ -455,14 +258,14 @@ def test_continual_learning_requires_admin_for_global_promotion(tmp_path):
         learning_events_path=str(tmp_path / "learning.jsonl"),
         local_training_dataset_path=str(tmp_path / "training.jsonl"),
     )
-    service = ContinualLearningService(settings, FakeGovernedRuflo())
+    service = ContinualLearningService(settings)
     service.capture_execution(
         execution_id="run-admin",
         project_id="project-a",
         prompt="Projeto aprovado",
         response="Resposta aprovada e detalhada.",
-        provider="ollama",
-        model="qwen2.5-coder:3b",
+        provider="openai",
+        model="gpt-5.5",
         fleet="project_factory_fleet",
         agents=["orchestration-manager"],
         quality_passed=True,
@@ -485,288 +288,101 @@ def test_all_60_agents_have_governed_model_router_tool():
     assert all("governed_llm_router" in agent["tools"] for agent in AGENT_CATALOG)
 
 
-def test_governed_swarm_requires_human_approval_for_all_60(tmp_path):
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=FakeHybridRouter(),
-        ruflo=FakeGovernedRuflo(),
-    )
-    with pytest.raises(GovernedSwarmExecutionError):
-        service.plan("Execute uma auditoria completa.", activate_all_60=True)
-
-    plan = service.plan(
-        "Execute uma auditoria completa.",
-        activate_all_60=True,
-        human_approved=True,
-        allow_cloud=False,
-    )
-    assert plan["active_agent_count"] == 60
-    assert plan["model_route"]["provider"] == "ollama"
-
-
-def test_governed_swarm_aligns_agents_with_security_fleet(tmp_path):
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=FakeHybridRouter(),
-        ruflo=FakeGovernedRuflo(),
-    )
-
-    plan = service.plan(
-        "FaÃ§a uma auditoria de seguranÃ§a, LGPD e compliance.",
-        universe="ia",
-    )
-
-    assert plan["selected_fleet"]["id"] == "security_fleet"
-    assert plan["selected_agents"][0] == "security-compliance"
-    assert set(plan["selected_agents"]).issubset(
-        {
-            "security-compliance",
-            "testing-qa",
-            "observability-ops",
-            "documentation",
-            "privacy-lgpd-reviewer",
-            "threat-modeling-specialist",
-            "policy-guardrails-engineer",
-            "qa-adversarial-tester",
-        }
-    )
-    assert plan["coordination"]["conflict_resolver"] == "orchestration-manager"
-
-
-def test_governed_swarm_aligns_rag_agents_and_model_profile(tmp_path):
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=FakeHybridRouter(),
-        ruflo=FakeGovernedRuflo(),
-    )
-
-    plan = service.plan(
-        "Crie um RAG com busca hÃ­brida, reranking e MCP com baixo custo.",
-        universe="ia",
-    )
-
-    assert plan["selected_fleet"]["id"] == "rag_fleet"
-    assert plan["selected_agents"][0] == "rag-engineering"
-    assert "hybrid-search-engineer" in plan["selected_agents"]
-    assert plan["model_route"]["local_model_profile"] == "balanced"
-
-
-def test_governed_swarm_plan_is_deterministic_for_equivalent_input(tmp_path):
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=FakeHybridRouter(),
-        ruflo=FakeGovernedRuflo(),
-    )
-
-    first = service.plan("Crie um projeto simples.", universe="ia")
-    second = service.plan("Crie um projeto simples.", universe="ia")
-
-    assert first["selected_agents"] == second["selected_agents"]
-    assert first["decision_fingerprint"] == second["decision_fingerprint"]
-    assert first["controls"]["deterministic_local_generation"] is True
-
-
-def test_governed_swarm_routes_model_and_persists_ruflo_memory(tmp_path):
-    ruflo = FakeGovernedRuflo()
-    llm = FakeHybridRouter("ollama")
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=llm,
-        ruflo=ruflo,
-    )
-
-    result = service.execute(
-        "Crie um resumo simples para reduzir custo.",
-        universe="ia",
-        allow_cloud=False,
-    )
-
-    assert result["result"]["provider"] == "ollama"
-    assert result["audit"]["ruflo_route_available"] is True
-    assert result["audit"]["ruflo_plan_memory_available"] is True
-    assert result["audit"]["ruflo_result_memory_available"] is True
-    assert "on_plan_created" in result["plan"]["lifecycle_callbacks"]
-    assert "on_execution_completed" in result["audit"]["lifecycle_callbacks"]
-    assert result["plan"]["coordination"]["a2a_message_contract"] == (
-        "objective_from_to_context_evidence_decision_risk_budget_status"
-    )
-    assert len(ruflo.routes) == 1
-    assert len(ruflo.memories) == 3
-    assert result["learning"]["capture"]["memory"]["available"] is True
-    assert service.audit_summary()["ollama_executions"] == 1
-
-
-def test_simple_synapse_questions_force_ruflo_and_local_ollama(tmp_path):
-    ruflo = FakeGovernedRuflo()
-    llm = FakeHybridRouter("openai")
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=llm,
-        ruflo=ruflo,
-    )
-
-    result = service.execute(
-        "Explique em poucas linhas como funciona o sistema Synapse.",
-        universe="ia",
-        allow_cloud=True,
-        human_approved=True,
-    )
-
-    assert result["result"]["provider"] == "ollama"
-    assert result["plan"]["model_route"]["provider"] == "ollama"
-    assert result["plan"]["model_route"]["cloud_allowed"] is False
-    assert result["plan"]["model_route"]["local_model_profile"] == "fast"
-    assert result["plan"]["controls"]["simple_synapse_local_only"] is True
-    assert llm.calls[0][1]["allow_cloud"] is False
-    assert llm.calls[0][1]["force_provider"] == "ollama"
-    assert len(ruflo.routes) == 1
-    assert len(ruflo.memories) == 3
-
-
-def test_governed_swarm_requires_human_approval_for_cloud(tmp_path):
-    service = GovernedSwarmExecutionService(
-        settings=Settings(governed_swarm_audit_path=str(tmp_path / "audit.jsonl")),
-        llm_gateway=FakeHybridRouter("openai"),
-        ruflo=FakeGovernedRuflo(),
-    )
-
-    with pytest.raises(GovernedSwarmExecutionError, match="paid cloud provider"):
-        service.plan("Revise a arquitetura.", allow_cloud=True)
-
-
-def test_hybrid_router_keeps_simple_and_sensitive_requests_local(tmp_path):
+def test_hybrid_router_uses_cloud_and_blocks_sensitive_content(tmp_path):
     settings = Settings(
         openai_api_key="configured",
         llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
     )
-    local = FakeLlmProvider("ollama", "Resposta local suficientemente completa para o teste.")
     cloud = FakeLlmProvider("openai", "Resposta cloud suficientemente completa para o teste.")
     router = HybridLlmRouter(
         settings,
-        ollama=local,
         openai=cloud,
         metrics=LlmRoutingMetrics(str(tmp_path / "events.jsonl")),
     )
 
     simple = router.generate("Resuma este texto curto.")
-    sensitive = router.generate("Analise esta senha secreta: abc123", allow_cloud=True)
 
-    assert simple["provider"] == "ollama"
-    assert sensitive["provider"] == "ollama"
-    assert sensitive["routing"]["sensitive"] is True
-
-
-def test_hybrid_router_selects_offline_model_profiles(tmp_path):
-    settings = Settings(
-        openai_api_key="",
-        llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
-    )
-    local = FakeLlmProvider("ollama", "Resposta local suficientemente completa para o teste.")
-    cloud = FakeLlmProvider("openai", "Resposta cloud.", configured=False)
-    router = HybridLlmRouter(
-        settings,
-        ollama=local,
-        openai=cloud,
-        metrics=LlmRoutingMetrics(str(tmp_path / "events.jsonl")),
-    )
-
-    simple = router.decide("Resuma este texto.", allow_cloud=False)
-    complex_task = router.decide(
-        "Defina uma arquitetura critica de producao.",
-        allow_cloud=False,
-    )
-    code_review = router.decide(
-        "Faca code review e encontre o bug neste codigo.",
-        allow_cloud=False,
-    )
-    explicit_large = router.decide(
-        "Analise o sistema.",
-        allow_cloud=False,
-        local_model_profile="large",
-    )
-
-    assert simple["local_model_profile"] == "fast"
-    assert simple["local_model"] == "qwen2.5-coder:3b"
-    assert complex_task["local_model_profile"] == "planning_strong"
-    assert complex_task["local_model"] == "qwen3:14b"
-    assert code_review["local_model_profile"] == "code_review"
-    assert code_review["local_model"] == "deepseek-coder-v2:lite"
-    assert explicit_large["local_model"] == "qwen2.5-coder:32b"
-    assert not cloud.calls
+    assert simple["provider"] == "openai"
+    with pytest.raises(HybridLlmRouterError):
+        router.generate("Analise esta senha secreta: abc123")
 
 
-def test_hybrid_router_uses_openai_for_complex_request_when_allowed(tmp_path):
+def test_hybrid_router_uses_openai_for_complex_request(tmp_path):
     settings = Settings(
         openai_api_key="configured",
         llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
     )
-    local = FakeLlmProvider("ollama", "Resposta local.")
     cloud = FakeLlmProvider("openai", "Revisao de arquitetura critica com detalhes suficientes.")
     router = HybridLlmRouter(
         settings,
-        ollama=local,
         openai=cloud,
         metrics=LlmRoutingMetrics(str(tmp_path / "events.jsonl")),
     )
 
-    result = router.generate(
-        "Realize uma arquitetura critica de producao com compliance.",
-        allow_cloud=True,
-    )
+    result = router.generate("Realize uma arquitetura critica de producao com compliance.")
 
     assert result["provider"] == "openai"
     assert result["routing"]["complex"] is True
-    assert not local.calls
+    assert result["routing"]["reasoning_effort"] == "medium"
     assert len(cloud.calls) == 1
 
 
-def test_hybrid_router_escalates_low_quality_local_response(tmp_path):
+def test_hybrid_router_retries_on_low_quality_response(tmp_path, monkeypatch):
     settings = Settings(
         openai_api_key="configured",
         llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
     )
-    local = FakeLlmProvider("ollama", "curta")
-    cloud = FakeLlmProvider("openai", "Resposta corrigida pela nuvem e aprovada pelo validador.")
+    cloud = FakeLlmProvider("openai", "curta")
     metrics = LlmRoutingMetrics(str(tmp_path / "events.jsonl"))
-    router = HybridLlmRouter(settings, ollama=local, openai=cloud, metrics=metrics)
+    router = HybridLlmRouter(settings, openai=cloud, metrics=metrics)
 
-    result = router.generate(
-        "Explique este conceito.",
-        allow_cloud=True,
-        min_response_chars=30,
-    )
+    responses = iter(["curta", "Resposta corrigida e aprovada pelo validador de qualidade."])
+
+    def fake_generate(prompt, **kwargs):
+        cloud.calls.append((prompt, kwargs))
+        return {
+            "provider": "openai",
+            "model": "openai-test",
+            "response": next(responses),
+            "done": True,
+            "prompt_tokens": 10,
+            "completion_tokens": 20,
+            "total_tokens": 30,
+        }
+
+    monkeypatch.setattr(cloud, "generate", fake_generate)
+
+    result = router.generate("Explique este conceito.", min_response_chars=30)
 
     assert result["provider"] == "openai"
-    assert result["fallback_used"] is True
-    assert metrics.summary()["fallbacks"] == 1
-    assert metrics.summary()["cloud_tokens"] == 30
+    assert result["retried"] is True
+    assert metrics.summary()["retries"] == 1
 
 
-def test_hybrid_router_rejects_forced_cloud_for_sensitive_content(tmp_path):
+def test_hybrid_router_rejects_sensitive_content(tmp_path):
     settings = Settings(
         openai_api_key="configured",
         llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
     )
     router = HybridLlmRouter(
         settings,
-        ollama=FakeLlmProvider("ollama", "local"),
         openai=FakeLlmProvider("openai", "cloud"),
     )
     with pytest.raises(HybridLlmRouterError):
-        router.decide("Minha API key e secreta", force_provider="openai")
+        router.decide("Minha API key e secreta")
 
 
-def test_llm_gateway_caches_local_deterministic_generation_and_audits(tmp_path):
+def test_llm_gateway_caches_deterministic_generation_and_audits(tmp_path):
     settings = Settings(
+        openai_api_key="configured",
         llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
         llm_gateway_cache_path=str(tmp_path / "cache.jsonl"),
         llm_gateway_audit_path=str(tmp_path / "audit.jsonl"),
     )
-    local = FakeLlmProvider("ollama", "Resposta local suficientemente completa para cache.")
+    cloud = FakeLlmProvider("openai", "Resposta suficientemente completa para cache.")
     router = HybridLlmRouter(
         settings,
-        ollama=local,
-        openai=FakeLlmProvider("openai", "cloud", configured=False),
+        openai=cloud,
         metrics=LlmRoutingMetrics(str(tmp_path / "events.jsonl")),
     )
     gateway = LlmGateway(settings, router=router)
@@ -786,31 +402,10 @@ def test_llm_gateway_caches_local_deterministic_generation_and_audits(tmp_path):
 
     assert first["cache_hit"] is False
     assert second["cache_hit"] is True
-    assert len(local.calls) == 1
+    assert len(cloud.calls) == 1
     assert first["gateway"]["policy_enforced"] is True
     assert "project-a" in (tmp_path / "audit.jsonl").read_text(encoding="utf-8")
     assert gateway.metrics.summary()["requests"] == 2
-
-
-def test_llm_gateway_blocks_cloud_without_human_approval(tmp_path):
-    settings = Settings(
-        openai_api_key="configured",
-        llm_routing_metrics_path=str(tmp_path / "events.jsonl"),
-        llm_gateway_cache_path=str(tmp_path / "cache.jsonl"),
-        llm_gateway_audit_path=str(tmp_path / "audit.jsonl"),
-    )
-    gateway = LlmGateway(
-        settings,
-        router=HybridLlmRouter(
-            settings,
-            ollama=FakeLlmProvider("ollama", "local"),
-            openai=FakeLlmProvider("openai", "cloud"),
-            metrics=LlmRoutingMetrics(str(tmp_path / "events.jsonl")),
-        ),
-    )
-
-    with pytest.raises(LlmGatewayError, match="human_approved"):
-        gateway.generate("Realize uma arquitetura critica de producao.", allow_cloud=True)
 
 
 def test_llm_gateway_enforces_cloud_token_budget(tmp_path):
@@ -831,18 +426,13 @@ def test_llm_gateway_enforces_cloud_token_budget(tmp_path):
         settings,
         router=HybridLlmRouter(
             settings,
-            ollama=FakeLlmProvider("ollama", "local"),
             openai=FakeLlmProvider("openai", "cloud"),
             metrics=LlmRoutingMetrics(str(events)),
         ),
     )
 
     with pytest.raises(LlmGatewayError, match="Daily cloud token budget"):
-        gateway.decide(
-            "Realize uma arquitetura critica de producao.",
-            allow_cloud=True,
-            human_approved=True,
-        )
+        gateway.decide("Realize uma arquitetura critica de producao.")
 
 
 def test_required_agent_roles_are_registered():
@@ -875,7 +465,7 @@ def test_swarm_contract_is_enterprise_ready():
     assert status["core_agent_count"] == 15
     assert status["specialist_agent_count"] == 45
     assert status["model_routing"]["mode"] == "governed_on_demand"
-    assert status["model_routing"]["local_provider"] == "ollama"
+    assert status["model_routing"]["provider"] == "openai"
 
 
 def test_project_factory_workflow_exists():
@@ -915,14 +505,11 @@ def test_runtime_manifest_matches_required_agent_count():
     assert "scripts/analyze_business_solution.py" in manifest["validation"]["required_practice_paths"]
     assert "scripts/context_filter.py" in manifest["validation"]["required_practice_paths"]
     assert "scripts/market_radar.py" in manifest["validation"]["required_practice_paths"]
-    assert "scripts/test_local_llm.py" in manifest["validation"]["required_practice_paths"]
-    assert "scripts/synapse_ollama_mcp.py" in manifest["validation"]["required_practice_paths"]
     assert ".codex/config.toml" in manifest["validation"]["required_practice_paths"]
     assert "config/model_providers.json" in manifest["validation"]["required_practice_paths"]
-    assert manifest["local_llm"]["provider"] == "ollama"
-    assert manifest["local_llm"]["routing_strategy"] == "local_first"
+    assert manifest["local_llm"]["provider"] == "openai"
+    assert manifest["local_llm"]["routing_strategy"] == "cloud_only"
     assert manifest["local_llm"]["all_60_agents_model_access"] == "governed_on_demand"
-    assert manifest["local_llm"]["ruflo_shared_memory_namespace"] == "synapse-governed-execution"
     assert "docs/radar/README.md" in manifest["validation"]["required_practice_paths"]
     assert "docs/architecture/agentic-mesh-governance.md" in manifest["validation"]["required_practice_paths"]
     assert "docs/architecture/agentic-architectural-patterns.md" in manifest["validation"]["required_practice_paths"]
@@ -998,7 +585,7 @@ def test_enterprise_ai_ml_spec_declares_required_execution_contract():
 
     assert spec["execution_policy"]["specification_driven_development"] is True
     assert spec["execution_policy"]["ruflo_required_for_project_creation"] is True
-    assert spec["execution_policy"]["ruflo_15_agents_required_for_all_universes"] is True
+    assert spec["execution_policy"]["swarm_15_agents_required_for_all_universes"] is True
     assert spec["execution_policy"]["data_treatment_required_for_all_universes"] is True
     assert spec["execution_policy"]["parallel_agent_count"] == 15
     assert spec["execution_policy"]["max_agent_count"] == 60
@@ -1152,7 +739,6 @@ def test_ai_framework_selector_has_required_frameworks_and_selects_by_scenario()
         "rag-frameworks",
         "kag-knowledge-graph",
         "fastapi",
-        "ollama",
         "mcp-servers",
     }.issubset(set(technology_ids))
 
@@ -1186,7 +772,7 @@ def test_runtime_ai_framework_endpoints_are_available():
 
     assert catalog_response.status_code == 200
     assert len(catalog_response.json()["frameworks"]) == 14
-    assert len(catalog_response.json()["technology_catalog"]) >= 17
+    assert len(catalog_response.json()["technology_catalog"]) >= 16
     assert select_response.status_code == 200
     assert select_response.json()["active"] is True
     assert "mcp-sdks" in select_response.json()["recommended_framework_ids"]
@@ -1239,36 +825,12 @@ def test_agentic_mesh_endpoints_are_available():
     assert blueprint_response.json()["architecture_decision"]["mode"] in {"multiagent", "fleet"}
 
 
-def test_ruflo_service_reports_unavailable_when_mcp_fails():
-    service = RufloService(client=FailingClient())
-    result = service.swarm_status()
-    assert result["available"] is False
-    assert result["tool"] == "swarm_status"
-
-
-def test_ruflo_service_calls_workflow_execution_tool():
-    client = RecordingClient()
-    service = RufloService(client=client)
-    result = service.execute_workflow("rag-build", ["rag-engineering"], True)
-    assert result["available"] is True
-    assert client.calls == [
-        (
-            "daa_workflow_execute",
-            {
-                "workflowId": "rag-build",
-                "agentIds": ["rag-engineering"],
-                "parallelExecution": True,
-            },
-        )
-    ]
-
-
-def test_ruflo_workflow_files_exist_for_required_workflows():
+def test_swarm_workflow_files_exist_for_required_workflows():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
     for workflow_id in ("new-ai-project", "rag-build", "ml-release"):
-        assert (root / "config" / "workflows" / "ruflo" / f"{workflow_id}.json").exists()
+        assert (root / "config" / "workflows" / "synapse" / f"{workflow_id}.json").exists()
 
 
 def test_new_project_workflow_declares_parallel_agent_activation():
@@ -1276,7 +838,7 @@ def test_new_project_workflow_declares_parallel_agent_activation():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    workflow = json.loads((root / "config" / "workflows" / "ruflo" / "new-ai-project.json").read_text())
+    workflow = json.loads((root / "config" / "workflows" / "synapse" / "new-ai-project.json").read_text())
     assert workflow["execution"]["parallelAgentActivation"] is True
     parallel_agent_list = [
         agent
@@ -1315,15 +877,7 @@ def test_project_factory_script_creates_solution_projects_without_platform_stack
     assert "agent_improvement_loop.json" in script
     assert "Configure-AgenticMeshGovernance" in script
     assert "Configure-LocalAiRuntime" in script
-    assert "OLLAMA_MODEL=qwen2.5-coder:3b" in script
-    assert "OLLAMA_GENERAL_MODEL=qwen3:8b" in script
-    assert "OLLAMA_BALANCED_MODEL=deepseek-coder-v2:lite" in script
-    assert "OLLAMA_CODE_REVIEW_MODEL=deepseek-coder-v2:lite" in script
-    assert "OLLAMA_CODE_STRONG_MODEL=qwen2.5-coder:14b" in script
-    assert "OLLAMA_PLANNING_STRONG_MODEL=qwen3:14b" in script
-    assert "OLLAMA_REASONING_STRONG_MODEL=deepseek-r1:14b" in script
-    assert "OLLAMA_LARGE_MODEL=qwen2.5-coder:32b" in script
-    assert "docs/ollama-offline-models.md" in script
+    assert 'cloud_model = "gpt-5.5"' in script
     assert "governed_on_demand" in script
     assert "continual_learning" in script
     assert "automatic_weight_updates = $false" in script
@@ -1342,7 +896,7 @@ def test_project_factory_script_creates_solution_projects_without_platform_stack
     assert '"create_ai_project.ps1",' in script
     assert "Finalize-SynapseSolutionProject" in script
     assert "Configure-SolutionVsCodeTasks" in script
-    assert '"Synapse: Ollama offline"' in script
+    assert '"Synapse: Listar modelos Ollama"' not in script
     assert "factory_capable = $false" in script
     assert "contains_backend = $false" in script
     assert "contains_frontend = $false" in script
@@ -1352,7 +906,6 @@ def test_vscode_eval_tasks_run_locally_and_specialists_use_one_catalog():
     root = Path(__file__).resolve().parents[1]
     ml_eval = (root / "scripts" / "run_ml_evals.ps1").read_text(encoding="utf-8-sig")
     ai_eval = (root / "scripts" / "run_ai_evals.ps1").read_text(encoding="utf-8-sig")
-    swarm = (root / "scripts" / "start_ruflo_swarm.ps1").read_text(encoding="utf-8-sig")
 
     assert "run_evals.py" in ml_eval
     assert "run_evals.py" in ai_eval
@@ -1360,8 +913,6 @@ def test_vscode_eval_tasks_run_locally_and_specialists_use_one_catalog():
     assert "[switch]$UseApi" in ai_eval
     assert '-ErrorAction Stop' in ml_eval
     assert '-ErrorAction Stop' in ai_eval
-    assert '"specialist.pool"' in swarm
-    assert '"specialist.$($Agent.id)"' not in swarm
 
 
 def test_codex_data_treatment_dialog_is_available_in_vscode_tasks():
@@ -1376,18 +927,17 @@ def test_codex_data_treatment_dialog_is_available_in_vscode_tasks():
     labels = {task["label"] for task in tasks["tasks"]}
     factory_task = next(
         task for task in tasks["tasks"]
-        if task["label"] == "AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados"
+        if task["label"] == "AI Factory: Criar projeto com Codex + swarm economico + tratamento dados"
     )
-    assert "-ActivateRuflo" in factory_task["args"]
     project_type_input = next(item for item in tasks["inputs"] if item["id"] == "projectType")
     assert project_type_input["type"] == "pickString"
     assert project_type_input["options"] == ["ML", "IA", "ML + IA (Hibrido)", "Chatbolt"]
     assert "tratamento de dados" in factory_task["detail"]
-    assert "Codex: Tratar dados com Ruflo economico" in labels
+    assert "Codex: Tratar dados com swarm economico" in labels
     assert "AI Factory: Anexar foto ou arquivo ao projeto" in labels
     assert "Synapse: Diagnosticar projeto criado" in labels
     assert "Synapse: Market Radar + Context Filter" in labels
-    assert "Synapse: Filtrar contexto para LLM/Ruflo" in labels
+    assert "Synapse: Filtrar contexto para LLM" in labels
     diagnose_task = next(
         task for task in tasks["tasks"]
         if task["label"] == "Synapse: Diagnosticar projeto criado"
@@ -1407,7 +957,7 @@ def test_codex_data_treatment_dialog_is_available_in_vscode_tasks():
     assert "market_radar.py" in " ".join(radar_task["args"])
     context_task = next(
         task for task in tasks["tasks"]
-        if task["label"] == "Synapse: Filtrar contexto para LLM/Ruflo"
+        if task["label"] == "Synapse: Filtrar contexto para LLM"
     )
     assert "context_filter.py" in " ".join(context_task["args"])
 
@@ -1417,17 +967,17 @@ def test_vscode_factory_task_enables_complete_bundle_for_every_universe():
     tasks = json.loads((root / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     factory_task = next(
         task for task in tasks["tasks"]
-        if task["label"] == "AI Factory: Criar projeto com Codex + Ruflo economico + tratamento dados"
+        if task["label"] == "AI Factory: Criar projeto com Codex + swarm economico + tratamento dados"
     )
     project_type_input = next(item for item in tasks["inputs"] if item["id"] == "projectType")
     script = _read_factory_sources(root)
 
     assert project_type_input["options"] == ["ML", "IA", "ML + IA (Hibrido)", "Chatbolt"]
-    assert factory_task["args"][-1] == "-ActivateRuflo"
+    assert factory_task["args"][-1] == "3"
     for capability in (
         "data_treatment_enabled = $true",
-        "ruflo_max_agents = 60",
-        "ruflo_specialist_agents = 45",
+        "swarm_max_agents = 60",
+        "swarm_specialist_agents = 45",
         "cost_aware_orchestration = $true",
         "prompts/codex_data_treatment_dialog.md",
         "config/ai_ml_enterprise_spec.json",
@@ -1570,13 +1120,12 @@ def test_market_radar_offline_generates_prioritized_report(tmp_path, monkeypatch
     assert "Lowfat" in Path(outputs["markdown"]).read_text(encoding="utf-8")
 
 
-def test_ai_factory_menu_defaults_to_real_ruflo_activation():
+def test_ai_factory_menu_defaults_to_swarm_activation():
     root = Path(__file__).resolve().parents[1]
     menu = (root / "scripts" / "ai_factory_menu.ps1").read_text(encoding="utf-8-sig")
-    assert "Criar projeto IA/ML completo com Ruflo real + 60 agents" in menu
+    assert "Criar projeto IA/ML completo com swarm de 60 agents" in menu
     assert "Criar projeto IA/ML offline apenas com memoria local" in menu
     assert "Read-ProjectUniverse" in menu
-    assert "-ActivateRuflo" in menu
     assert "-LocalMemoryOnly" in menu
 
 
@@ -1799,7 +1348,6 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert not (project / "frontend").exists()
     assert not (project / "scripts" / "create_ai_project.ps1").exists()
     assert (project / "agents" / "definitions" / "enterprise_agents.yaml").exists()
-    assert (project / "scripts" / "start_ruflo_swarm.ps1").exists()
     assert (project / ".mcp.json").exists()
     assert (project / "config" / "data_treatment_policy.json").exists()
     assert (project / "config" / "context_policy.json").exists()
@@ -1833,7 +1381,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     settings = json.loads((project / ".vscode" / "settings.json").read_text(encoding="utf-8-sig"))
     assert settings["task.allowAutomaticTasks"] == "on"
     assert not (project / "adonex").exists()
-    assert not (project / "config" / "workflows" / "ruflo" / "new-ai-project.json").exists()
+    assert not (project / "config" / "workflows" / "synapse" / "new-ai-project.json").exists()
     solution_contract = json.loads(
         (project / "config" / "synapse_solution_contract.json").read_text(encoding="utf-8-sig")
     )
@@ -1841,7 +1389,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert solution_contract["factory_capable"] is False
     assert solution_contract["contains_backend"] is False
     assert solution_contract["contains_frontend"] is False
-    assert solution_contract["ruflo_runtime"] == "inherited"
+    assert solution_contract["swarm_runtime"] == "inherited"
     assert solution_contract["agents_runtime"] == "inherited"
     assert solution_contract["capabilities"] == {
         "ml": False,
@@ -1937,7 +1485,6 @@ def test_generated_solution_project_matches_selected_universe(
     assert not (project / "backend").exists()
     assert not (project / "frontend").exists()
     assert not (project / "scripts" / "create_ai_project.ps1").exists()
-    assert (project / "scripts" / "start_ruflo_swarm.ps1").exists()
     assert (project / "agents" / "definitions" / "enterprise_agents.yaml").exists()
     assert (project / ".mcp.json").exists()
     assert (project / "config" / "data_treatment_policy.json").exists()
@@ -2053,16 +1600,10 @@ def test_managed_project_artifact_manifest_inherits_assistant_and_cost_contracts
     assert manifest["assistant_inheritance"]["shared_solution_factory_access"]["ml_foundations_policy"] == "config/ml_foundations_policy.json"
     assert manifest["assistant_inheritance"]["shared_solution_factory_access"]["business_analysis"] == "config/business_solution_analysis.json"
     assert manifest["assistant_inheritance"]["peer_messaging"]["script"] == "scripts/synapse_solution_peers_mcp.py"
-    assert manifest["local_model_policy"]["allowed_models"] == [
-        "nomic-embed-text:latest",
-        "qwen2.5-coder:3b",
-        "qwen3:8b",
-        "deepseek-coder-v2:lite",
-        "qwen2.5-coder:14b",
-        "qwen3:14b",
-        "deepseek-r1:14b",
-        "qwen2.5-coder:32b",
-    ]
+    assert manifest["cloud_model_policy"] == {
+        "codex": "openai (assistant-configured model)",
+        "claude": "anthropic (assistant-configured model)",
+    }
     assert manifest["cost_policy"]["default_active_agents"] == 1
     assert manifest["cost_policy"]["enterprise_active_agents"] == 8
     assert "docs/runbooks/peer_messaging.md" in manifest["required_paths"]
@@ -2362,10 +1903,10 @@ def test_project_factory_resolves_ml_ia_and_hybrid_universes(tmp_path):
     assert service._resolve_project_universe("Chatbolt") == PROJECT_UNIVERSES["chatbolt"]
     for universe in PROJECT_UNIVERSES.values():
         assert universe["capabilities"]["data_treatment"] is True
-        assert universe["capabilities"]["ruflo_15_agents"] is True
-        assert universe["capabilities"]["ruflo_core_agents"] == 15
-        assert universe["capabilities"]["ruflo_max_agents"] == 60
-        assert universe["capabilities"]["ruflo_specialist_agents"] == 45
+        assert universe["capabilities"]["swarm_15_agents"] is True
+        assert universe["capabilities"]["swarm_core_agents"] == 15
+        assert universe["capabilities"]["swarm_max_agents"] == 60
+        assert universe["capabilities"]["swarm_specialist_agents"] == 45
 
     with pytest.raises(ProjectFactoryError, match="Project universe"):
         service._resolve_project_universe("crm")
@@ -2411,7 +1952,7 @@ def test_project_factory_requires_business_problem_when_requested(tmp_path):
 
 
 def test_project_briefing_agent_requires_business_problem():
-    service = ProjectBriefingService(ruflo=RufloService(client=FailingClient()))
+    service = ProjectBriefingService()
 
     result = service.answer(
         ProjectBriefingRequest(
@@ -2428,11 +1969,11 @@ def test_project_briefing_agent_requires_business_problem():
     assert "risk_level" in result["required_fields"]
     assert result["missing_questions"]
     assert "Qual problema de negocio" in result["next_question"]
-    assert result["ruflo"]["available"] is False
+    assert result["swarm"]["workflow"] == "new-ai-project"
 
 
 def test_project_briefing_agent_releases_project_creation_when_complete():
-    service = ProjectBriefingService(ruflo=RufloService(client=RecordingClient()))
+    service = ProjectBriefingService()
 
     result = service.answer(
         ProjectBriefingRequest(
@@ -2449,7 +1990,7 @@ def test_project_briefing_agent_releases_project_creation_when_complete():
     assert result["suggested_project_name"].startswith("crie_um_saas")
     assert "AI Engineering" in result["foundation_principles"][0]
     assert tuple(result["parallel_agents"]) == REQUIRED_PARALLEL_AGENTS
-    assert result["enterprise_spec"]["ruflo_required"] is True
+    assert result["enterprise_spec"]["swarm_required"] is True
     assert result["enterprise_spec"]["parallel_agent_count"] == 15
     assert result["enterprise_spec"]["max_agent_count"] == 60
     assert result["enterprise_spec"]["specialist_agent_count"] == 45
@@ -2471,7 +2012,7 @@ def test_project_briefing_agent_releases_project_creation_when_complete():
     assert "tests/test_ml_contract.py" in result["business_solution_analysis"]["test_strategy"]
     assert result["business_solution_analysis"]["technology_layer"]["active"] is True
     assert "mlflow" not in result["business_solution_analysis"]["technology_layer"]["recommended_technology_ids"]
-    assert result["ruflo"]["parallel_default"] is True
+    assert result["swarm"]["parallel_default"] is True
     assert "tokens" in result["token_strategy"]
 
 
@@ -2499,15 +2040,7 @@ def test_project_briefing_endpoint_preserves_cost_and_governance_contracts():
     assert "rag-frameworks" in payload["business_solution_analysis"]["technology_layer"]["recommended_technology_ids"]
 
 
-def test_workflow_execution_defaults_to_parallel():
-    from app.schemas.workflows import WorkflowExecutionRequest
-
-    request = WorkflowExecutionRequest()
-
-    assert request.parallel_execution is True
-
-
-def test_project_factory_writes_llm_ruflo_briefing(monkeypatch, tmp_path):
+def test_project_factory_writes_llm_project_briefing(monkeypatch, tmp_path):
     class Completed:
         returncode = 0
         stdout = "created"
@@ -2561,8 +2094,8 @@ def test_project_factory_writes_llm_ruflo_briefing(monkeypatch, tmp_path):
     assert result["project_universe"]["universe"] == "ml"
     assert result["project_universe"]["capabilities"]["ai"] is False
     assert result["project_universe"]["capabilities"]["data_treatment"] is True
-    assert result["project_universe"]["capabilities"]["ruflo_15_agents"] is True
-    assert result["project_universe"]["capabilities"]["ruflo_max_agents"] == 60
+    assert result["project_universe"]["capabilities"]["swarm_15_agents"] is True
+    assert result["project_universe"]["capabilities"]["swarm_max_agents"] == 60
     assert result["cost_aware_activation"]["max_available_agents"] == 60
     assert result["cost_aware_activation"]["active_agent_count"] < 60
     assert result["agentic_mesh"]["requires_human_approval_for_all_60_agents"] is True
@@ -2627,45 +2160,6 @@ def test_synapse_project_index_preserves_created_project_access(monkeypatch, tmp
     assert projects[0]["project_type"] == "enterprise-ai-agentic-system"
     assert detail["project_goal"] == "Criar agente interno."
     assert detail["business_problem"] == "Reduzir trabalho manual."
-
-
-def test_project_factory_does_not_activate_ruflo_when_disabled(monkeypatch, tmp_path):
-    class Completed:
-        returncode = 0
-        stdout = "created"
-        stderr = ""
-
-    script_path = tmp_path / "scripts" / "create_ai_project.ps1"
-    script_path.parent.mkdir()
-    script_path.write_text("Write-Output created", encoding="utf-8")
-    destination = tmp_path / "generated" / "economical_project"
-    recorded_command = []
-
-    def fake_run(command, **kwargs):
-        recorded_command.extend(command)
-        destination.mkdir(parents=True)
-        return Completed()
-
-    service = ProjectFactoryService(root=tmp_path)
-    settings = service.settings
-    original_base_path = settings.project_factory_base_path
-    monkeypatch.setattr("app.services.project_factory_service.subprocess.run", fake_run)
-    try:
-        settings.project_factory_base_path = str(tmp_path / "generated")
-        result = service.create_project(
-            ProjectCreateRequest(
-                name="economical_project",
-                project_type="IA",
-                activate_ruflo=False,
-                project_goal="Criar um assistente simples.",
-            )
-        )
-    finally:
-        settings.project_factory_base_path = original_base_path
-
-    assert "-ActivateRuflo" not in recorded_command
-    assert "-ActiveAgentLimit" in recorded_command
-    assert result["ruflo_activation"]["requested"] is False
 
 
 def test_project_create_endpoint_requires_api_key_in_production(monkeypatch):
@@ -2787,7 +2281,7 @@ def test_security_and_deployment_contracts_are_hardened():
     assert 'mlflow' not in compose
     assert 'NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-}' in compose
     assert 'SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}' in compose
-    assert mcp["mcpServers"]["ruflo"]["env"]["CLAUDE_FLOW_MAX_AGENTS"] == "60"
+    assert "ruflo" not in mcp["mcpServers"]
 
 
 def test_browser_and_vscode_interfaces_expose_independent_equivalent_capabilities():
@@ -2818,7 +2312,7 @@ def test_browser_and_vscode_interfaces_expose_independent_equivalent_capabilitie
     assert "/tools/context-filter" in ops
     assert "/tools/market-radar" in ops
     assert "ML + IA (Hibrido)" in ops
-    assert "activate_ruflo: activateRuflo" in ops
+    assert "activate_ruflo" not in ops
     assert "WorkflowCanvas" in (root / "frontend" / "app" / "workflows" / "page.tsx").read_text(encoding="utf-8")
     assert "Codex + Ruflo" not in dashboard
     assert "Codex + Ruflo" not in layout
@@ -3010,9 +2504,9 @@ def test_rag_pipeline_builds_local_index_and_returns_citations(tmp_path):
     assert answer["metrics"]["local_only"] is True
 
 
-def test_runtime_manifest_declares_generated_project_ruflo_strategy():
+def test_runtime_manifest_declares_generated_project_swarm_strategy():
     manifest = load_runtime_manifest()
-    strategy = manifest["generated_project_ruflo_strategy"]
+    strategy = manifest["generated_project_swarm_strategy"]
 
     assert strategy["available_agents"] == 60
     assert strategy["default_activation"] == "one_orchestrator_first"
@@ -3034,8 +2528,8 @@ def test_assistant_provider_boundaries_are_fixed():
     providers = json.loads((root / 'config' / 'model_providers.json').read_text(encoding='utf-8'))
     runtime = json.loads((root / 'config' / 'runtime_manifest.json').read_text(encoding='utf-8'))
     expected = {
-        'codex': {'provider': 'openai', 'direct_generation': True, 'ollama_allowed': False},
-        'claude_code': {'provider': 'anthropic', 'direct_generation': True, 'ollama_allowed': False},
+        'codex': {'provider': 'openai', 'direct_generation': True},
+        'claude_code': {'provider': 'anthropic', 'direct_generation': True},
     }
     assert policy['assistant_provider_boundaries'] == expected
     assert providers['assistant_provider_boundaries'] == expected

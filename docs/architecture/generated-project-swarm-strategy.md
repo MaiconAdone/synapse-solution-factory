@@ -1,6 +1,6 @@
-# Generated Project Ruflo Strategy
+# Generated Project Swarm Strategy
 
-Synapse-generated projects inherit a solution-scoped Ruflo runtime. They do not
+Synapse-generated projects inherit a solution-scoped swarm runtime. They do not
 inherit the Synapse backend, frontend, or project factory.
 
 ## Policy
@@ -11,7 +11,7 @@ inherit the Synapse backend, frontend, or project factory.
 - Activate specialists only when the project universe and task require them.
 - Require explicit high-complexity request, human approval, cost review and
   role-specific context filtering before activating all 60 agents.
-- Keep Ollama local-first and cloud disabled unless explicitly approved.
+- Use Codex/OpenAI or Claude Code/Anthropic directly for model calls.
 
 ## Fleet Fit
 

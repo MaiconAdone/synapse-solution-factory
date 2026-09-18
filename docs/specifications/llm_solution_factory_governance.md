@@ -1,7 +1,7 @@
 # LLM Solution Factory Governance
 
-Este documento e o contrato operacional para Codex, Claude Code, VS Code
-chat, Ruflo e modelos Ollama ao criar ou implementar solucoes no Synapse.
+Este documento e o contrato operacional para Codex, Claude Code e VS Code
+chat ao criar ou implementar solucoes no Synapse.
 
 ## Regra Principal
 
@@ -139,14 +139,14 @@ evals, observabilidade e custo.
 
 ## Governanca De LLMs
 
-- Preferir Ollama local para triagem, classificacao, resumo, planejamento e
-  revisao inicial.
-- Cloud e opt-in: exige pedido explicito e aprovacao humana.
+- Usar Codex/OpenAI ou Claude Code/Anthropic diretamente para triagem,
+  classificacao, resumo, planejamento e revisao inicial.
+- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
 - Comecar com um agente.
-- Escalar Ruflo por dominio somente quando necessario.
+- Escalar o swarm por dominio somente quando necessario.
 - Nunca ativar 60 agentes por padrao.
 - Usar `config/cost_optimization_policy.json` antes de ampliar agentes.
-- Usar `synapse-peers` para handoff curto entre Codex, Claude, Ruflo e
+- Usar `synapse-peers` para handoff curto entre Codex, Claude e
   operadores humanos.
 
 ## Contrato Para Assistentes
@@ -164,10 +164,10 @@ operacional. Preserve prompt caching e contexto pequeno.
 
 ### VS Code Chat
 
-Receba o pedido pela conversa, colete lacunas minimas, prefira Ollama local e
-consulte o analisador antes de sugerir arquitetura ou gerar handoff para Codex.
+Receba o pedido pela conversa, colete lacunas minimas e consulte o analisador
+antes de sugerir arquitetura ou gerar handoff para Codex.
 
-### Ruflo
+### Swarm
 
 Use a analise para escolher fleets e especialistas. O padrao e um orquestrador;
 especialistas entram por dominio e 60 agentes exigem aprovacao explicita.

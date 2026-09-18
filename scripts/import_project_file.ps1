@@ -93,13 +93,13 @@ $Attachment = [ordered]@{
     extension = $Extension
     size_bytes = $SourceFile.Length
     imported_at = (Get-Date).ToString("s")
-    codex_context = "Arquivo anexado ao projeto para uso por Codex, Ruflo e agentes especializados."
+    codex_context = "Arquivo anexado ao projeto para uso por Codex e agentes especializados."
 }
 
 $Manifest = [ordered]@{
     project = $ProjectName
     source = "scripts/import_project_file.ps1"
-    usage = "Referencie stored_path no dialogo do Codex. Datasets em data/raw podem ser tratados com a task Codex: Tratar dados com Ruflo economico."
+    usage = "Referencie stored_path no dialogo do Codex. Datasets em data/raw podem ser tratados com a task Codex: Tratar dados com swarm economico."
     attachments = @($Existing + [pscustomobject]$Attachment)
 }
 

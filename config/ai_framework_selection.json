@@ -4,7 +4,7 @@
   "selection_policy": {
     "applies_to_universes": ["ia", "hybrid", "chatbolt"],
     "codex_analyzes_request_first": true,
-    "ruflo_max_agents": 60,
+    "swarm_max_agents": 60,
     "core_agents_always_active": 15,
     "specialists_on_demand": 45,
     "sdd_required_before_implementation": true,
@@ -150,7 +150,7 @@
       "category": "tool_context_protocol",
       "best_for": ["mcp_servers", "mcp_clients", "tool_exposure", "standardized_context"],
       "capabilities": ["mcp", "tools", "resources", "prompts", "integration"],
-      "select_when": ["external_tools_or_context_must_be_exposed", "codex_ruflo_needs_standard_tool_boundary"],
+      "select_when": ["external_tools_or_context_must_be_exposed", "codex_or_swarm_needs_standard_tool_boundary"],
       "avoid_when": ["no_tools_or_external_context_needed"]
     },
     {
@@ -163,7 +163,7 @@
       "avoid_when": ["strict_small_deterministic_workflow_is_required"]
     }
   ],
-  "default_technology_recommendation": ["fastapi", "ollama", "mcp-servers"],
+  "default_technology_recommendation": ["fastapi", "mcp-servers"],
   "technology_catalog": [
     {
       "id": "crewai",
@@ -299,15 +299,6 @@
       "best_for": ["production_api", "model_serving", "agent_gateway"],
       "select_when": ["api", "backend", "service", "serving", "fastapi"],
       "templates": ["templates/backend/fastapi_service.py"]
-    },
-    {
-      "id": "ollama",
-      "name": "Ollama",
-      "category": "local_llm_runtime",
-      "capabilities": ["local_llm", "privacy", "offline_inference", "model_routing"],
-      "best_for": ["local_first_ai", "private_data", "cost_control"],
-      "select_when": ["local", "ollama", "privacy", "offline", "custo"],
-      "templates": ["templates/llm/ollama_router.py"]
     },
     {
       "id": "mcp-servers",

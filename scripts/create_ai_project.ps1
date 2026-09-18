@@ -14,7 +14,6 @@
     [int]$ActiveAgentLimit = 0,
     [switch]$SkipValidation,
     [switch]$SkipActivation,
-    [switch]$ActivateRuflo,
     [switch]$LocalMemoryOnly
 )
 
@@ -126,9 +125,7 @@ function Copy-Template {
         "ai_factory_menu.ps1",
         "bootstrap_enterprise_stack.ps1",
         "validate_enterprise_stack.ps1",
-        "synapse_ollama_mcp.py",
         "synapse_peers_mcp.py",
-        "test_local_llm.py",
         "agentdb.rvf",
         "agentdb.rvf.lock",
         "ruvector.db",
@@ -197,16 +194,16 @@ function Configure-RuntimeManifest {
         ai = $ProjectUniverse.ai_enabled
         rag = $ProjectUniverse.rag_enabled
         data_treatment = $true
-        ruflo_15_agents = $true
-        ruflo_core_agents = 15
-        ruflo_max_agents = 60
-        ruflo_specialist_agents = 45
+        swarm_15_agents = $true
+        swarm_core_agents = 15
+        swarm_max_agents = 60
+        swarm_specialist_agents = 45
         cost_aware_orchestration = $true
         agentic_business_transformation = $true
         simulation_first = $true
     }) -Force
     $RuntimeManifest.swarm.name = $SwarmName
-    $RuntimeManifest | Add-Member -NotePropertyName "generated_project_ruflo_strategy" -NotePropertyValue ([ordered]@{
+    $RuntimeManifest | Add-Member -NotePropertyName "generated_project_swarm_strategy" -NotePropertyValue ([ordered]@{
         inheritance_mode = "solution_runtime"
         available_agents = 60
         core_agents = 15
@@ -227,13 +224,12 @@ function Configure-RuntimeManifest {
             hybrid = @("project_factory_fleet", "ml_fleet", "rag_fleet", "cost_optimization_fleet")
         }
         context_policy = "send_only_role_specific_context"
-        local_model_policy = "ollama_local_first"
+        cloud_model_policy = "openai_claude_direct"
         inherited_artifacts = @(
             "config/agent_fleets.json",
             "config/agent_trust_framework.json",
             "config/cost_optimization_policy.json",
             "config/model_providers.json",
-            "scripts/start_ruflo_swarm.ps1",
             "agents/definitions/enterprise_agents.yaml"
         )
     }) -Force
@@ -306,10 +302,10 @@ function Configure-EnterpriseSpec {
             ai = $ProjectUniverse.ai_enabled
             rag = $ProjectUniverse.rag_enabled
             data_treatment = $true
-            ruflo_15_agents = $true
-            ruflo_core_agents = 15
-            ruflo_max_agents = 60
-            ruflo_specialist_agents = 45
+            swarm_15_agents = $true
+            swarm_core_agents = 15
+            swarm_max_agents = 60
+            swarm_specialist_agents = 45
         }
         swarm = $SwarmName
         created_at = $CreationDate
@@ -437,25 +433,24 @@ function Configure-LocalAiRuntime {
             swarm_execution_owned_by_project = $true
             application_runtime_owned_by_synapse = $true
         }) -Force
-        $Runtime.local_llm.enabled = $true
-        $Runtime.local_llm.provider = "ollama"
-        $Runtime.local_llm.routing_strategy = "local_first"
-        $Runtime.local_llm.default_model = "qwen2.5-coder:3b"
-        $Runtime.local_llm | Add-Member -NotePropertyName "general_model" -NotePropertyValue "qwen3:8b" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "balanced_model" -NotePropertyValue "deepseek-coder-v2:lite" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "code_review_model" -NotePropertyValue "deepseek-coder-v2:lite" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "code_strong_model" -NotePropertyValue "qwen2.5-coder:14b" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "planning_strong_model" -NotePropertyValue "qwen3:14b" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "reasoning_strong_model" -NotePropertyValue "deepseek-r1:14b" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "code_critical_model" -NotePropertyValue "qwen2.5-coder:32b" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "large_model" -NotePropertyValue "qwen2.5-coder:32b" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "embedding_model" -NotePropertyValue "nomic-embed-text:latest" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "model_selection" -NotePropertyValue "offline_profile_router" -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "large_model_requires_explicit_request" -NotePropertyValue $true -Force
-        $Runtime.local_llm | Add-Member -NotePropertyName "recommended_context_tokens_on_16gb_ram" -NotePropertyValue 4096 -Force
+        $Runtime.local_llm.enabled = $false
+        $Runtime.local_llm.provider = "openai"
+        $Runtime.local_llm.routing_strategy = "cloud_only"
+        $Runtime.local_llm.default_model = "gpt-5.5"
         $Runtime.local_llm.provider_config_file = "config/model_providers.json"
-        $Runtime.local_llm.ruflo_governed_bridge = "project_ruflo_runtime"
         foreach ($Property in @(
+            "general_model",
+            "balanced_model",
+            "code_review_model",
+            "code_strong_model",
+            "planning_strong_model",
+            "reasoning_strong_model",
+            "code_critical_model",
+            "large_model",
+            "embedding_model",
+            "model_selection",
+            "large_model_requires_explicit_request",
+            "recommended_context_tokens_on_16gb_ram",
             "vscode_test_script",
             "codex_mcp_server",
             "codex_project_config",
@@ -471,7 +466,7 @@ function Configure-LocalAiRuntime {
             project_id = $NomeProjeto
             automatic_weight_updates = $false
             events_path = "memory/synapse_learning_memory.jsonl"
-            training_dataset_path = "data/learning/ollama_training.jsonl"
+            training_dataset_path = "data/learning/training_examples.jsonl"
             promotion_requires_evals_and_human_approval = $true
         }) -Force
         Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
@@ -482,22 +477,12 @@ function Configure-LocalAiRuntime {
         $Providers | Add-Member -NotePropertyName "project_context" -NotePropertyValue ([ordered]@{
             name = $NomeProjeto
             universe = $ProjectUniverse.universe
-            local_model = "qwen2.5-coder:3b"
-            general_local_model = "qwen3:8b"
-            balanced_local_model = "deepseek-coder-v2:lite"
-            code_review_local_model = "deepseek-coder-v2:lite"
-            code_strong_local_model = "qwen2.5-coder:14b"
-            planning_strong_local_model = "qwen3:14b"
-            reasoning_strong_local_model = "deepseek-r1:14b"
-            code_critical_local_model = "qwen2.5-coder:32b"
-            large_local_model = "qwen2.5-coder:32b"
-            embedding_local_model = "nomic-embed-text:latest"
+            cloud_model = "gpt-5.5"
             created_at = $CreationDate
         }) -Force
-        $Providers.routing_strategy = "local_first"
-        $Providers.ruflo_bridge.enabled = $true
-        $Providers.ruflo_bridge.all_60_agents_have_governed_router_access = $true
-        $Providers.ruflo_bridge.single_consolidated_call_by_default = $true
+        $Providers.swarm_bridge.enabled = $true
+        $Providers.swarm_bridge.all_60_agents_have_governed_router_access = $true
+        $Providers.swarm_bridge.single_consolidated_call_by_default = $true
         Write-TextFile -Path $ProvidersPath -Content ($Providers | ConvertTo-Json -Depth 20)
     }
 
@@ -510,16 +495,7 @@ function Configure-LocalAiRuntime {
         Write-TextFile -Path $ImprovementPath -Content ($Improvement | ConvertTo-Json -Depth 20)
     }
 
-    if (Test-Path $McpPath) {
-        $Mcp = Get-Content $McpPath -Raw | ConvertFrom-Json
-        $RufloEnv = $Mcp.mcpServers.ruflo.env
-        $RufloEnv.CLAUDE_FLOW_MAX_AGENTS = "60"
-        $RufloEnv | Add-Member -NotePropertyName "SYNAPSE_PROJECT_NAME" -NotePropertyValue $NomeProjeto -Force
-        $RufloEnv | Add-Member -NotePropertyName "SYNAPSE_PROJECT_UNIVERSE" -NotePropertyValue $ProjectUniverse.universe -Force
-        Write-TextFile -Path $McpPath -Content ($Mcp | ConvertTo-Json -Depth 20)
-    }
-
-    Write-Host "Runtime Ruflo, agentes e politicas de modelo do projeto configurados." -ForegroundColor Green
+    Write-Host "Runtime, agentes e politicas de modelo do projeto configurados." -ForegroundColor Green
 }
 
 function Configure-AgentsYaml {
@@ -538,14 +514,12 @@ function Create-AssistantInheritanceArtifacts {
     $CodexInstructions = @"
 # Synapse Solution Project
 
-- Use Ollama local para triagem, resumo, classificacao, planejamento inicial e revisao de codigo.
-- Use `qwen2.5-coder:3b` para tarefas rapidas e escale via Model Router para DeepSeek/Qwen maiores apenas quando necessario.
-- Cloud exige pedido explicito do usuario e aprovacao humana.
+- Use OpenAI/Codex diretamente para triagem, resumo, classificacao, planejamento inicial e revisao de codigo.
 - Comece com um agente; escale conforme `config/cost_optimization_policy.json`.
-- Nunca ative os 60 agentes por padrao.
+- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
-- Limite respostas locais normalmente a 512 tokens e contexto a 4096 tokens.
-- Use `synapse-peers` para trocar resumos curtos entre Codex, Claude e Ruflo antes de repetir contexto.
+- Limite respostas normalmente a 512 tokens de saida.
+- Use `synapse-peers` para trocar resumos curtos entre Codex e Claude antes de repetir contexto.
 - Este projeto pertence ao universo `$($ProjectUniverse.universe)` e herda somente os artefatos de solucao aplicaveis.
 - Antes de criar ou implementar qualquer funcionalidade, siga `config/business_solution_analysis.json` e `docs/briefings/business_solution_analysis.md`.
 - Se o problema de negocio mudar, atualize a analise com `scripts/analyze_business_solution.py` no Synapse antes de alterar arquitetura, testes ou evals.
@@ -562,15 +536,14 @@ function Create-AssistantInheritanceArtifacts {
 
 Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse.universe)`.
 
-## Politica Local-First
+## Politica De Provedores
 
-- Priorize Ollama local para resumo, classificacao, planejamento, revisao e tarefas de baixo risco.
-- Use Ollama local-first com gateway/model router: rapido no `qwen2.5-coder:3b`, balanceado no `deepseek-coder-v2:lite` e modelos maiores sob demanda.
-- Nao use cloud por padrao. OpenAI/Anthropic exigem pedido explicito do usuario e aprovacao humana.
+- Use Anthropic/Claude diretamente para resumo, classificacao, planejamento, revisao e tarefas de baixo risco.
+- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
 - Leia `config/synapse_solution_contract.json`, `config/project_universe.json` e `config/cost_optimization_policy.json` antes de escalar agentes.
 - Leia `config/business_solution_analysis.json` antes de decidir arquitetura, agentes, RAG, ML, testes ou evals.
 - Ative um agente primeiro; use perfis de custo para escalar para 3 ou 8. Sessenta agentes exigem alta complexidade explicita.
-- Use o MCP `synapse-peers` para coordenar com Codex e Ruflo por resumos curtos, sem secrets e sem colar arquivos grandes.
+- Use o MCP `synapse-peers` para coordenar com Codex por resumos curtos, sem secrets e sem colar arquivos grandes.
 - Ao concluir ou bloquear uma tarefa de chat, registre resumo curto na memoria compartilhada.
 
 ## Escopo
@@ -589,7 +562,7 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
     $PeerRunbook = @"
 # Peer Messaging Local
 
-O MCP `synapse-peers` permite que Codex, Claude, Ruflo e operadores humanos compartilhem resumos curtos em SQLite local.
+O MCP `synapse-peers` permite que Codex, Claude e operadores humanos compartilhem resumos curtos em SQLite local.
 
 Use para reduzir custo por tokens:
 
@@ -632,7 +605,7 @@ DB_PATH = Path(os.getenv("PEER_MESSAGING_DB_PATH", "./artifacts/peers/synapse-pe
 MAX_MESSAGE_CHARS = int(os.getenv("PEER_MESSAGING_MAX_MESSAGE_CHARS", "1200"))
 MAX_SUMMARY_CHARS = int(os.getenv("PEER_MESSAGING_MAX_SUMMARY_CHARS", "360"))
 PEER_TYPE = (os.getenv("SYNAPSE_PEER_TYPE", "codex").strip().lower() or "codex")
-ALLOWED_PEER_TYPES = {"codex", "claude", "ruflo", "ollama", "human", "other"}
+ALLOWED_PEER_TYPES = {"codex", "claude", "human", "other"}
 
 
 def now() -> str:
@@ -720,7 +693,7 @@ REGISTERED_PEER = register_peer()
 MCP = FastMCP(
     "synapse-peers",
     instructions=(
-        "Coordinate Codex, Claude, Ruflo and human sessions locally. "
+        "Coordinate Codex, Claude and human sessions locally. "
         "Prefer summaries before details. Do not send secrets or large files."
     ),
 )
@@ -956,12 +929,11 @@ function Create-ProjectArtifacts {
     "ai": $($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant()),
     "rag": $($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant()),
     "data_treatment": true,
-    "ruflo_15_agents": true,
-    "ruflo_core_agents": 15,
-    "ruflo_max_agents": 60,
-    "ruflo_specialist_agents": 45,
+    "swarm_15_agents": true,
+    "swarm_core_agents": 15,
+    "swarm_max_agents": 60,
+    "swarm_specialist_agents": 45,
     "cost_aware_orchestration": true,
-    "ollama_local_first": true,
     "governed_model_routing": true,
     "continual_learning": true,
     "tests": true,
@@ -984,7 +956,6 @@ function Create-ProjectArtifacts {
     "data_treatment_required": true,
     "sdd_required": true,
     "codex_dialog_required": true
-    ,"ollama_required": true
     ,"governance_required": true
     ,"continual_learning_requires_human_feedback": true
   }
@@ -1218,7 +1189,7 @@ chatbot:
 {
   "project": "$NomeProjeto",
   "source": "scripts/create_ai_project.ps1",
-  "usage": "Fotos e arquivos anexados pela task AI Factory: Anexar foto ou arquivo ao projeto aparecem aqui para o Codex, Ruflo, os 15 core agents e especialistas sob demanda.",
+  "usage": "Fotos e arquivos anexados pela task AI Factory: Anexar foto ou arquivo ao projeto aparecem aqui para o Codex, os 15 core agents e especialistas sob demanda.",
   "attachments": []
 }
 "@
@@ -1236,19 +1207,18 @@ Este projeto segue `config/ai_ml_enterprise_spec.json` como contrato principal.
 - ML ativo: $($ProjectUniverse.ml_enabled)
 - IA ativa: $($ProjectUniverse.ai_enabled)
 - RAG ativo: $($ProjectUniverse.rag_enabled)
-- Ruflo core agents ativos: 15
-- Ruflo max agents: 60
-- Ruflo especialistas sob demanda: 45
-- Ruflo default economic active agents: 5
-- Ruflo enterprise active agents: 15
+- Swarm core agents ativos: 15
+- Swarm max agents: 60
+- Swarm especialistas sob demanda: 45
+- Swarm default economic active agents: 5
+- Swarm enterprise active agents: 15
 - Tratamento de dados ativo: True
-- Ollama local-first ativo: True
-- Roteamento governado Ruflo/Ollama/OpenAI: True
+- Roteamento governado OpenAI/Anthropic: True
 - Aprendizagem por memoria do projeto: True
 - IA agentica aplicada a transformacao empresarial: True
 - Descricao: $($ProjectUniverse.description)
 
-Ruflo com 15 core agents configurados, ativacao economica, pool escalavel ate 60 agentes e o fluxo de tratamento estatistico de dados sao base
+O swarm com 15 core agents configurados, ativacao economica, pool escalavel ate 60 agentes e o fluxo de tratamento estatistico de dados sao base
 obrigatoria em todos os universos. O universo define o foco da solucao, nao
 remove a preparacao, validacao e tratamento dos dados.
 
@@ -1264,9 +1234,9 @@ Nenhuma implementacao deve comecar sem:
 - criterios de aceitacao
 - estrategia de testes
 
-## Execucao no Codex + Ruflo
+## Execucao no Codex + Claude Code
 
-- Ruflo ativo e obrigatorio por padrao.
+- Swarm ativo e obrigatorio por padrao.
 - O roteador deve ativar em paralelo apenas o subconjunto de core agents necessario ao cenario.
 - Os 45 especialistas devem ser roteados sob demanda pelo orchestration-manager quando a solicitacao justificar.
 - Para baixo custo, o roteador economico deve ativar 3, 5, 8 ou 15 agentes por padrao conforme complexidade.
@@ -1274,8 +1244,7 @@ Nenhuma implementacao deve comecar sem:
 - Fleets governadas devem ser selecionadas por `config/agent_fleets.json`.
 - Identidade, permissoes, proposito, explicabilidade, observabilidade, certificacao e lifecycle devem seguir `config/agent_trust_framework.json`.
 - O `orchestration-manager` consolida respostas antes de acionar modelos ou ferramentas.
-- Solicitacoes simples devem usar Ollama local por padrao.
-- Solicitacoes complexas podem escalar para OpenAI somente pela ponte governada.
+- Solicitacoes usam o provedor cloud configurado (OpenAI/Anthropic) pela ponte governada.
 - Os 60 agentes acessam modelos apenas por `governed_llm_router`.
 - Todo objetivo empresarial deve passar pelo workflow `business-transformation`
   antes de escalar automacoes ou integracoes.
@@ -1309,7 +1278,7 @@ Nenhuma implementacao deve comecar sem:
 
 - Configuracao: `config/business_transformation.json`.
 - Prompt: `prompts/business_transformation.md`.
-- Workflow Ruflo: `config/workflows/ruflo/business-transformation.json`.
+- Workflow: `config/workflows/synapse/business-transformation.json`.
 - Perfis: `agents/definitions/business_transformation_agents.yaml`.
 - Operar em simulacao antes de conectar tools MCP reais.
 - Medir baseline, tempo de ciclo, retrabalho, custo por caso, adocao e resultado principal.
@@ -1320,13 +1289,13 @@ Nenhuma implementacao deve comecar sem:
         $FrameworkSpec = @"
 # Selecao de Frameworks IA - $NomeProjeto
 
-Este projeto usa `config/ai_framework_selection.json` para orientar Codex + Ruflo
+Este projeto usa `config/ai_framework_selection.json` para orientar Codex + Claude Code
 antes de criar agentes, RAG, LLM, MCP ou workflows no-code.
 
 ## Politica
 
 - Codex classifica o cenario da solicitacao do usuario.
-- Ruflo ativa um subconjunto economico dos 15 core agents e roteia especialistas sob demanda ate 60 agentes.
+- O swarm ativa um subconjunto economico dos 15 core agents e roteia especialistas sob demanda ate 60 agentes.
 - Frameworks sao candidatos arquiteturais, nao dependencias instaladas cegamente.
 - A selecao deve respeitar SDD, evals, observabilidade, seguranca, custo e latencia.
 
@@ -1354,7 +1323,7 @@ antes de criar agentes, RAG, LLM, MCP ou workflows no-code.
 - Times de agentes por papeis: CrewAI, LangGraph, OpenAI Agents SDK.
 - Conversas multiagentes e colaboracao pesquisador/coder/reviewer: AutoGen, LangGraph, CrewAI.
 - No-code ou visual builder: Dify, Flowise, RAGFlow.
-- Muitos agentes paralelos: Swarms, Ruflo, LangGraph.
+- Muitos agentes paralelos: Swarms, LangGraph.
 - Stack Microsoft: Microsoft Agent Framework / Semantic Kernel.
 - Ferramentas, recursos e contexto padronizado: MCP SDKs.
 
@@ -1392,7 +1361,6 @@ templates a partir do problema de negocio.
 - RAG frameworks
 - KAG / Knowledge Graph
 - FastAPI
-- Ollama
 - MCP servers
 
 ## Saidas Obrigatorias
@@ -1407,12 +1375,12 @@ templates a partir do problema de negocio.
 ## Regras
 
 - Comecar pelo problema de negocio, metrica, fontes disponiveis e risco.
-- Usar Ollama local para triagem, planejamento e revisao por padrao.
-- Usar FastAPI, Ollama e MCP servers como base local-first para IA, Chatbolt e hibridos.
+- Usar OpenAI/Anthropic diretamente para triagem, planejamento e revisao por padrao.
+- Usar FastAPI e MCP servers como base para IA, Chatbolt e hibridos.
 - Usar registry local de modelos e evals em projetos ML e hibridos.
 - Usar RAG somente quando conhecimento confiavel, busca ou citacoes forem necessarios.
 - Usar agentes somente quando houver planejamento, ferramentas, coordenacao ou execucao multi-etapas.
-- Nao ativar os 60 agentes nem cloud sem pedido explicito e aprovacao humana.
+- Nao ativar os 60 agentes sem pedido explicito e aprovacao humana.
 "@
         Write-TextFile (Join-Path $Destino "docs\specifications\technology_layer.md") $TechnologyLayerSpec
         $RuntimePath = Join-Path $Destino "config\runtime_manifest.json"
@@ -1447,9 +1415,9 @@ para criar, operar e auditar agents e fleets de forma corporativa.
 - ML ativo: $($ProjectUniverse.ml_enabled)
 - IA ativa: $($ProjectUniverse.ai_enabled)
 - RAG ativo: $($ProjectUniverse.rag_enabled)
-- Ruflo max agents: 60
-- Ruflo default economic active agents: 5
-- Ruflo enterprise active agents: 15
+- Swarm max agents: 60
+- Swarm default economic active agents: 5
+- Swarm enterprise active agents: 15
 
 ## Trust Layers Obrigatorias
 
@@ -1545,7 +1513,7 @@ multiagente empresariais. O catalogo executavel fica em
 
 - Orchestrator Specialist: um lider coordena especialistas sob demanda.
 - Critic Reviewer Gate: risco alto passa por revisao, evals e aprovacao.
-- A2A Message Contract: Codex, Claude, Ruflo e humanos trocam resumos
+- A2A Message Contract: Codex, Claude e humanos trocam resumos
   curtos por `synapse-peers`.
 - Tool Gateway: ferramentas operam com menor privilegio e auditoria.
 - Model Router: agentes nao chamam LLM direto; passam pelo gateway.
@@ -1614,7 +1582,6 @@ def test_required_solution_runtime_artifacts_exist():
         "config/context_policy.json",
         "config/data_treatment_policy.json",
         "scripts/treat_dataset.py",
-        "scripts/start_ruflo_swarm.ps1",
         "agents/definitions/enterprise_agents.yaml",
         "docs/briefings/business_solution_analysis.md",
         "docs/specifications/llm_solution_factory_governance.md",
@@ -1891,10 +1858,10 @@ function Create-Runbooks {
         "- agentes de IA",
         "- pipelines RAG",
         "- tratamento estatistico dos dados",
-        "- anexos de fotos e arquivos para contexto do Codex/Ruflo",
+        "- anexos de fotos e arquivos para contexto do Codex",
         "- avaliacoes",
         "- documentacao",
-        "- ajustes de workflows Ruflo",
+        "- ajustes de workflows do swarm",
         "",
         "## Validacao",
         "",
@@ -1918,7 +1885,7 @@ function Create-Runbooks {
         "Coloque arquivos em data/raw/ e, pela conversa com Codex, peca:",
         "",
         "~~~text",
-        "trate data/raw/seu_arquivo.csv com Ruflo economico e especialistas sob demanda",
+        "trate data/raw/seu_arquivo.csv com o swarm economico e especialistas sob demanda",
         "~~~",
         "",
         "Tasks locais podem existir como atalho, mas a caixa de dialogo e o caminho principal.",
@@ -2020,22 +1987,16 @@ function Create-Runbooks {
         "- [x] Prompt mestre de tratamento estatistico em prompts/master_data_treatment.md.",
         "- [x] Politica de tratamento em config/data_treatment_policy.json.",
         "- [x] Prompt de tratamento de dados em prompts/codex_data_treatment_dialog.md.",
-        "- [x] Fluxo Codex + Ruflo + 15 core agents para tratar dados.",
-        "- [x] Fluxo de anexos para fotos e arquivos com manifesto para Codex/Ruflo.",
+        "- [x] Fluxo Codex + swarm + 15 core agents para tratar dados.",
+        "- [x] Fluxo de anexos para fotos e arquivos com manifesto para Codex.",
         "- [x] Camadas ML, IA, RAG, guardrails e evals copiadas do template.",
-        "- [x] SDD, Ruflo ativo, 15 core agents e limite escalavel de 60 agentes definidos como padrao.",
+        "- [x] SDD, swarm ativo, 15 core agents e limite escalavel de 60 agentes definidos como padrao.",
         "- [x] Especificacao de execucao criada em docs/specifications/ai_ml_execution_spec.md.",
         "- [x] Especificacao agentic mesh criada em docs/specifications/agentic_mesh_governance.md.",
         "- [x] Checklist de certificacao de fleets criado em docs/checklists/agent_fleet_certification.md.",
         "- [x] Runbook Agent SRE criado em docs/runbooks/agent_sre.md.",
-        "- [x] Ollama local-first configurado com qwen2.5-coder:3b para tarefas rapidas.",
-        "- [x] Ollama qwen3:8b integrado para respostas gerais e documentacao offline.",
-        "- [x] Ollama deepseek-coder-v2:lite integrado para revisao e debugging offline.",
-        "- [x] Ollama qwen2.5-coder:14b, qwen3:14b, deepseek-r1:14b e qwen2.5-coder:32b mapeados sob demanda.",
-        "- [x] DeepSeek Coder V2 Lite integrado para revisao, debugging e reparo de codigo.",
-        "- [x] Perfil local avancado mapeado para qwen2.5-coder:32b sob demanda.",
-        "- [x] Politica offline documentada em docs/ollama-offline-models.md.",
-        "- [x] Ponte governada Ruflo -> Ollama/OpenAI configurada para os 60 agentes.",
+        "- [x] Codex/OpenAI e Claude Code/Anthropic configurados como provedores diretos.",
+        "- [x] Ponte governada do swarm -> OpenAI/Anthropic configurada para os 60 agentes.",
         "- [x] Aprendizagem continua por memoria configurada sem atualizar pesos automaticamente.",
         "- [x] Catalogo de frameworks IA disponivel em config/ai_framework_selection.json.",
         "- [x] Projetos IA/Hibridos/Chatbolt recebem docs/specifications/ai_framework_selection.md.",
@@ -2147,12 +2108,11 @@ Capacidades ativas:
 - ML: `$($ProjectUniverse.ml_enabled)`
 - IA: `$($ProjectUniverse.ai_enabled)`
 - RAG: `$($ProjectUniverse.rag_enabled)`
-- Ruflo core agents: `15`
-- Ruflo max agents: `60`
-- Ruflo especialistas sob demanda: `45`
+- Swarm core agents: `15`
+- Swarm max agents: `60`
+- Swarm especialistas sob demanda: `45`
 - Transformacao empresarial agentica: `True`
 - Tratamento de dados: `True`
-- Ollama local-first: `True`
 - Governanca de modelos: `True`
 - Aprendizagem por memoria: `True`
 - Testes automatizados: `True`
@@ -2166,7 +2126,7 @@ Machine Learning, Estatistica, Governanca e Tratamento de Dados.
 - Nao contem backend.
 - Nao contem frontend.
 - Nao contem fabrica de projetos.
-- Ruflo, agentes, memoria e orquestracao executam no contexto deste projeto.
+- Swarm, agentes, memoria e orquestracao executam no contexto deste projeto.
 
 ## Configuracao Principal
 
@@ -2178,7 +2138,7 @@ Machine Learning, Estatistica, Governanca e Tratamento de Dados.
 - `config/enterprise.yaml`
 - `config/workflows/enterprise_workflows.yaml`
 - `config/business_transformation.json`
-- `config/workflows/ruflo/business-transformation.json`
+- `config/workflows/synapse/business-transformation.json`
 
 ## Camada de Praticas
 
@@ -2222,9 +2182,9 @@ function Create-CreationReport {
 - ML enabled: $($ProjectUniverse.ml_enabled)
 - IA enabled: $($ProjectUniverse.ai_enabled)
 - RAG enabled: $($ProjectUniverse.rag_enabled)
-- Ruflo core agents enabled: 15
-- Ruflo max agents enabled: 60
-- Ruflo specialist agents available: 45
+- Swarm core agents enabled: 15
+- Swarm max agents enabled: 60
+- Swarm specialist agents available: 45
 - Data treatment enabled: True
 - Slug: $ProjectSlug
 - Swarm: $SwarmName
@@ -2249,18 +2209,14 @@ function Create-CreationReport {
 - Codex data treatment prompt and task available
  - No backend or frontend copied into the solution project
  - No project factory copied into the solution project
-- Ruflo runtime and agents copied into the solution project
-- Ollama qwen2.5-coder:3b configured as the fast local-first provider
-- Ollama qwen3:8b configured for general local responses
-- Ollama deepseek-coder-v2:lite configured as the balanced offline coding provider
-- DeepSeek Coder V2 Lite configured for code review, debugging and repair
-- Qwen/DeepSeek 14B and Qwen Coder 32B configured as explicit strong local profiles
-- Governed Ruflo model bridge and project-scoped continual learning configured
+- Swarm runtime and agents copied into the solution project
+- OpenAI/Codex and Anthropic/Claude Code configured as direct cloud providers
+- Governed swarm model bridge and project-scoped continual learning configured
 - Agentic business transformation workflow, prompt, profiles and governance inherited
 
 ## Ready
 
-Use `scripts/start_ruflo_swarm.ps1` inside the project to operate its Ruflo swarm.
+Codex and Claude Code operate directly in the cloud; no external swarm activation is required.
 "@
     Write-TextFile (Join-Path $Destino "output\project_creation_report.md") $Report
     Write-Host "Relatorio de criacao gerado." -ForegroundColor Green
@@ -2275,7 +2231,7 @@ function Finalize-SynapseSolutionProject {
         "docs\production-readiness.md",
         "docs\vscode-workflow.md",
         "docs\dual-interface-contract.md",
-        "config\workflows\ruflo\new-ai-project.json",
+        "config\workflows\synapse\new-ai-project.json",
         "scripts\codex_data_treatment_dialog.ps1",
         "scripts\diagnose_project.ps1",
         "scripts\import_project_file.ps1",
@@ -2284,9 +2240,7 @@ function Finalize-SynapseSolutionProject {
         "scripts\ai_factory_menu.ps1",
         "scripts\bootstrap_enterprise_stack.ps1",
         "scripts\validate_enterprise_stack.ps1",
-        "scripts\synapse_ollama_mcp.py",
-        "scripts\synapse_peers_mcp.py",
-        "scripts\test_local_llm.py"
+        "scripts\synapse_peers_mcp.py"
     )) {
         $Path = Join-Path $Destino $RelativePath
         if (Test-Path $Path) {
@@ -2354,8 +2308,7 @@ function Finalize-SynapseSolutionProject {
     $ProvidersPath = Join-Path $Destino "config\model_providers.json"
     if (Test-Path $ProvidersPath) {
         $Providers = Get-Content $ProvidersPath -Raw | ConvertFrom-Json
-        $Providers.ruflo_bridge.PSObject.Properties.Remove("execution_service")
-        $Providers.ruflo_bridge | Add-Member -NotePropertyName "managed_by" -NotePropertyValue "synapse" -Force
+        $Providers.swarm_bridge | Add-Member -NotePropertyName "managed_by" -NotePropertyValue "synapse" -Force
         Write-TextFile -Path $ProvidersPath -Content ($Providers | ConvertTo-Json -Depth 20)
     }
 
@@ -2375,7 +2328,7 @@ function Finalize-SynapseSolutionProject {
         factory_capable = $false
         contains_backend = $false
         contains_frontend = $false
-        ruflo_runtime = "inherited"
+        swarm_runtime = "inherited"
         agents_runtime = "inherited"
         practices = @(
             "ai_engineering",
@@ -2422,11 +2375,10 @@ function Run-ProjectValidation {
         "tests\test_data_contract.py",
         "scripts\treat_dataset.py"
         "prompts\master_data_treatment.md"
-        "scripts\start_ruflo_swarm.ps1"
         "agents\definitions\enterprise_agents.yaml"
         "agents\definitions\business_transformation_agents.yaml"
         "config\business_transformation.json"
-        "config\workflows\ruflo\business-transformation.json"
+        "config\workflows\synapse\business-transformation.json"
         "prompts\business_transformation.md"
         "docs\AGENTIC_AI_TRANSFORMATION.md"
         ".mcp.json"
@@ -2486,56 +2438,7 @@ function Configure-SolutionVsCodeTasks {
     $Tasks = @"
 {
   "version": "2.0.0",
-  "inputs": [
-    {
-      "id": "ollamaModel",
-      "type": "pickString",
-      "description": "Perfil local do Ollama",
-      "options": [
-        "qwen2.5-coder:3b",
-        "qwen3:8b",
-        "deepseek-coder-v2:lite",
-        "qwen2.5-coder:14b",
-        "qwen3:14b",
-        "deepseek-r1:14b",
-        "qwen2.5-coder:32b"
-      ],
-      "default": "qwen2.5-coder:3b"
-    },
-    {
-      "id": "ollamaPrompt",
-      "type": "promptString",
-      "description": "Solicitacao para o modelo local"
-    }
-  ],
   "tasks": [
-    {
-      "label": "Synapse: Ollama offline",
-      "detail": "Executa um dos perfis locais do Synapse sem navegador e sem API paga.",
-      "type": "shell",
-      "command": "ollama",
-      "args": [
-        "run",
-        "`${input:ollamaModel}",
-        "`${input:ollamaPrompt}"
-      ],
-      "group": "test",
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true,
-        "focus": true
-      }
-    },
-    {
-      "label": "Synapse: Listar modelos Ollama",
-      "type": "shell",
-      "command": "ollama",
-      "args": ["list"],
-      "group": "test",
-      "problemMatcher": []
-    },
     {
       "label": "Synapse: Rodar testes do projeto",
       "detail": "Executa a camada tests/ herdada do Synapse para validar contratos, dados, evals e universo selecionado.",
@@ -2564,39 +2467,11 @@ function Configure-SolutionVsCodeTasks {
         Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
     }
 
-    Write-Host "Tasks VS Code para modelos Ollama offline configuradas." -ForegroundColor Green
+    Write-Host "Tasks VS Code do projeto configuradas." -ForegroundColor Green
 }
 
 function Activate-GeneratedProject {
-    if ($SkipActivation -or (!$ActivateRuflo -and !$LocalMemoryOnly)) {
-        Write-Host "Ativacao automatica pulada por parametro." -ForegroundColor Yellow
-        return
-    }
-
-    $ActivationScript = Join-Path $Destino "scripts\start_ruflo_swarm.ps1"
-    if (!(Test-Path $ActivationScript)) {
-        Write-Host "Aviso: script de ativacao Ruflo nao encontrado no projeto gerado." -ForegroundColor Yellow
-        return
-    }
-
-    Push-Location $Destino
-    if (!$LocalMemoryOnly) {
-        Write-Host "Ativando Ruflo real no projeto gerado..." -ForegroundColor Cyan
-        powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\start_ruflo_swarm.ps1" -ActiveAgentLimit $ActiveAgentLimit
-    }
-    else {
-        Write-Host "Preparando memoria/swarm local no projeto gerado..." -ForegroundColor Cyan
-        powershell -NoProfile -ExecutionPolicy Bypass -File ".\scripts\start_ruflo_swarm.ps1" -SkipRufloCli -ActiveAgentLimit $ActiveAgentLimit
-    }
-    $ActivationExitCode = $LASTEXITCODE
-    Pop-Location
-
-    if ($ActivationExitCode -ne 0) {
-        Write-Host "ERRO: Projeto criado, mas a ativacao falhou." -ForegroundColor Red
-        exit $ActivationExitCode
-    }
-
-    Write-Host "Ativacao concluida no projeto gerado." -ForegroundColor Green
+    Write-Host "Nenhuma ativacao de swarm externa e necessaria; Codex/Claude Code operam direto na nuvem." -ForegroundColor Yellow
 }
 
 function Normalize-GeneratedProjectFilesystem {

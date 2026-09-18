@@ -2,12 +2,12 @@
 
 Use these workspace instructions for VS Code Chat/Copilot Chat.
 
-1. Read `AGENTS.md` first and follow the SYNAPSE local-first policy.
+1. Read `AGENTS.md` first and follow the SYNAPSE provider policy.
 2. Read `memory/codex-vscode-context.md` as the shared working context with Codex.
-3. Prefer local tools and concise context. Use Ollama for triage, summaries,
-   classification, planning, and code review when available.
-4. Do not assume cloud execution is allowed. Cloud requires an explicit user
-   request and human approval.
+3. Prefer concise context and the assistant-configured provider (OpenAI for
+   Codex, Anthropic for Claude Code) for triage, summaries, classification,
+   planning, and code review.
+4. Human approval is required only to activate all 60 agents.
 5. Do not load large agent catalogs, `.claude-flow`, full memory dumps,
    generated output, or artifacts unless directly needed.
 6. For simple tasks, use the smallest relevant file set. For medium tasks, keep

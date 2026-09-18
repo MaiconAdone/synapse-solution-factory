@@ -26,7 +26,7 @@ Autonomia:
 - HIGH: parar e solicitar aprovacao humana.
 - CRITICAL: bloquear ate aprovacao explicita e nao executar acao externa.
 
-Use os 60 agentes Ruflo como capacidade governada. Ative todos somente quando
+Use os 60 agentes do swarm como capacidade governada. Ative todos somente quando
 houver justificativa, aprovacao humana e necessidade real. Nao afirme que houve
 60 chamadas independentes quando o runtime usar consolidacao consultiva.
 

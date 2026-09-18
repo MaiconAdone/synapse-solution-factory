@@ -21,39 +21,25 @@ project:
   universe: $($ProjectUniverse.universe)
   universe_label: $($ProjectUniverse.label)
   solution_focus: $($ProjectUniverse.solution_focus)
-  core: codex-ruflo
+  core: codex-claude
 capabilities:
   ml: $($ProjectUniverse.ml_enabled.ToString().ToLowerInvariant())
   ai: $($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant())
   rag: $($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant())
   data_treatment: true
-  ruflo_15_agents: true
-  ruflo_core_agents: 15
-  ruflo_max_agents: 60
-  ruflo_specialist_agents: 45
+  swarm_15_agents: true
+  swarm_core_agents: 15
+  swarm_max_agents: 60
+  swarm_specialist_agents: 45
   cost_aware_orchestration: true
   default_active_agents: 1
   enterprise_active_agents: 8
-local_llm:
-  enabled: true
+cloud_llm:
   managed_by: synapse
-  provider: ollama
-  model: qwen2.5-coder:3b
-  general_model: qwen3:8b
-  balanced_model: deepseek-coder-v2:lite
-  code_review_model: deepseek-coder-v2:lite
-  code_strong_model: qwen2.5-coder:14b
-  planning_strong_model: qwen3:14b
-  reasoning_strong_model: deepseek-r1:14b
-  code_critical_model: qwen2.5-coder:32b
-  large_model: qwen2.5-coder:32b
-  embedding_model: nomic-embed-text:latest
-  model_selection: offline_profile_router
-  large_model_requires_explicit_request: true
-  recommended_context_tokens_on_16gb_ram: 4096
-  routing_strategy: local_first
-  ruflo_access: governed_on_demand
-  sensitive_content_local_only: true
+  codex_provider: openai
+  claude_provider: anthropic
+  swarm_access: governed_on_demand
+  sensitive_content_blocked: true
 continual_learning:
   enabled: true
   mode: memory_retrieval_first
@@ -256,34 +242,17 @@ PROJECT_ML_ENABLED=$($ProjectUniverse.ml_enabled.ToString().ToLowerInvariant())
 PROJECT_AI_ENABLED=$($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant())
 PROJECT_RAG_ENABLED=$($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant())
 PROJECT_DATA_TREATMENT_ENABLED=true
-PROJECT_RUFLO_15_AGENTS_ENABLED=true
-PROJECT_RUFLO_CORE_AGENTS=15
-PROJECT_RUFLO_MAX_AGENTS=60
-PROJECT_RUFLO_SPECIALIST_AGENTS=45
+PROJECT_SWARM_15_AGENTS_ENABLED=true
+PROJECT_SWARM_CORE_AGENTS=15
+PROJECT_SWARM_MAX_AGENTS=60
+PROJECT_SWARM_SPECIALIST_AGENTS=45
 PROJECT_COST_AWARE_ORCHESTRATION_ENABLED=true
 PROJECT_DEFAULT_ACTIVE_AGENTS=1
 PROJECT_ENTERPRISE_ACTIVE_AGENTS=8
 PROJECT_ACTIVATE_ALL_60_REQUIRES_EXPLICIT_HIGH_COMPLEXITY=true
-LOCAL_LLM_ENABLED=true
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen2.5-coder:3b
-OLLAMA_GENERAL_MODEL=qwen3:8b
-OLLAMA_BALANCED_MODEL=deepseek-coder-v2:lite
-OLLAMA_CODE_REVIEW_MODEL=deepseek-coder-v2:lite
-OLLAMA_CODE_STRONG_MODEL=qwen2.5-coder:14b
-OLLAMA_PLANNING_STRONG_MODEL=qwen3:14b
-OLLAMA_REASONING_STRONG_MODEL=deepseek-r1:14b
-OLLAMA_CODE_CRITICAL_MODEL=qwen2.5-coder:32b
-OLLAMA_LARGE_MODEL=qwen2.5-coder:32b
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text:latest
-OLLAMA_TIMEOUT_SECONDS=600
-OLLAMA_CONTEXT_WINDOW=4096
-OLLAMA_MAX_OUTPUT_TOKENS=512
-OLLAMA_SEED=42
 LLM_ROUTING_METRICS_PATH=./artifacts/llm-routing/events.jsonl
-GOVERNED_SWARM_AUDIT_PATH=./artifacts/governance/swarm-executions.jsonl
 LEARNING_EVENTS_PATH=./memory/synapse_learning_memory.jsonl
-LOCAL_TRAINING_DATASET_PATH=./data/learning/ollama_training.jsonl
+LOCAL_TRAINING_DATASET_PATH=./data/learning/training_examples.jsonl
 "@
     Write-TextFile (Join-Path $Destino ".env.example") $Content
     Write-Host ".env.example criado." -ForegroundColor Green

@@ -16,8 +16,8 @@
     "enterprise_active_agent_count": 8,
     "activate_all_60_requires_explicit_high_complexity": true,
     "data_treatment_required_for_all_universes": true,
-    "ruflo_15_agents_required_for_all_universes": true,
-    "token_strategy": "Use Ruflo to route only domain-specific context to each specialized agent, reduce OpenAI tokens, then consolidate through orchestration-manager before any model or tool call.",
+    "swarm_15_agents_required_for_all_universes": true,
+    "token_strategy": "Route only domain-specific context to each specialized agent, reduce cloud model tokens, then consolidate through orchestration-manager before any model or tool call.",
     "required_steps_per_request": [
       "understand_problem",
       "define_architecture",
@@ -84,7 +84,7 @@
       "mcp-sdks",
       "swarms"
     ],
-    "selection_gate": "Codex and Ruflo must classify the scenario before implementing Agents, RAG, LLM, MCP, or no-code AI workflows. Frameworks are selected by fit, not installed blindly."
+    "selection_gate": "Codex and Claude Code must classify the scenario before implementing Agents, RAG, LLM, MCP, or no-code AI workflows. Frameworks are selected by fit, not installed blindly."
   },
   "technology_layer": {
     "enabled": true,
@@ -107,7 +107,6 @@
       "rag-frameworks",
       "kag-knowledge-graph",
       "fastapi",
-      "ollama",
       "mcp-servers"
     ],
     "selection_outputs": [
@@ -178,7 +177,7 @@
   },
   "cost_aware_orchestration": {
     "enabled": true,
-    "principle": "Keep the 60-agent Ruflo swarm available, but activate only the minimum useful agent set for the request complexity, universe, risk, and token budget.",
+    "principle": "Keep the 60-agent swarm available, but activate only the minimum useful agent set for the request complexity, universe, risk, and token budget.",
     "required_behaviors": [
       "classify_request_complexity_before_agent_activation",
       "choose_ml_ia_or_hybrid_solution_path_before_implementation",
@@ -205,7 +204,6 @@
       "faiss",
       "qdrant",
       "weaviate",
-      "ruflo_agentdb",
       "ruvector"
     ],
     "required_design_fields": [
@@ -258,8 +256,7 @@
     "current_runtime": [
       "python",
       "fastapi",
-      "pydantic",
-      "ruflo_mcp"
+      "pydantic"
     ]
   },
   "ml_systems": {

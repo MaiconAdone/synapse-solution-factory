@@ -1,5 +1,4 @@
 param(
-    [switch]$SkipRuflo,
     [switch]$InstallPythonDeps,
     [switch]$InstallFrontendDeps
 )
@@ -24,14 +23,6 @@ if ($InstallFrontendDeps) {
     Push-Location frontend
     npm install
     Pop-Location
-}
-
-if (!$SkipRuflo) {
-    Write-Host "Validando Ruflo CLI..." -ForegroundColor Cyan
-    if (!(Test-Path "node_modules\.bin\ruflo.cmd")) {
-        npm install
-    }
-    .\node_modules\.bin\ruflo.cmd --version
 }
 
 Write-Host "Bootstrap concluido. Rode .\scripts\validate_enterprise_stack.ps1" -ForegroundColor Green

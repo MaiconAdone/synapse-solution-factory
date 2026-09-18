@@ -104,7 +104,7 @@ export function getMemory() {
   return fetchApi<MemoryStatus>("/memory", {
     backend: "hybrid",
     tiers: ["working", "episodic", "semantic"],
-    embeddings: { enabled: true, dimension: 384, provider: "ruflo-agentdb" },
+    embeddings: { enabled: true, dimension: 384, provider: "local" },
     semantic_search: { enabled: true, index: "hnsw-ready" },
   });
 }

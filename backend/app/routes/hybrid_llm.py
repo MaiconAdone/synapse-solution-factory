@@ -14,13 +14,7 @@ def hybrid_llm_decision(
     service: LlmGateway = Depends(get_llm_gateway),
 ) -> dict[str, object]:
     try:
-        return service.decide(
-            request.prompt,
-            allow_cloud=request.allow_cloud,
-            force_provider=request.force_provider,
-            local_model_profile=request.local_model_profile,
-            human_approved=request.human_approved,
-        )
+        return service.decide(request.prompt)
     except LlmGatewayError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
 
@@ -34,13 +28,9 @@ def hybrid_llm_generate(
         return service.generate(
             request.prompt,
             system=request.system,
-            allow_cloud=request.allow_cloud,
-            force_provider=request.force_provider,
-            local_model_profile=request.local_model_profile,
             json_mode=request.json_mode,
             temperature=request.temperature,
             min_response_chars=request.min_response_chars,
-            human_approved=request.human_approved,
             project_id=request.project_id,
             agent_id=request.agent_id,
             tool_name=request.tool_name,

@@ -1,7 +1,6 @@
 ﻿param(
     [string]$InputPath = "",
     [switch]$WinsorizeOutliers,
-    [switch]$SkipRufloCli,
     [switch]$SkipValidation
 )
 
@@ -41,18 +40,6 @@ if (!$SkipValidation) {
     }
 }
 
-Write-Host "Ativando Ruflo economico para tratamento de dados (pool de 15 core + 45 especialistas)..." -ForegroundColor Cyan
-if ($SkipRufloCli) {
-    & "$PSScriptRoot\start_ruflo_swarm.ps1" -SkipRufloCli
-}
-else {
-    & "$PSScriptRoot\start_ruflo_swarm.ps1"
-}
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERRO: ativacao Ruflo falhou." -ForegroundColor Red
-    exit $LASTEXITCODE
-}
-
 $OutputDir = Join-Path $Root "output\codex_dialog"
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
@@ -86,7 +73,7 @@ $DialogContext = @{
         "Codex recebe o pedido pela caixa de dialogo do VS Code.",
         "Aplicar prompts/master_data_treatment.md como contrato metodologico.",
         "Aplicar config/data_treatment_policy.json para separar etapas automaticas, assistidas e avancadas.",
-        "Ruflo ativa um subconjunto economico dos 15 core agents e mantem 45 especialistas disponiveis sob demanda.",
+        "O swarm ativa um subconjunto economico dos 15 core agents e mantem 45 especialistas disponiveis sob demanda.",
         "data-engineering valida estrutura, tipos, ausentes e linhagem.",
         "data-science conduz diagnostico estatistico, outliers, distribuicoes e transformacoes.",
         "machine-learning consome somente dados tratados e relatorio antes de treino.",

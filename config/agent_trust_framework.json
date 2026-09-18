@@ -55,7 +55,7 @@
         "cost_metrics",
         "fleet_health",
         "model_provider_audit",
-        "ruflo_memory_trace"
+        "swarm_memory_trace"
       ]
     },
     {

@@ -6,7 +6,7 @@ navegador.
 ## Stack Oficial
 
 - Codex dentro do VS Code para orientar, revisar e evoluir o projeto.
-- Ruflo com 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
+- Swarm com 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
 - Project Factory em PowerShell para criar projetos completos.
 - FastAPI apenas como runtime interno quando alguma automacao precisar de API.
 - Memoria local, Vector DB, playbooks, evals, guardrails e workflows versionados.
@@ -58,8 +58,8 @@ Tasks: Run Task
 Use uma destas tarefas:
 
 - `AI Factory: Menu interativo`
-- `AI Factory: Criar projeto com Codex + Ruflo 60 agents + tratamento dados`
-- `Codex: Tratar dados com Ruflo economico`
+- `AI Factory: Criar projeto com Codex + swarm economico + tratamento dados`
+- `Codex: Tratar dados com swarm economico`
 - `Dados: Tratar dataset estatistico`
 - `Enterprise: Validar stack`
 - `SYNAPSE: Preparar runtime VS Code sem navegador`
@@ -78,7 +78,7 @@ O fluxo recomendado e:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\create_ai_project.ps1 -NomeProjeto "meu_projeto_ai"
 ```
 
-Para preparar apenas memoria local sem chamar Ruflo CLI real, somente quando offline:
+Para preparar apenas memoria local sem ativar o swarm, somente quando offline:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\create_ai_project.ps1 -NomeProjeto "meu_projeto_ai" -LocalMemoryOnly
@@ -90,9 +90,9 @@ Cada projeto novo nasce com:
 
 - 15 core agents obrigatorios configurados.
 - 45 specialist agents sob demanda configurados.
-- Ruflo `new-ai-project` com ativacao paralela dos core agents e limite maximo de 60 agentes.
+- workflow `new-ai-project` com ativacao paralela dos core agents e limite maximo de 60 agentes.
 - prompt `prompts/codex_data_treatment_dialog.md`.
-- task `Codex: Tratar dados com Ruflo economico`.
+- task `Codex: Tratar dados com swarm economico`.
 - `data/` para CSV, Excel, JSON, JSONL e Parquet.
 - `scripts/treat_dataset.py` para tratamento estatistico rastreavel.
 - `experiments/`, `artifacts/`, `memory/` e `output/`.
@@ -109,7 +109,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterpris
 ```
 
 Essa validacao falha se o projeto nao tiver 15 core agents, 45 specialists,
-`max_agents=60` e workflow Ruflo paralelo.
+`max_agents=60` e workflow do swarm paralelo.
 
 ## Tratar Dados
 
@@ -117,13 +117,13 @@ Coloque a base bruta em `data/raw/` e, quando estiver conversando com Codex,
 peca algo como:
 
 ```text
-trate data/raw/clientes.csv com Ruflo economico e especialistas sob demanda
+trate data/raw/clientes.csv com o swarm economico e especialistas sob demanda
 ```
 
 O caminho integrado e a task:
 
 ```text
-Codex: Tratar dados com Ruflo economico
+Codex: Tratar dados com swarm economico
 ```
 
 Essa task valida o stack, ativa um subconjunto economico dos 15 core agents, registra o contexto
@@ -162,6 +162,6 @@ Depois de abrir o projeto gerado no VS Code, use Codex como caixa de dialogo:
 - informe o problema de negocio;
 - indique os dados disponiveis;
 - peca modelos de ML, agentes de IA, RAG, avaliacoes e documentacao;
-- peca para rodar Ruflo quando quiser paralelizar com os 15 core agents e acionar especialistas sob demanda.
+- peca para rodar o swarm quando quiser paralelizar com os 15 core agents e acionar especialistas sob demanda.
 
 Nenhuma etapa exige abrir navegador.

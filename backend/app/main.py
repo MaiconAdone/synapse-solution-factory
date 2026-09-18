@@ -4,8 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core_config import get_settings
-from app.routes import agents, auth, business, evals, health, hybrid_llm, learning, local_llm, memory, models, projects, rag, runtime, swarm, tools, workflows
-from app.services.governed_swarm_dependencies import close_governed_swarm_service
+from app.routes import agents, auth, business, evals, health, hybrid_llm, learning, memory, models, projects, rag, runtime, swarm, tools, workflows
 from app.services.llm_dependencies import close_llm_services
 
 
@@ -15,14 +14,13 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
-    close_governed_swarm_service()
     close_llm_services()
 
 
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="Decoupled backend for Codex + Ruflo enterprise AI operations.",
+    description="Decoupled backend for Codex + Claude Code enterprise AI operations.",
     lifespan=lifespan,
 )
 
@@ -46,7 +44,6 @@ app.include_router(memory.router, prefix="/memory", tags=["memory"])
 app.include_router(swarm.router, prefix="/swarm", tags=["swarm"])
 app.include_router(runtime.router, prefix="/runtime", tags=["runtime"])
 app.include_router(tools.router, prefix="/tools", tags=["tools"])
-app.include_router(local_llm.router, prefix="/local-llm", tags=["local-llm"])
 app.include_router(hybrid_llm.router, prefix="/llm", tags=["llm-routing"])
 app.include_router(learning.router, prefix="/learning", tags=["continual-learning"])
 app.include_router(business.router, prefix="/business", tags=["business-transformation"])

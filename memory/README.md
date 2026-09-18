@@ -6,12 +6,12 @@ This project uses a hybrid memory model:
 - episodic memory for decisions, incidents, and workflow runs
 - semantic memory for reusable patterns, architecture decisions, and retrieval
 
-Ruflo AgentDB/RuVector is the operational memory backend. The local `vector_db/`
+Local embeddings/RuVector is the operational memory backend. The local `vector_db/`
 directory is reserved for project-owned vector indexes and RAG artifacts.
 
 Project runtime memory is enabled through `config/runtime_manifest.json` and is
 materialized locally in `memory/project_memory.runtime.json` when a project is
-created or when `scripts/start_ruflo_swarm.ps1` runs.
+created.
 
 ## Shared Codex + VS Code Chat Context
 
