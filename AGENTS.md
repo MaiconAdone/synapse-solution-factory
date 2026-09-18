@@ -26,7 +26,7 @@
   `config/llm_solution_factory_policy.json` e
   `docs/specifications/llm_solution_factory_governance.md`.
 - O analisador de solucoes e obrigatorio antes da decisao arquitetural:
-  `backend/app/services/business_solution_analyzer.py` ou
+  `scripts/synapse_lib/business_solution_analyzer.py` ou
   `scripts/analyze_business_solution.py`.
 - O resultado oficial da decisao deve ficar em
   `config/business_solution_analysis.json` e

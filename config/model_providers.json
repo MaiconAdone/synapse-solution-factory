@@ -1,23 +1,7 @@
 {
-  "llm_gateway": {
-    "enabled": true,
-    "entrypoint": "backend/app/services/llm_gateway.py",
-    "public_routes": [
-      "/hybrid-llm/generate",
-      "/hybrid-llm/decision",
-      "/swarm"
-    ],
-    "all_generation_must_pass_gateway": true,
-    "cache_path_env": "LLM_GATEWAY_CACHE_PATH",
-    "audit_path_env": "LLM_GATEWAY_AUDIT_PATH",
-    "max_input_tokens_env": "LLM_GATEWAY_MAX_INPUT_TOKENS",
-    "daily_cloud_token_budget_env": "LLM_GATEWAY_DAILY_CLOUD_TOKEN_BUDGET",
-    "per_request_cloud_token_budget_env": "LLM_GATEWAY_PER_REQUEST_CLOUD_TOKEN_BUDGET"
-  },
   "routing_strategy": "assistant_boundaries",
   "swarm_bridge": {
     "enabled": true,
-    "status_service": "backend/app/services/swarm_service.py",
     "all_60_agents_have_governed_router_access": true,
     "single_consolidated_call_by_default": true
   },

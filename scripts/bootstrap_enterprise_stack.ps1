@@ -1,6 +1,5 @@
 param(
-    [switch]$InstallPythonDeps,
-    [switch]$InstallFrontendDeps
+    [switch]$InstallPythonDeps
 )
 
 $Root = Split-Path -Parent $PSScriptRoot
@@ -15,14 +14,7 @@ if (!(Test-Path ".mcp.json")) {
 
 if ($InstallPythonDeps) {
     Write-Host "Instalando dependencias Python..." -ForegroundColor Cyan
-    python -m pip install -r backend\requirements.txt pytest
-}
-
-if ($InstallFrontendDeps) {
-    Write-Host "Instalando dependencias frontend..." -ForegroundColor Cyan
-    Push-Location frontend
-    npm install
-    Pop-Location
+    python -m pip install -r requirements.txt
 }
 
 Write-Host "Bootstrap concluido. Rode .\scripts\validate_enterprise_stack.ps1" -ForegroundColor Green

@@ -14,8 +14,8 @@ try:
     from scipy import stats
 except ImportError as error:  # pragma: no cover - exercised only without deps.
     raise SystemExit(
-        "pandas and scipy are required. Install backend dependencies with: "
-        "python -m pip install -r backend/requirements.txt"
+        "pandas and scipy are required. Install dependencies with: "
+        "python -m pip install -r requirements.txt"
     ) from error
 
 

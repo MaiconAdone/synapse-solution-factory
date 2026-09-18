@@ -3,11 +3,7 @@
   "private": true,
   "scripts": {
     "check:enterprise": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate_enterprise_stack.ps1",
-    "check:backend": "python -m pytest tests/test_backend_contracts.py -q",
-    "check:frontend": "npm --prefix frontend run lint && npm --prefix frontend run build",
-    "check": "npm run check:enterprise && npm run check:backend && npm run check:frontend"
-  },
-  "overrides": {
-    "sharp": "0.34.5"
+    "check:tests": "python -m pytest tests -q",
+    "check": "npm run check:enterprise && npm run check:tests"
   }
 }

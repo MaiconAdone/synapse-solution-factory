@@ -55,17 +55,6 @@ swarm.
 Toda execucao registra agente, plano, decisao, tool, risco, aprovacao e
 resultado. Tools simuladas sao usadas quando nao existe integracao MCP real.
 
-## API
-
-- `POST /business/diagnosis`
-- `POST /business/opportunities`
-- `POST /business/transformation`
-- `POST /business/transformation/{workflow_id}/approve`
-- `GET /business/transformation/{workflow_id}`
-- `GET /business/transformation/{workflow_id}/audit`
-
-Endpoints de escrita usam a autenticacao ja adotada pelo SYNAPSE.
-
 ## Projetos Criados
 
 Projetos IA, ML e Hibridos recebem:

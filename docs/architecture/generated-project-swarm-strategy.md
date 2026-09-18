@@ -1,7 +1,7 @@
 # Generated Project Swarm Strategy
 
 Synapse-generated projects inherit a solution-scoped swarm runtime. They do not
-inherit the Synapse backend, frontend, or project factory.
+inherit the Synapse project factory.
 
 ## Policy
 

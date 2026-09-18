@@ -7,24 +7,22 @@ governed agent state, coordination, durable memory, and semantic retrieval
 locally, with no external MCP swarm executor.
 
 The machine-readable runtime contract lives in `config/runtime_manifest.json`.
-Backend services read this manifest so API responses, validation scripts, and
-operator documentation share the same source of truth.
+`scripts/create_ai_project.ps1`, `scripts/diagnose_project.ps1`, and
+`scripts/validate_enterprise_stack.ps1` all read this manifest so project
+generation, diagnostics, and validation share the same source of truth.
 
-## Backend
+## Scripts
 
-FastAPI exposes operational APIs for health, agents, workflows, memory, and
-swarm status. The backend is organized around:
+SYNAPSE has no application server; everything runs as local scripts invoked
+from VS Code Chat, Codex, or Claude Code:
 
-- `routes/` for API boundaries
-- `services/` for business logic
-- `repositories/` for persistence adapters
-- `models/` for ORM entities
-- `schemas/` for request/response contracts
-- `agents/` for agent catalogs and runtime adapters
-- `rag/` for retrieval pipelines
-- `orchestration/` for workflow definitions
-
-## Frontend
-
-Next.js provides a decoupled enterprise dashboard with screens for agents,
-workflows, memory, and swarm monitoring.
+- `scripts/create_ai_project.ps1` and `scripts/project_factory/` for project
+  generation
+- `scripts/synapse_lib/` for shared Python logic (business solution analysis,
+  framework selection, evals, local model training, peer messaging) used by
+  the CLI entry points below
+- `scripts/analyze_business_solution.py`, `scripts/run_evals.py`, and
+  `scripts/synapse_peers_mcp.py` as the CLI/MCP entry points into
+  `scripts/synapse_lib/`
+- `scripts/treat_dataset.py`, `scripts/context_filter.py`, and
+  `scripts/market_radar.py` as standalone data/context tools

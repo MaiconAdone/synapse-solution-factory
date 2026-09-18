@@ -99,9 +99,6 @@
     "routing_strategy": "cloud_only",
     "default_model": "gpt-5.5",
     "provider_config_file": "config/model_providers.json",
-    "hybrid_router": "backend/app/services/hybrid_llm_router.py",
-    "routing_endpoint": "/llm/generate",
-    "metrics_endpoint": "/llm/metrics",
     "sensitive_content_blocked": true,
     "all_60_agents_model_access": "governed_on_demand",
     "cloud_default_enabled": true,
@@ -116,8 +113,6 @@
     "automatic_weight_updates": false,
     "events_path": "memory/synapse_learning_memory.jsonl",
     "training_dataset_path": "data/learning/training_examples.jsonl",
-    "feedback_endpoint": "/learning/feedback",
-    "summary_endpoint": "/learning/summary",
     "promotion_requires_evals_and_human_approval": true
   },
   "business_transformation": {
@@ -165,11 +160,11 @@
       "Claude Code",
       "Codex"
     ],
-    "content_collection_rule": "Goals, constraints, files, decisions, approvals and missing briefing fields for corporate solution creation must be collected or confirmed through assistant chat channels before using tasks, scripts, browser UI or tools.",
+    "content_collection_rule": "Goals, constraints, files, decisions, approvals and missing briefing fields for corporate solution creation must be collected or confirmed through assistant chat channels before using tasks, scripts or tools.",
     "shared_solution_factory_access": {
       "policy": "config/llm_solution_factory_policy.json",
       "technology_catalog": "config/ai_framework_selection.json",
-      "business_analyzer": "backend/app/services/business_solution_analyzer.py",
+      "business_analyzer": "scripts/synapse_lib/business_solution_analyzer.py",
       "analyzer_cli": "scripts/analyze_business_solution.py",
       "governance": "docs/specifications/llm_solution_factory_governance.md",
       "technology_layer": "docs/specifications/technology_layer.md",
@@ -181,7 +176,6 @@
     },
     "non_primary_channels": [
       "VS Code tasks",
-      "browser UI",
       "scripts",
       "MCP tools"
     ],
@@ -189,9 +183,7 @@
   },
   "rag": {
     "ready": true,
-    "implementation_status": "local_executable",
-    "runtime": "backend/app/rag/pipeline.py",
-    "api_prefix": "/rag",
+    "implementation_status": "specification_only",
     "limitations": [
       "local lexical/vector-light index is intended for project bootstrap and offline evaluation",
       "production vector store integration is still optional by adapter",
@@ -347,7 +339,6 @@
       "agents/definitions/business_transformation_agents.yaml",
       "config/workflows/synapse/business-transformation.json",
       "docs/AGENTIC_AI_TRANSFORMATION.md",
-      "backend/app/services/continual_learning_service.py",
       ".codex/config.toml"
     ]
   },

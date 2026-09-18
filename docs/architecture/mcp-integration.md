@@ -2,14 +2,9 @@
 
 Synapse Peers and Claude Peers are configured in `.mcp.json` as local MCP
 servers. There is no external swarm-execution MCP server; the swarm runtime
-tracked in `config/runtime_manifest.json` is descriptive governance data
-consumed directly by backend services (`SwarmService`, `MemoryService`,
-`ContinualLearningService`), not an MCP client.
-
-Runtime endpoints:
-
-- `GET /swarm` returns swarm status from the local runtime manifest.
-- `GET /memory` returns memory status from the local runtime manifest.
+tracked in `config/runtime_manifest.json` is descriptive governance data read
+directly by the project-factory scripts and by `scripts/synapse_lib/`, not
+served over an API.
 
 ## Claude Peers
 

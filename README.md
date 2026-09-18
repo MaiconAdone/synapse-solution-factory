@@ -6,14 +6,6 @@ Code, and Codex.
 Synapse is the control plane and the only project factory. Experiment tracking
 uses the local model registry in `artifacts/models/`.
 
-## Interfaces Oficiais
-
-O Synapse funciona de forma independente no navegador e no VS Code, com o
-mesmo nucleo de agentes, projetos, dados, evals e governanca. No navegador a
-interface e o painel Next.js (`/ops`, `/projects`, etc.). No VS Code os canais
-sao o VS Code Chat, o Claude Code e o Codex. Consulte
-`docs/dual-interface-contract.md`.
-
 ## Stack Oficial No VS Code
 
 - Canais oficiais de dialogo: VS Code Chat, Claude Code e Codex,
@@ -25,12 +17,12 @@ sao o VS Code Chat, o Claude Code e o Codex. Consulte
 - Project Factory em `scripts/create_ai_project.ps1`.
 - Memoria hibrida working/episodic/semantic.
 - RAG e Vector DB em `vector_db/`.
-- FastAPI apenas como runtime interno quando necessario.
 
 ## Arquitetura Dos Projetos
 
-Somente o Synapse possui backend, frontend e fabrica de projetos. Um projeto
-criado pelo Synapse e um workspace de solucao
+Somente o Synapse e a fabrica de projetos. O Synapse nao tem backend nem
+frontend proprios; ele roda como scripts locais acionados pelo VS Code Chat,
+Claude Code e Codex. Um projeto criado pelo Synapse e um workspace de solucao
 administrado pelo Synapse, e nao uma copia da plataforma.
 
 Projetos gerados:
@@ -70,15 +62,6 @@ governanca de risco e aprovacao humana.
 - `MEDIUM`: execucao com validacao e auditoria.
 - `HIGH`: exige aprovacao humana.
 - `CRITICAL`: exige aprovacao explicita e bloqueia acoes externas automaticas.
-
-Endpoints:
-
-- `POST /business/diagnosis`
-- `POST /business/opportunities`
-- `POST /business/transformation`
-- `POST /business/transformation/{workflow_id}/approve`
-- `GET /business/transformation/{workflow_id}`
-- `GET /business/transformation/{workflow_id}/audit`
 
 Consulte `docs/AGENTIC_AI_TRANSFORMATION.md`.
 
@@ -182,14 +165,15 @@ workflows and agent catalog.
 ## Swarm Runtime Interno
 
 O swarm usa o MCP configurado em `.mcp.json` e os workflows versionados em
-`config/workflows/synapse/*.json`. O fluxo principal e pelo VS Code/Codex, nao
-por navegador. Cada projeto recebe `.mcp.json`,
+`config/workflows/synapse/*.json`. O fluxo principal e pelo VS Code/Codex.
+Cada projeto recebe `.mcp.json`,
 `agents/definitions/enterprise_agents.yaml`
 e seus contratos de workflows e memoria.
 
 ## Local Model Layer
 
-The backend includes an ML model layer for local baselines:
+`scripts/synapse_lib/model_service.py` includes an ML model layer for local
+baselines:
 
 - trains regression (`linear_regression`, `ridge_regression`,
   `neural_network_regression`), classification (`logistic_regression`,
@@ -198,7 +182,7 @@ The backend includes an ML model layer for local baselines:
 - stores versioned artifacts in `artifacts/models/`
 - maintains `artifacts/models/registry.json` as the local model registry and
   experiment tracking source of truth
-- serves predictions through `POST /models/{model_id}/predict`
+- serves predictions through `ModelService.predict(model_id, request)`
 
 Example training payload:
 
@@ -217,16 +201,17 @@ Example training payload:
 
 ## Run Model And AI Evals
 
-The evaluation layer is split between ML and AI prompt checks:
+The evaluation layer is split between ML and AI prompt checks, both served by
+`scripts/synapse_lib/eval_service.py` through `scripts/run_evals.py`:
 
-- `POST /evals/ml` reads `evals/ml_cases.jsonl`, checks ML quality gates,
-  and computes prediction metrics when a `model_id` is provided with cases that
-  include `features` and `expected`.
-- `POST /evals/ai` reads `evals/prompt_cases.jsonl`, checks prompt readiness,
-  expected terms, and simple prompt-injection guards.
+- `EvalService.run_ml_eval` reads `evals/ml_cases.jsonl`, checks ML quality
+  gates, and computes prediction metrics when a `model_id` is provided with
+  cases that include `features` and `expected`.
+- `EvalService.run_ai_eval` reads `evals/prompt_cases.jsonl`, checks prompt
+  readiness, expected terms, and simple prompt-injection guards.
 
-Both eval paths return structured API responses with pass rates, metrics,
-and quality gates.
+Both eval paths return a structured result with pass rates, metrics, and
+quality gates.
 
 From VS Code, run:
 

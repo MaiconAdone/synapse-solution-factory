@@ -8,7 +8,6 @@ navegador.
 - Codex dentro do VS Code para orientar, revisar e evoluir o projeto.
 - Swarm com 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
 - Project Factory em PowerShell para criar projetos completos.
-- FastAPI apenas como runtime interno quando alguma automacao precisar de API.
 - Memoria local, Vector DB, playbooks, evals, guardrails e workflows versionados.
 
 ## Criar Projeto Pelo Chat
@@ -62,12 +61,12 @@ Use uma destas tarefas:
 - `Codex: Tratar dados com swarm economico`
 - `Dados: Tratar dataset estatistico`
 - `Enterprise: Validar stack`
-- `SYNAPSE: Preparar runtime VS Code sem navegador`
+- `Synapse: Preparar runtime VS Code`
 
 O fluxo recomendado e:
 
 1. Rodar `Enterprise: Validar stack`.
-2. Rodar `SYNAPSE: Preparar runtime VS Code sem navegador`.
+2. Rodar `Synapse: Preparar runtime VS Code`.
 3. Rodar `AI Factory: Menu interativo`.
 4. Escolher criar projeto; o padrao ativa um subconjunto economico dos core agents e mantem o pool de 60 disponivel.
 5. Abrir a pasta gerada com `code C:\Users\<seu_usuario>\Documents\Projetos\nome_do_projeto`.

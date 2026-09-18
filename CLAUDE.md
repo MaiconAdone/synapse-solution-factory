@@ -14,7 +14,7 @@ Anthropic API, Claude Agent SDK ou fluxos assistidos pelo swarm de agentes.
 - Rode testes depois de alterar codigo.
 - Antes de implementar, respeite o gate SDD: problema, arquitetura, agentes, RAG, memoria, ferramentas, plano, testes e revisao.
 - Para criar ou implementar projetos pelo dialogo, siga `config/llm_solution_factory_policy.json` e `docs/specifications/llm_solution_factory_governance.md`.
-- Antes da decisao arquitetural, consulte o analisador em `backend/app/services/business_solution_analyzer.py` ou `scripts/analyze_business_solution.py`.
+- Antes da decisao arquitetural, consulte o analisador em `scripts/synapse_lib/business_solution_analyzer.py` ou `scripts/analyze_business_solution.py`.
 - Use `config/business_solution_analysis.json` como ADR operacional do projeto criado.
 - A conversa e o caminho principal; tasks VS Code sao apenas atalhos opcionais.
 - Claude Code deve conduzir o briefing no proprio chat do VS Code/terminal,

@@ -14,8 +14,8 @@ specialist routing.
 
 - Catalog: `config/ai_framework_selection.json`
 - Catalog section: `technology_catalog`
-- Selector: `backend/app/services/ai_framework_selector.py`
-- Architecture decision: `backend/app/services/business_solution_analyzer.py`
+- Selector: `scripts/synapse_lib/ai_framework_selector.py`
+- Architecture decision: `scripts/synapse_lib/business_solution_analyzer.py`
 - Official project artifacts:
   - `config/business_solution_analysis.json`
   - `docs/briefings/business_solution_analysis.md`

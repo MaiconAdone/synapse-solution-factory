@@ -255,7 +255,6 @@
     ],
     "current_runtime": [
       "python",
-      "fastapi",
       "pydantic"
     ]
   },

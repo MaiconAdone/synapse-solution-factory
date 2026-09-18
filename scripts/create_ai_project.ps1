@@ -548,7 +548,7 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
 
 ## Escopo
 
-- Backend, frontend e fabrica de projetos pertencem ao Synapse, nao a este projeto.
+- A fabrica de projetos pertence ao Synapse, nao a este projeto.
 - Mantenha mudancas dentro dos artefatos de solucao e dos dominios habilitados pelo universo.
 - A implementacao deve seguir a analise de solucao, SDD, testes e evals gerados para este projeto.
 - A conversa e o caminho principal para pedir mudancas; tasks locais sao apenas atalhos auxiliares.

@@ -5,7 +5,6 @@
     "**/.next": true,
     "**/node_modules": true
   },
-  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
   "terminal.integrated.defaultProfile.windows": "PowerShell",
   "powershell.scriptAnalysis.enable": true,
   "task.allowAutomaticTasks": "on"

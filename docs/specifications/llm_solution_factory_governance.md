@@ -52,7 +52,7 @@ IA/RAG/agentes, Chatbolt ou hibrido?"
 - `config/llm_solution_factory_policy.json`
 - `config/business_solution_catalog.json`
 - `config/ai_framework_selection.json`
-- `backend/app/services/business_solution_analyzer.py`
+- `scripts/synapse_lib/business_solution_analyzer.py`
 - `scripts/analyze_business_solution.py`
 - `docs/specifications/technology_layer.md`
 - `config/ai_ml_enterprise_spec.json`
@@ -177,8 +177,7 @@ especialistas entram por dominio e 60 agentes exigem aprovacao explicita.
 Para o Synapse:
 
 ```powershell
-python -m pytest tests/test_backend_contracts.py
-python -m pytest tests/test_business_transformation.py
+python -m pytest tests
 ```
 
 Para projeto criado:

@@ -101,8 +101,6 @@
         "actions need rollback or human approval"
       ],
       "synapse_mapping": {
-        "model_gateway": "backend/app/services/llm_gateway.py",
-        "governed_swarm": "backend/app/services/governed_swarm_execution.py",
         "trust_framework": "config/agent_trust_framework.json"
       },
       "guardrails": [
@@ -121,8 +119,6 @@
         "fallback and cache behavior must be auditable"
       ],
       "synapse_mapping": {
-        "gateway": "backend/app/services/llm_gateway.py",
-        "router": "backend/app/services/hybrid_llm_router.py",
         "provider_config": "config/model_providers.json"
       },
       "guardrails": [
@@ -142,7 +138,6 @@
         "similar tasks were already completed"
       ],
       "synapse_mapping": {
-        "learning": "backend/app/services/continual_learning_service.py",
         "memory_namespace": "synapse-governed-execution",
         "embedding_profile": "nomic-embed-text:latest"
       },

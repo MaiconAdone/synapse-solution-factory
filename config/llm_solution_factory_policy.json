@@ -10,7 +10,7 @@
   ],
   "dialog_first": {
     "required": true,
-    "description": "Project creation and implementation should be driven by the local chat/dialog request in VS Code, Claude Code or Codex. Browser UI and VS Code tasks are optional shortcuts, never the required path.",
+    "description": "Project creation and implementation should be driven by the local chat/dialog request in VS Code, Claude Code or Codex. VS Code tasks are optional shortcuts, never the required path.",
     "authorized_user_request_channels": [
       "VS Code Chat",
       "Claude Code chat/terminal",
@@ -19,7 +19,6 @@
     "content_collection_rule": "All user-provided goals, constraints, files, decisions, approvals, and missing business context for corporate solution creation must be requested and confirmed through these assistant chat channels.",
     "non_primary_channels": [
       "VS Code tasks",
-      "browser UI",
       "scripts",
       "MCP tools"
     ],
@@ -76,7 +75,7 @@
     "technology_layer_spec": "docs/specifications/technology_layer.md",
     "ml_foundations_policy": "config/ml_foundations_policy.json",
     "ml_foundations_spec": "docs/specifications/ml_foundations.md",
-    "analyzer_service": "backend/app/services/business_solution_analyzer.py",
+    "analyzer_service": "scripts/synapse_lib/business_solution_analyzer.py",
     "analyzer_cli": "scripts/analyze_business_solution.py",
     "analysis_json": "config/business_solution_analysis.json",
     "analysis_briefing": "docs/briefings/business_solution_analysis.md",
@@ -117,7 +116,7 @@
     "codex": [
       "Read AGENTS.md and this policy before planning project creation or implementation.",
       "Use scripts/analyze_business_solution.py or BusinessSolutionAnalyzer for architecture selection.",
-      "Collect or confirm all user-requested business content through Codex chat before relying on tasks, scripts, browser UI, or tools.",
+      "Collect or confirm all user-requested business content through Codex chat before relying on tasks, scripts, or tools.",
       "Use the same Synapse project artifacts as VS Code Chat and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
       "Implement the smallest safe change that satisfies the analysis and tests.",
       "Use OpenAI/Codex directly for analysis and code editing."
@@ -125,7 +124,7 @@
     "claude_code": [
       "Read CLAUDE.md and this policy before planning.",
       "Use the analysis as the architecture decision record for coding, review, and agent coordination.",
-      "Collect or confirm all user-requested business content through Claude Code chat/terminal before relying on tasks, scripts, browser UI, or tools.",
+      "Collect or confirm all user-requested business content through Claude Code chat/terminal before relying on tasks, scripts, or tools.",
       "Use the same Synapse project artifacts as VS Code Chat and Codex: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
       "Respect prompt caching and do not resend large catalogs unless required.",
       "Use Anthropic/Claude directly for analysis and code editing."
@@ -133,9 +132,8 @@
     "vscode_chat": [
       "The user can request project creation or implementation directly in chat.",
       "The assistant should ask for missing business context, run/consult analyzer, then create/update project artifacts.",
-      "Collect or confirm all user-requested business content through VS Code Chat before relying on tasks, scripts, browser UI, or tools.",
-      "Use the same Synapse project artifacts as Codex and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals.",
-      "Do not require browser access to finish the briefing or architecture decision."
+      "Collect or confirm all user-requested business content through VS Code Chat before relying on tasks, scripts, or tools.",
+      "Use the same Synapse project artifacts as Codex and Claude Code: shared memory, analyzer, technology catalog, governance docs, tests, and evals."
     ]
   },
   "validation": {
@@ -143,8 +141,8 @@
       "config/llm_solution_factory_policy.json",
       "config/business_solution_catalog.json",
       "config/ai_framework_selection.json",
-      "backend/app/services/business_solution_analyzer.py",
-      "backend/app/services/ai_framework_selector.py",
+      "scripts/synapse_lib/business_solution_analyzer.py",
+      "scripts/synapse_lib/ai_framework_selector.py",
       "scripts/analyze_business_solution.py",
       "docs/specifications/llm_solution_factory_governance.md",
       "docs/specifications/technology_layer.md",

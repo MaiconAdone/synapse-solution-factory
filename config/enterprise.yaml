@@ -2,13 +2,6 @@
   name: synapse-ai
   type: enterprise-ai-ml-saas
   core: codex-claude
-backend:
-  framework: fastapi
-  path: backend/app
-frontend:
-  framework: nextjs
-  language: typescript
-  path: frontend
 swarm:
   name: synapse-ai-swarm
   topology: hierarchical-mesh

@@ -25,7 +25,6 @@
     "build",
     "coverage",
     "dist",
-    "frontend/.next",
     "logs",
     "node_modules",
     "output",
@@ -76,7 +75,7 @@
     "config/cost_optimization_policy.json",
     "scripts/*.py",
     "scripts/*.ps1",
-    "backend/app/**/*.py",
+    "scripts/synapse_lib/**/*.py",
     "tests/**/*.py",
     "prompts/*.md",
     "docs/**/*.md"

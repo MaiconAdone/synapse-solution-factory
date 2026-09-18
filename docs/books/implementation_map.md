@@ -208,17 +208,15 @@ The following works are conceptual references without copied text:
 - *All-In on AI*, by Thomas H. Davenport and Nitin Mittal:
   transformation portfolios, adoption, operating-model change, and value.
 
-Implemented contracts:
+Governance contracts:
 
 - `config/business_transformation.json`
 - `agents/definitions/business_transformation_agents.yaml`
 - `config/workflows/synapse/business-transformation.json`
 - `prompts/business_transformation.md`
-- `backend/app/orchestration/transformation_workflow.py`
-- `backend/app/governance/business_transformation.py`
 - `docs/AGENTIC_AI_TRANSFORMATION.md`
 
-The implementation keeps deterministic workflow state around probabilistic
+The specification keeps deterministic workflow state around probabilistic
 reasoning. High-risk stages stop for approval, tools remain simulated until
-authorized, and generated projects inherit the operational contracts without
-inheriting SYNAPSE's backend or frontend.
+authorized, and generated projects inherit the operational contracts as
+governance data without inheriting SYNAPSE's own project-factory scripts.

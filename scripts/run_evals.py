@@ -7,9 +7,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "backend"))
+sys.path.insert(0, str(ROOT))
 
-from app.services.eval_service import EvalService  # noqa: E402
+from scripts.synapse_lib.eval_service import EvalService  # noqa: E402
 
 
 def main() -> int:
