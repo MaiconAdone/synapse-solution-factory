@@ -24,7 +24,7 @@ Validar a instalacao:
 
 ```powershell
 .\.venv\Scripts\python -m pytest tests -q
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scriptsalidate_enterprise_stack.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterprise_stack.ps1
 ```
 
 Variaveis de ambiente sao opcionais: para personalizar, `Copy-Item .env.example .env`.
