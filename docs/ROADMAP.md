@@ -1,7 +1,0 @@
-# Roadmap
-
-## Now
-
-## Next
-
-## Later
