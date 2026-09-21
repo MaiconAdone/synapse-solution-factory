@@ -1,10 +1,62 @@
-﻿# synapse-solution-factory
+# synapse-solution-factory
 
 Enterprise AI/ML solution factory with a cloud-native 60-agent swarm as the
 multi-agent core and three official dialog channels: VS Code Chat, Claude
 Code, and Codex.
 Synapse is the control plane and the only project factory. Experiment tracking
 uses the local model registry in `artifacts/models/`.
+
+## Como Comecar
+
+Requisitos: Windows com PowerShell, Python 3.12+, Git e VS Code com a extensao
+Claude Code (`anthropic.claude-code`). Nao ha servidor nem chaves de API: Claude
+Code e Codex usam a propria autenticacao.
+
+```powershell
+git clone https://github.com/MaiconAdone/synapse-solution-factory
+cd synapse-solution-factory
+python -m venv .venv
+.\.venv\Scripts\pip install -r requirements.txt
+code .
+```
+
+Validar a instalacao:
+
+```powershell
+.\.venv\Scripts\python -m pytest tests -q
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scriptsalidate_enterprise_stack.ps1
+```
+
+Variaveis de ambiente sao opcionais: para personalizar, `Copy-Item .env.example .env`.
+Se o painel do Claude Code mostrar `spawn EINVAL`, confira em
+`Preferences: Open User Settings (JSON)` se `claudeCode.claudeProcessWrapper` aponta
+para um arquivo inexistente e remova-o.
+
+## Criar Um Projeto (ML, IA, Chatbolt ou Hibrido)
+
+Universos: `ML`, `IA`, `Chatbolt` e `ML + IA (Hibrido)`. Ha dois caminhos:
+
+**1. Task do VS Code** — `Ctrl+Shift+P` -> `Tasks: Run Task` -> `AI Factory: Criar
+projeto com Codex + swarm economico + tratamento dados`. A task pergunta nome,
+universo, objetivo e problema de negocio. Ela nao coleta metrica de sucesso,
+fontes de dados nem nivel de risco; preencha depois em
+`config/business_solution_analysis.json` do projeto criado.
+
+**2. Claude Code (recomendado)** — peca no chat, por exemplo:
+`crie uma solucao de IA/RAG para atendimento ao cliente`. O assistente pergunta o
+briefing completo (objetivo, problema, universo, metrica, dados, risco), consulta o
+analisador e cria o projeto.
+
+Pelo terminal (equivalente):
+
+```powershell
+.\scripts\create_ai_project.ps1 -NomeProjeto meu_projeto -TipoProjeto "ML" `
+  -ProjectGoal "..." -BusinessProblem "..." -SuccessMetric "..." `
+  -AvailableSources "..." -RiskLevel "baixo"
+```
+
+O projeto e criado em `%USERPROFILE%\Documents\Projetos` (mude com `-DestinoBase`).
+Para conferir: `.\scripts\diagnose_project.ps1 -ProjectName meu_projeto`.
 
 ## Stack Oficial No VS Code
 
