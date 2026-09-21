@@ -1,17 +1,3 @@
 {
-  "mcpServers": {
-    "claude-peers": {
-      "command": "C:\\Users\\malves\\.bun\\bin\\bun.exe",
-      "args": [
-        "C:\\Users\\malves\\.claude\\mcp\\claude-peers-mcp\\server.ts"
-      ],
-      "env": {
-        "CLAUDE_PEERS_PORT": "7899",
-        "CLAUDE_PEERS_DB": "C:/Users/malves/.claude-peers.db",
-        "HOME": "C:/Users/malves",
-        "OPENAI_API_KEY": ""
-      },
-      "autoStart": false
-    }
-  }
+  "mcpServers": {}
 }

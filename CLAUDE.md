@@ -52,23 +52,11 @@ Evite:
 - Usar Opus sem justificativa explicita.
 - Misturar contexto estavel e dinamico de forma que quebre cache.
 
-## Claude Peers MCP
+## MCP
 
-O projeto tambem registra `claude-peers` em `.mcp.json`, instalado em
-`C:\Users\malves\.claude\mcp\claude-peers-mcp`.
-
-Use `claude-peers` somente para comunicacao entre sessoes Claude Code.
-
-Para receber mensagens instantaneas via `claude/channel`, inicie o Claude Code
-com development channels:
-
-```powershell
-claude --dangerously-load-development-channels server:claude-peers
-```
-
-Se quiser operar sem channel experimental, use `check_messages` manualmente.
-O `OPENAI_API_KEY` do `claude-peers` esta vazio no `.mcp.json` para evitar
-auto-summary via provedor externo.
+O `.mcp.json` do projeto nao declara servidores; o Claude Code abre sem
+dependencias externas. Coordenacao entre sessoes locais (opcional) usa
+`scripts/synapse_peers_mcp.py`, que requer `pip install -r requirements.txt`.
 
 Referencias oficiais:
 

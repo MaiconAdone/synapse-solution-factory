@@ -120,19 +120,10 @@ def test_peer_messaging_supports_codex_claude_and_local_task_routes(tmp_path, mo
     assert "provider=openai cloud=true" in inbox["messages"][0]["text"]
 
 
-def test_claude_peers_mcp_is_declared_for_claude_code_channels():
+def test_mcp_json_has_no_machine_specific_servers():
     config = json.loads(Path(".mcp.json").read_text(encoding="utf-8"))
-    peers = config["mcpServers"]["claude-peers"]
 
-    assert peers["command"].endswith("bun.exe")
-    assert peers["args"] == [
-        "C:\\Users\\malves\\.claude\\mcp\\claude-peers-mcp\\server.ts"
-    ]
-    assert peers["env"]["CLAUDE_PEERS_PORT"] == "7899"
-    assert peers["env"]["CLAUDE_PEERS_DB"] == "C:/Users/malves/.claude-peers.db"
-    assert peers["env"]["HOME"] == "C:/Users/malves"
-    assert peers["env"]["OPENAI_API_KEY"] == ""
-    assert peers["autoStart"] is False
+    assert config["mcpServers"] == {}
 
 
 def test_llm_solution_factory_policy_guides_all_dialog_assistants():
