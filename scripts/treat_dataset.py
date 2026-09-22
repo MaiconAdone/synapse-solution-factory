@@ -145,7 +145,7 @@ def numeric_profile(series: pd.Series) -> dict[str, Any]:
     }
 
 
-def iqr_bounds(series: pd.Series) -> tuple[float, float] | None:
+def iqr_bounds(series: pd.Series, multiplier: float = 1.5) -> tuple[float, float] | None:
     clean = pd.to_numeric(series, errors="coerce").dropna()
     if clean.empty:
         return None
@@ -154,7 +154,7 @@ def iqr_bounds(series: pd.Series) -> tuple[float, float] | None:
     iqr = q3 - q1
     if iqr == 0 or math.isnan(float(iqr)):
         return None
-    return float(q1 - 1.5 * iqr), float(q3 + 1.5 * iqr)
+    return float(q1 - multiplier * iqr), float(q3 + multiplier * iqr)
 
 
 def zscore_flags(series: pd.Series, threshold: float = 3.0) -> tuple[pd.Series, dict[str, float]] | None:
@@ -259,26 +259,54 @@ def try_parse_dates(df: pd.DataFrame, actions: list[str], threshold: float = 0.8
     return df
 
 
+def default_output_path(input_path: Path, warnings: list[str]) -> Path:
+    # Anchor the treated dataset to the project's data/ tree whenever the
+    # input actually lives under data/raw/. Falling back to
+    # input_path.parent.parent for an arbitrary path (e.g. a file outside the
+    # project) would silently write the treated dataset next to unrelated
+    # folders on disk instead of inside the project.
+    parts = input_path.parts
+    for index in range(len(parts) - 1):
+        if parts[index].lower() == "data" and parts[index + 1].lower() == "raw":
+            data_dir = Path(*parts[: index + 1])
+            return data_dir / "processed" / f"{input_path.stem}_treated.csv"
+    warnings.append(
+        "--input nao esta dentro de data/raw/; dataset tratado escrito em "
+        f"data/processed/{input_path.stem}_treated.csv relativo ao diretorio atual "
+        "(nao ao lado do arquivo de entrada). Informe --output explicitamente para "
+        "controlar o destino."
+    )
+    return Path("data") / "processed" / f"{input_path.stem}_treated.csv"
+
+
 def treat_dataset(
     input_path: Path,
     output_path: Path | None = None,
     report_path: Path | None = None,
-    rare_category_threshold: float = 0.01,
-    drop_missing_column_threshold: float = 0.8,
+    rare_category_threshold: float | None = None,
+    drop_missing_column_threshold: float | None = None,
     winsorize_outliers: bool = False,
 ) -> TreatmentResult:
     input_path = input_path.resolve()
     if not input_path.exists():
         raise FileNotFoundError(input_path)
 
-    output_path = output_path or input_path.parent.parent / "processed" / f"{input_path.stem}_treated.csv"
+    actions: list[str] = []
+    warnings: list[str] = []
+
+    output_path = output_path or default_output_path(input_path, warnings)
     report_path = report_path or Path("output") / "data_treatment" / f"{input_path.stem}_report.md"
 
     raw = load_dataset(input_path)
     policy = load_treatment_policy()
+    default_thresholds = policy.get("default_thresholds", {})
+    if rare_category_threshold is None:
+        rare_category_threshold = float(default_thresholds.get("rare_category_ratio", 0.01))
+    if drop_missing_column_threshold is None:
+        drop_missing_column_threshold = float(default_thresholds.get("drop_missing_column_ratio", 0.8))
+    iqr_multiplier = float(default_thresholds.get("iqr_multiplier", 1.5))
+    quasi_constant_ratio = float(default_thresholds.get("quasi_constant_ratio", 0.99))
     rows_before, columns_before = raw.shape
-    actions: list[str] = []
-    warnings: list[str] = []
 
     df = raw.copy()
     original_columns = list(df.columns)
@@ -351,7 +379,7 @@ def treat_dataset(
             df[f"{column}_was_missing"] = df[column].isna()
             profile = numeric_stats.get(column, {})
             skew = abs(float(profile.get("skew", 0.0)))
-            bounds = iqr_bounds(df[column])
+            bounds = iqr_bounds(df[column], multiplier=iqr_multiplier)
             has_outliers = False
             if bounds:
                 lower, upper = bounds
@@ -365,7 +393,7 @@ def treat_dataset(
             df[column] = df[column].fillna(value)
             actions.append(f"Ausentes em `{column}` imputados por {method}; flag `{column}_was_missing` criada.")
 
-        bounds = iqr_bounds(df[column])
+        bounds = iqr_bounds(df[column], multiplier=iqr_multiplier)
         if bounds:
             lower, upper = bounds
             flag_column = f"{column}_is_outlier_iqr"
@@ -439,7 +467,7 @@ def treat_dataset(
     quasi_constant_columns = []
     for column in df.columns:
         frequencies = df[column].value_counts(dropna=False, normalize=True)
-        if not frequencies.empty and float(frequencies.iloc[0]) >= 0.99:
+        if not frequencies.empty and float(frequencies.iloc[0]) >= quasi_constant_ratio:
             quasi_constant_columns.append(column)
     if quasi_constant_columns:
         warnings.append(
@@ -708,8 +736,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True, type=Path, help="Arquivo em data/raw ou caminho equivalente.")
     parser.add_argument("--output", type=Path, default=None, help="Arquivo tratado. Padrao: data/processed/<nome>_treated.csv.")
     parser.add_argument("--report", type=Path, default=None, help="Relatorio Markdown. Padrao: output/data_treatment/<nome>_report.md.")
-    parser.add_argument("--rare-category-threshold", type=float, default=0.01, help="Frequencia minima para manter categoria.")
-    parser.add_argument("--drop-missing-column-threshold", type=float, default=0.8, help="Percentual de ausentes para remover coluna.")
+    parser.add_argument(
+        "--rare-category-threshold", type=float, default=None,
+        help="Frequencia minima para manter categoria. Padrao: config/data_treatment_policy.json (rare_category_ratio).",
+    )
+    parser.add_argument(
+        "--drop-missing-column-threshold", type=float, default=None,
+        help="Percentual de ausentes para remover coluna. Padrao: config/data_treatment_policy.json (drop_missing_column_ratio).",
+    )
     parser.add_argument("--winsorize-outliers", action="store_true", help="Aplica winsorizacao IQR em vez de apenas flagar outliers.")
     return parser.parse_args()
 

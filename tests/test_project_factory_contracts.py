@@ -604,6 +604,45 @@ def test_data_treatment_flags_outliers_by_zscore(tmp_path):
     assert "outlier(s) por z-score" in report
 
 
+def test_data_treatment_warns_and_stays_project_local_when_input_outside_data_raw(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    raw = tmp_path / "uploads" / "clientes.csv"
+    raw.parent.mkdir()
+    raw.write_text("idade\n20\n30\n40\n", encoding="utf-8")
+
+    result = treat_dataset(raw, report_path=tmp_path / "report.md")
+
+    assert result.output_path.resolve() == tmp_path / "data" / "processed" / "clientes_treated.csv"
+    assert result.output_path.exists()
+    assert any("nao esta dentro de data/raw" in warning for warning in result.warnings)
+
+
+def test_data_treatment_reads_thresholds_from_policy_not_hardcoded(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    raw = tmp_path / "data" / "raw" / "sample.csv"
+    raw.parent.mkdir(parents=True)
+    raw.write_text("id,valor\n1,10\n2,11\n3,9\n4,10\n5,10\n6,300\n", encoding="utf-8")
+
+    baseline = treat_dataset(raw, report_path=tmp_path / "baseline_report.md")
+    assert baseline.report_path.read_text(encoding="utf-8").count("outlier(s) por IQR (") > 0
+    assert "1 outlier(s) por IQR" in [
+        line for line in baseline.report_path.read_text(encoding="utf-8").splitlines() if "`valor`" in line and "IQR" in line
+    ][0]
+
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "data_treatment_policy.json").write_text(
+        json.dumps({"default_thresholds": {"iqr_multiplier": 1000.0}}),
+        encoding="utf-8",
+    )
+
+    widened = treat_dataset(raw, report_path=tmp_path / "widened_report.md")
+    widened_line = [
+        line for line in widened.report_path.read_text(encoding="utf-8").splitlines() if "`valor`" in line and "IQR" in line
+    ][0]
+    assert "0 outlier(s) por IQR" in widened_line
+
+
 def test_context_policy_filters_workspace_noise_before_llm_calls():
     policy = load_context_policy()
     assert is_ignored_path("node_modules/pkg/index.js", policy)
@@ -1048,8 +1087,8 @@ def test_rag_eval_service_fails_ungrounded_claims(tmp_path):
 
 
 def test_data_treatment_report_includes_advanced_statistics(tmp_path):
-    raw = tmp_path / "raw" / "clientes.csv"
-    raw.parent.mkdir()
+    raw = tmp_path / "data" / "raw" / "clientes.csv"
+    raw.parent.mkdir(parents=True)
     raw.write_text(
         "idade,renda,segmento\n"
         "20,1000,a\n"
