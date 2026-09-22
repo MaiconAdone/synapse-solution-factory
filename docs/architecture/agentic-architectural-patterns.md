@@ -20,8 +20,10 @@ contracts. It does not copy book content.
 ### Orchestrator Specialist
 
 Use a lead orchestrator to choose the smallest useful set of specialists. In
-SYNAPSE this maps to `GovernedSwarmExecutionService`, `CostAwareRouter`, and
-`AgenticMeshGovernanceService`.
+SYNAPSE there is no standalone runtime/router/governance service; the
+assistant executes the swarm directly and is responsible for reading
+`config/runtime_manifest.json`, `config/cost_optimization_policy.json`, and
+`config/agent_trust_framework.json` before selecting or scaling agents.
 
 ### Critic Reviewer Gate
 

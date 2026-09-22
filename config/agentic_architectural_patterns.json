@@ -24,8 +24,8 @@
       ],
       "synapse_mapping": {
         "lead": "orchestration-manager",
-        "runtime": "GovernedSwarmExecutionService",
-        "selection": "CostAwareRouter + AgenticMeshGovernanceService",
+        "runtime": "assistant-executed swarm per config/runtime_manifest.json (no standalone runtime service)",
+        "selection": "config/cost_optimization_policy.json + config/agent_trust_framework.json",
         "default_agent_count": 1
       },
       "guardrails": [

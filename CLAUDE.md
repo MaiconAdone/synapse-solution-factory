@@ -78,23 +78,34 @@ Contrato atual:
 - Enterprise active agents: 8
 - All 60 agents: somente com justificativa explicita de alta complexidade
 
-Use `config/cost_optimization_policy.json` e `CostAwareRouter` antes de ativar agentes.
+Antes de ativar agentes, leia `config/cost_optimization_policy.json` e decida o
+perfil de custo (default/standard/enterprise/extreme) com base nele; nao ha um
+roteador de custo em codigo, a decisao e feita pelo assistente a partir dessa
+politica.
 
 ## Agentic Mesh Governance
 
 O Synapse opera como um mesh governado de agentes e fleets, nao apenas como uma
 lista plana de agentes.
 
+Nao ha um servico em codigo que aplique essa governanca em runtime; a
+observancia e responsabilidade do assistente ao ler e seguir estes arquivos
+antes de criar ou escalar agentes.
+
 Arquivos oficiais:
 
 - `config/agent_trust_framework.json`
 - `config/agent_fleets.json`
-- `AgenticMeshGovernanceService`
-- `docs/specifications/agentic_mesh_governance.md`
-- `docs/checklists/agent_fleet_certification.md`
-- `docs/runbooks/agent_sre.md`
 - `config/agent_blueprint_contract.json`
 - `config/agent_improvement_loop.json`
+
+Gerados por projeto (em `docs/specifications/agentic_mesh_governance.md`,
+`docs/checklists/agent_fleet_certification.md` e `docs/runbooks/agent_sre.md`
+dentro do projeto criado, nao no Synapse):
+
+- especificacao agentic mesh
+- checklist de certificacao de fleets
+- runbook Agent SRE
 
 Trust framework obrigatorio:
 
