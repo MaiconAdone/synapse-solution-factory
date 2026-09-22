@@ -670,6 +670,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
             str(tmp_path),
             "-SkipValidation",
             "-SkipActivation",
+            "-AllowIncompleteBriefing",
         ],
         cwd=root,
         capture_output=True,
@@ -830,6 +831,7 @@ def test_generated_solution_project_matches_selected_universe(
             "-DestinoBase",
             str(tmp_path),
             "-SkipActivation",
+            "-AllowIncompleteBriefing",
         ],
         cwd=root,
         capture_output=True,
@@ -982,6 +984,47 @@ def test_ai_eval_service_runs_prompt_cases():
     assert "mlflow" not in result
 
 
+def test_rag_eval_service_grounds_answers_in_their_cited_source():
+    service = EvalService(root=Path(__file__).resolve().parents[1])
+    result = service.run_rag_eval()
+
+    assert result["eval_type"] == "rag"
+    assert result["cases_total"] == 2
+    assert result["passed"]
+    assert "avg_term_coverage" in result["metrics"]
+    for case_result in result["results"]:
+        assert case_result["checks"]["citation_present"]
+        assert case_result["checks"]["source_exists"]
+
+
+def test_rag_eval_service_fails_ungrounded_claims(tmp_path):
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "runtime_manifest.json").write_text(
+        json.dumps({"swarm": {"topology": "hierarchical-mesh"}}), encoding="utf-8"
+    )
+    (tmp_path / "evals").mkdir()
+    (tmp_path / "evals" / "rag_cases.jsonl").write_text(
+        json.dumps(
+            {
+                "id": "rag-hallucination",
+                "query": "What is the swarm topology?",
+                "expected_source": "config/runtime_manifest.json",
+                "expected_answer_contains": ["a-term-that-does-not-exist-in-the-source"],
+                "metric": "faithfulness",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    service = EvalService(root=tmp_path)
+    result = service.run_rag_eval(cases_path="evals/rag_cases.jsonl")
+
+    assert result["passed"] is False
+    assert result["results"][0]["checks"]["faithfulness_grounded"] is False
+    assert "not grounded" in result["results"][0]["notes"][0]
+
+
 def test_data_treatment_report_includes_advanced_statistics(tmp_path):
     raw = tmp_path / "raw" / "clientes.csv"
     raw.parent.mkdir()
@@ -1112,6 +1155,7 @@ def test_generated_project_inherits_business_transformation_assets(tmp_path):
         "-DestinoBase",
         str(tmp_path),
         "-SkipActivation",
+        "-AllowIncompleteBriefing",
     ]
     completed = subprocess.run(
         command,

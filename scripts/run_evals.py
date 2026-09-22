@@ -14,7 +14,7 @@ from scripts.synapse_lib.eval_service import EvalService  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run Synapse evals locally without the web stack.")
-    parser.add_argument("mode", choices=("ml", "ai"))
+    parser.add_argument("mode", choices=("ml", "ai", "rag"))
     parser.add_argument("--cases-path")
     parser.add_argument("--model-id")
     args = parser.parse_args()
@@ -24,6 +24,10 @@ def main() -> int:
         result = service.run_ml_eval(
             model_id=args.model_id,
             cases_path=args.cases_path or "evals/ml_cases.jsonl",
+        )
+    elif args.mode == "rag":
+        result = service.run_rag_eval(
+            cases_path=args.cases_path or "evals/rag_cases.jsonl",
         )
     else:
         result = service.run_ai_eval(

@@ -100,9 +100,15 @@ class AiFrameworkSelector:
         if not matched:
             defaults = set(self.catalog.get("default_technology_recommendation", []))
             matched = [technology for technology in technologies if technology["id"] in defaults]
+        # mcp-servers is core Synapse infrastructure (synapse-peers, tool
+        # boundaries) so it is always present. fastapi is intentionally not
+        # forced here: generated solution projects never contain a backend
+        # (Run-ProjectValidation rejects a copied backend/ folder), so
+        # recommending one by default would contradict that contract. It
+        # stays selectable in the catalog only when a business problem
+        # explicitly signals for it.
         if universe in {"ia", "chatbolt", "hybrid"}:
-            for required_id in ["fastapi", "mcp-servers"]:
-                matched = self._with_required_technology(matched, technologies, required_id)
+            matched = self._with_required_technology(matched, technologies, "mcp-servers")
 
         technology_ids = self._dedupe(technology["id"] for technology in matched)
         selected = [technology for technology in technologies if technology["id"] in technology_ids]

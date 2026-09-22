@@ -38,6 +38,7 @@ def test_create_ai_project_rolls_back_partial_directory_on_failure(tmp_path):
             str(empty_template),
             "-SkipValidation",
             "-SkipActivation",
+            "-AllowIncompleteBriefing",
         ],
         cwd=ROOT,
         capture_output=True,
@@ -50,6 +51,38 @@ def test_create_ai_project_rolls_back_partial_directory_on_failure(tmp_path):
     assert completed.returncode != 0, output
     assert not (dest_base / "rollback_probe").exists(), "partial project was not rolled back"
     assert "Rollback" in output
+
+
+def test_create_ai_project_blocks_on_incomplete_briefing(tmp_path):
+    dest_base = tmp_path / "dest"
+    dest_base.mkdir()
+
+    completed = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(SCRIPT),
+            "-NomeProjeto",
+            "briefing_probe",
+            "-TipoProjeto",
+            "IA",
+            "-DestinoBase",
+            str(dest_base),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    output = completed.stdout + completed.stderr
+    assert completed.returncode != 0, output
+    assert "briefing minimo incompleto" in output
+    assert not (dest_base / "briefing_probe").exists()
 
 
 def test_create_ai_project_preserves_preexisting_directory_on_failure(tmp_path):
@@ -80,6 +113,7 @@ def test_create_ai_project_preserves_preexisting_directory_on_failure(tmp_path):
             str(empty_template),
             "-SkipValidation",
             "-SkipActivation",
+            "-AllowIncompleteBriefing",
         ],
         cwd=ROOT,
         capture_output=True,

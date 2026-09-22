@@ -14,8 +14,29 @@
     [int]$ActiveAgentLimit = 0,
     [switch]$SkipValidation,
     [switch]$SkipActivation,
-    [switch]$LocalMemoryOnly
+    [switch]$LocalMemoryOnly,
+    [switch]$AllowIncompleteBriefing
 )
+
+# CLAUDE.md/AGENTS.md require the dialog channel (Claude Code, Codex, VS Code
+# Chat) to collect objetivo, problema de negocio, universo, metrica de
+# sucesso, dados/fontes and nivel de risco before creating or implementing a
+# solution, instead of inventing them. Enforce that here so a project is never
+# scaffolded with a fabricated ADR just because the caller forgot to ask.
+if (!$AllowIncompleteBriefing) {
+    $MissingBriefingFields = @()
+    if ([string]::IsNullOrWhiteSpace($BusinessProblem)) { $MissingBriefingFields += "problema de negocio (-BusinessProblem)" }
+    if ([string]::IsNullOrWhiteSpace($SuccessMetric)) { $MissingBriefingFields += "metrica de sucesso (-SuccessMetric)" }
+    if ([string]::IsNullOrWhiteSpace($AvailableSources)) { $MissingBriefingFields += "dados/fontes disponiveis (-AvailableSources)" }
+    if ([string]::IsNullOrWhiteSpace($RiskLevel)) { $MissingBriefingFields += "nivel de risco (-RiskLevel)" }
+    if ($MissingBriefingFields.Count -gt 0) {
+        Write-Host "ERRO: briefing minimo incompleto para criar o projeto." -ForegroundColor Red
+        Write-Host "Faltando: $($MissingBriefingFields -join ', ')" -ForegroundColor Red
+        Write-Host "Pergunte esses itens ao usuario no chat antes de chamar create_ai_project.ps1." -ForegroundColor Yellow
+        Write-Host "Para prototipagem deliberada sem briefing completo, use -AllowIncompleteBriefing." -ForegroundColor Yellow
+        exit 1
+    }
+}
 
 $Destino = Join-Path $DestinoBase $NomeProjeto
 # Record whether the destination pre-existed so rollback never deletes a project
@@ -585,7 +606,14 @@ Limite padrao: 1200 caracteres por mensagem e 360 por resumo.
 
     $Settings = @"
 {
-  "task.allowAutomaticTasks": "on"
+  "task.allowAutomaticTasks": "on",
+  "python.defaultInterpreterPath": "`${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "terminal.integrated.defaultProfile.windows": "PowerShell"
 }
 "@
     Write-TextFile -Path (Join-Path $Destino ".vscode\settings.json") -Content $Settings
@@ -891,22 +919,28 @@ function Create-ProjectStructure {
         "artifacts\models",
         "artifacts\evals",
         "artifacts\reports",
-        "artifacts\rag_indexes",
         "artifacts\llm-routing",
         "artifacts\governance",
         "docs\runbooks",
         "docs\checklists",
-        "docs\specifications\chatbot",
-        "docs\runbooks\chatbot",
-        "docs\checklists\chatbot",
-        "prompts\chatbot",
-        "artifacts\chatbot",
-        "data\session_logs",
-        "data\conversations",
         "memory\snapshots",
         "tests",
         "output"
     )
+    if ($ProjectUniverse.rag_enabled) {
+        $Paths += "artifacts\rag_indexes"
+    }
+    if ($ProjectUniverse.universe -eq "chatbolt") {
+        $Paths += @(
+            "docs\specifications\chatbot",
+            "docs\runbooks\chatbot",
+            "docs\checklists\chatbot",
+            "prompts\chatbot",
+            "artifacts\chatbot",
+            "data\session_logs",
+            "data\conversations"
+        )
+    }
 
     foreach ($Path in $Paths) {
         Add-KeepFile (Join-Path $Destino $Path)
@@ -1727,6 +1761,19 @@ def test_prompt_eval_cases_define_expected_behavior():
 
     assert rows
     assert all(row.get("expected_contains") for row in rows)
+
+
+def test_rag_eval_cases_are_grounded_in_their_cited_source():
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from scripts.synapse_lib.eval_service import EvalService
+
+    result = EvalService(root=ROOT).run_rag_eval()
+
+    assert result["eval_type"] == "rag"
+    assert result["cases_total"] > 0
+    assert result["passed"], "RAG eval cases must be grounded in expected_source (faithfulness gate)"
 "@
         Write-TextFile (Join-Path $Destino "tests\test_ai_contract.py") $AiContractTest
     }
@@ -1863,6 +1910,16 @@ function Create-Runbooks {
         "- documentacao",
         "- ajustes de workflows do swarm",
         "",
+        "## Ambiente Virtual E .env",
+        "",
+        "O .venv e criado e populado com requirements.txt automaticamente na criacao do",
+        "projeto (pule com -SkipActivation). Um .env real (nao versionado) tambem e",
+        "criado a partir do .env.example. Para ativar o ambiente no seu terminal:",
+        "",
+        "~~~powershell",
+        ".\.venv\Scripts\Activate.ps1",
+        "~~~",
+        "",
         "## Validacao",
         "",
         "A validacao inicial ja foi executada durante a criacao do projeto, exceto se",
@@ -1981,7 +2038,8 @@ function Create-Runbooks {
         "- [x] Especificacao enterprise IA/ML configurada em config/ai_ml_enterprise_spec.json.",
         "- [x] Enterprise YAML configurado.",
         "- [x] Contratos de execucao configurados para o Synapse.",
-        "- [x] .env.example criado sem backend ou frontend.",
+        "- [x] .env.example e .env criados sem backend ou frontend.",
+        "- [x] Ambiente virtual .venv criado e dependencias de requirements.txt instaladas.",
         "- [x] Estrutura de data/experiments/artifacts criada.",
         "- [x] Script de tratamento estatistico em scripts/treat_dataset.py.",
         "- [x] Prompt mestre de tratamento estatistico em prompts/master_data_treatment.md.",
@@ -2003,9 +2061,10 @@ function Create-Runbooks {
         "- [x] Projetos IA/Hibridos/Chatbolt recebem docs/specifications/technology_layer.md.",
         "- [x] Projeto marcado como nao-fabrica, sem backend e sem frontend.",
         "- [ ] Ajustar contrato de dados para o caso real.",
-        "- [ ] Completar model card com uso pretendido e metricas reais.",
+        $(if ($ProjectUniverse.ml_enabled) { "- [ ] Completar model card com uso pretendido e metricas reais." }),
         "- [ ] Adicionar casos especificos em evals/."
-    ) -join $NewLine
+    ) | Where-Object { $null -ne $_ }
+    $Checklist = $Checklist -join $NewLine
     Write-TextFile -Path (Join-Path $Destino "docs\checklists\first_project_setup.md") -Content $Checklist
 
     $FleetCertification = @(
@@ -2096,6 +2155,26 @@ function Create-Runbooks {
 }
 
 function Personalize-Readme {
+    $FirstStepsList = [System.Collections.Generic.List[string]]::new()
+    $FirstStepsList.Add('Revise `docs/checklists/first_project_setup.md`.')
+    $FirstStepsList.Add('Revise `docs/specifications/ai_ml_execution_spec.md`.')
+    if ($ProjectUniverse.ai_enabled) {
+        $FirstStepsList.Add('Revise `docs/specifications/ai_framework_selection.md`.')
+    }
+    $FirstStepsList.Add('Revise `docs/AGENTIC_AI_TRANSFORMATION.md`.')
+    $FirstStepsList.Add('Defina objetivo, processo, baseline, risco, owner e KPIs.')
+    $FirstStepsList.Add('Ajuste `ml_systems/data_contract.yaml`.')
+    $FirstStepsList.Add('Coloque dados brutos em `data/raw/`.')
+    $FirstStepsList.Add('Peca ao Synapse para tratar `data/raw/seu_arquivo.csv`.')
+    $FirstStepsList.Add('Atualize os casos em `evals/project_cases.jsonl`.')
+    $FirstStepsList.Add('Rode `python -m pytest tests`.')
+    $FirstStepsList.Add('Rode os scripts de avaliacao aplicaveis ao universo do projeto.')
+    $FirstStepsIndex = 0
+    $FirstStepsText = ($FirstStepsList | ForEach-Object {
+        $FirstStepsIndex++
+        "$FirstStepsIndex. $_"
+    }) -join [Environment]::NewLine
+
     $Readme = @"
 # $NomeProjeto
 
@@ -2155,17 +2234,7 @@ Machine Learning, Estatistica, Governanca e Tratamento de Dados.
 
 ## Primeiros Passos
 
-1. Revise `docs/checklists/first_project_setup.md`.
-2. Revise `docs/specifications/ai_ml_execution_spec.md`.
-3. Se o universo for IA, Hibrido ou Chatbolt, revise `docs/specifications/ai_framework_selection.md`.
-4. Revise `docs/AGENTIC_AI_TRANSFORMATION.md`.
-5. Defina objetivo, processo, baseline, risco, owner e KPIs.
-6. Ajuste `ml_systems/data_contract.yaml`.
-7. Coloque dados brutos em `data/raw/`.
-8. Peca ao Synapse para tratar `data/raw/seu_arquivo.csv`.
-9. Atualize os casos em `evals/project_cases.jsonl`.
-10. Rode `python -m pytest tests`.
-11. Rode os scripts de avaliacao aplicaveis ao universo do projeto.
+$FirstStepsText
 "@
     Write-TextFile (Join-Path $Destino "README.md") $Readme
     Write-Host "README personalizado." -ForegroundColor Green
@@ -2201,7 +2270,8 @@ function Create-CreationReport {
 - Enterprise YAML configured
 - Synapse solution contract configured
 - Workflow YAML configured
-- `.env.example` created
+- `.env.example` and `.env` created
+- Python `.venv` created and `requirements.txt` installed (skip with -SkipActivation)
 - Data, experiments, artifacts, docs, and output folders created
 - Upload folders and Codex attachment manifest created
 - Project model card, data contract, prompts, evals, runbooks, and checklist created
@@ -2255,7 +2325,10 @@ function Finalize-SynapseSolutionProject {
             "rag_pipelines",
             "llm_ops",
             "prompts\rag_answering.md",
-            "evals\prompt_cases.jsonl"
+            "evals\prompt_cases.jsonl",
+            "evals\rag_cases.jsonl",
+            "scripts\run_ai_evals.ps1",
+            "scripts\run_rag_evals.ps1"
         )) {
             $Path = Join-Path $Destino $RelativePath
             if (Test-Path $Path) {
@@ -2265,17 +2338,23 @@ function Finalize-SynapseSolutionProject {
     }
 
     if (!$ProjectUniverse.ml_enabled) {
+        # ml_systems/data_contract.yaml stays: it backs the universal data
+        # treatment pipeline (tests/test_data_contract.py, generated for every
+        # universe) rather than being ML-training specific. Only the
+        # model-training artifacts are ML-exclusive.
         foreach ($RelativePath in @(
             "ml_systems\model_card.md",
+            "ml_systems\model_card_template.md",
             "ml_systems\monitoring_plan.yaml",
             "evals\ml_cases.jsonl",
             "notebooks\foundations\math_for_ml_plan.md",
             "config\ml_foundations_policy.json",
-            "docs\specifications\ml_foundations.md"
+            "docs\specifications\ml_foundations.md",
+            "scripts\run_ml_evals.ps1"
         )) {
             $Path = Join-Path $Destino $RelativePath
             if (Test-Path $Path) {
-                Remove-Item -LiteralPath $Path -Force
+                Remove-Item -LiteralPath $Path -Recurse -Force
             }
         }
     }
@@ -2435,6 +2514,24 @@ function Run-ProjectValidation {
 
 function Configure-SolutionVsCodeTasks {
     $TasksPath = Join-Path $Destino ".vscode\tasks.json"
+    $RagTask = ""
+    if ($ProjectUniverse.rag_enabled) {
+        $RagTask = @"
+,
+    {
+      "label": "Evals: Rodar testes RAG (faithfulness)",
+      "detail": "Verifica se as respostas esperadas em evals/rag_cases.jsonl sao rastreaveis ao expected_source, bloqueando afirmacoes sem base (alucinacao).",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_evals.py",
+        "rag"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    }
+"@
+    }
     $Tasks = @"
 {
   "version": "2.0.0",
@@ -2451,7 +2548,7 @@ function Configure-SolutionVsCodeTasks {
       ],
       "group": "test",
       "problemMatcher": []
-    }
+    }$RagTask
   ]
 }
 "@
@@ -2472,6 +2569,46 @@ function Configure-SolutionVsCodeTasks {
 
 function Activate-GeneratedProject {
     Write-Host "Nenhuma ativacao de swarm externa e necessaria; Codex/Claude Code operam direto na nuvem." -ForegroundColor Yellow
+
+    if ($SkipActivation) {
+        Write-Host "Ambiente virtual Python nao criado (-SkipActivation)." -ForegroundColor Yellow
+        return
+    }
+
+    $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
+    if (!$PythonCommand) {
+        Write-Host "Aviso: python nao encontrado no PATH; ambiente virtual nao foi criado. Crie manualmente com 'python -m venv .venv'." -ForegroundColor Yellow
+        return
+    }
+
+    $VenvPath = Join-Path $Destino ".venv"
+    $VenvPython = Join-Path $VenvPath "Scripts\python.exe"
+    try {
+        Write-Host "Criando ambiente virtual Python (.venv)..." -ForegroundColor Cyan
+        & $PythonCommand.Source -m venv $VenvPath
+        if ($LASTEXITCODE -ne 0 -or !(Test-Path $VenvPython)) {
+            throw "python -m venv retornou codigo $LASTEXITCODE"
+        }
+
+        & $VenvPython -m pip install --upgrade pip --quiet
+        $RequirementsPath = Join-Path $Destino "requirements.txt"
+        if (Test-Path $RequirementsPath) {
+            Write-Host "Instalando dependencias em .venv a partir de requirements.txt..." -ForegroundColor Cyan
+            & $VenvPython -m pip install -r $RequirementsPath --quiet
+            if ($LASTEXITCODE -ne 0) {
+                throw "pip install -r requirements.txt retornou codigo $LASTEXITCODE"
+            }
+        }
+
+        # Um processo filho do PowerShell nao consegue deixar o venv ativado na
+        # sessao interativa de quem chamou este script; por isso o venv e criado
+        # e populado aqui, mas a ativacao final e responsabilidade do usuario
+        # (comando exibido no resumo final).
+        Write-Host "Ambiente virtual Python criado e dependencias instaladas em .venv." -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Aviso: falha ao preparar o ambiente virtual Python. $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 }
 
 function Normalize-GeneratedProjectFilesystem {
@@ -2534,4 +2671,5 @@ Write-Host "Tipo: $TipoProjeto" -ForegroundColor Green
 Write-Host "Swarm: $SwarmName" -ForegroundColor Green
 Write-Host "Proximos comandos:" -ForegroundColor Cyan
 Write-Host "  cd $Destino"
+Write-Host "  .\.venv\Scripts\Activate.ps1"
 Write-Host "  code ."

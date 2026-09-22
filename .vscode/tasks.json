@@ -297,6 +297,24 @@
       }
     },
     {
+      "label": "Evals: Rodar testes RAG",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\run_rag_evals.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
       "label": "Synapse: Preparar runtime VS Code",
       "dependsOn": [
         "Enterprise: Validar stack"

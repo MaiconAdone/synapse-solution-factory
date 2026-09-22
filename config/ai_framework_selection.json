@@ -163,7 +163,7 @@
       "avoid_when": ["strict_small_deterministic_workflow_is_required"]
     }
   ],
-  "default_technology_recommendation": ["fastapi", "mcp-servers"],
+  "default_technology_recommendation": ["mcp-servers"],
   "technology_catalog": [
     {
       "id": "crewai",

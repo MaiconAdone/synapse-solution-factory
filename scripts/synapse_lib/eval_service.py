@@ -50,6 +50,69 @@ class EvalService:
         passed = self._passed(results) and metrics["pass_rate"] >= required_pass_rate
         return self._response("ai_prompt", passed, metrics, gates, results)
 
+    def run_rag_eval(self, cases_path: str = "evals/rag_cases.jsonl") -> dict[str, Any]:
+        cases = self._load_jsonl(cases_path)
+        gates = self._load_quality_gates().get("rag", {})
+        results = [self._evaluate_rag_case(case, gates) for case in cases]
+        metrics = self._aggregate_results(results)
+        coverage_scores = [result.metrics["term_coverage"] for result in results if "term_coverage" in result.metrics]
+        if coverage_scores:
+            metrics["avg_term_coverage"] = float(sum(coverage_scores) / len(coverage_scores))
+        passed = self._passed(results)
+        return self._response("rag", passed, metrics, gates, results)
+
+    def _evaluate_rag_case(self, case: dict[str, Any], gates: dict[str, Any]) -> EvalCaseResult:
+        # Deterministic, LLM-free proxy for faithfulness: instead of asking a
+        # model to judge its own answer, we require every expected claim to be
+        # textually grounded in the file the case cites as its source. If a
+        # golden answer contains a claim the source doesn't back up, the case
+        # is itself an unsupported claim and must fail like any hallucination
+        # would under guardrails/policy.yaml's unsupported_claim_policy.
+        checks: dict[str, bool] = {}
+        metrics: dict[str, float] = {}
+        notes: list[str] = []
+
+        checks["case_has_id"] = bool(case.get("id"))
+        checks["case_has_query"] = bool(case.get("query"))
+
+        expected_source = str(case.get("expected_source", ""))
+        if gates.get("citation_required", True):
+            checks["citation_present"] = bool(expected_source)
+
+        source_text = ""
+        if expected_source:
+            source_path = self._resolve_project_path(expected_source)
+            checks["source_exists"] = source_path.exists()
+            if source_path.exists():
+                source_text = source_path.read_text(encoding="utf-8").lower()
+            else:
+                notes.append(f"expected_source not found: {expected_source}")
+        else:
+            checks["source_exists"] = False
+
+        expected_terms = [str(term).lower() for term in case.get("expected_answer_contains", [])]
+        if expected_terms:
+            matched = [term for term in expected_terms if term in source_text]
+            coverage = len(matched) / len(expected_terms)
+            metrics["term_coverage"] = coverage
+
+            metric_name = str(case.get("metric", "faithfulness"))
+            threshold_key = "recall_at_k_min" if metric_name == "recall_at_k" else "faithfulness_min"
+            threshold = float(gates.get(threshold_key, 1.0))
+            checks[f"{metric_name}_grounded"] = coverage >= threshold
+
+            if coverage < 1.0:
+                missing = [term for term in expected_terms if term not in source_text]
+                notes.append(f"Terms not grounded in expected_source: {missing}")
+
+        return EvalCaseResult(
+            id=str(case.get("id", "unknown")),
+            passed=all(checks.values()) if checks else False,
+            checks=checks,
+            metrics=metrics,
+            notes=notes,
+        )
+
     def _evaluate_ml_case(self, case: dict[str, Any], model_id: str | None, gates: dict[str, Any]) -> EvalCaseResult:
         checks: dict[str, bool] = {}
         notes: list[str] = []

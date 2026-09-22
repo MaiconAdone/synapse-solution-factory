@@ -203,9 +203,11 @@ It also inherits `config/business_transformation.json`,
 `prompts/business_transformation.md`, and
 `docs/AGENTIC_AI_TRANSFORMATION.md`.
 
-It also creates `.env.example`, project data/experiment/artifact folders,
-project-specific prompt/eval seeds, a data contract, a model card, runbooks,
-a first setup checklist, a creation report, and runs validation by default.
+It also creates `.env.example` and a real `.env` (git-ignored), a Python
+`.venv` with `requirements.txt` installed (skip with `-SkipActivation`),
+project data/experiment/artifact folders, project-specific prompt/eval seeds,
+a data contract, a model card, runbooks, a first setup checklist, a creation
+report, and runs validation by default.
 Artifacts that do not apply to the selected universe are removed. For example,
 an IA-only project does not receive an ML model card, while an ML-only project
 does not receive the RAG and AI framework layers.
@@ -261,20 +263,28 @@ The evaluation layer is split between ML and AI prompt checks, both served by
   cases that include `features` and `expected`.
 - `EvalService.run_ai_eval` reads `evals/prompt_cases.jsonl`, checks prompt
   readiness, expected terms, and simple prompt-injection guards.
+- `EvalService.run_rag_eval` reads `evals/rag_cases.jsonl` and checks that
+  every expected answer term is textually grounded in the file it cites as
+  `expected_source`, enforcing `faithfulness_min`/`recall_at_k_min` from
+  `evals/quality_gates.yaml`. This is the hallucination/faithfulness gate for
+  RAG: a golden answer that claims something the cited source doesn't say
+  fails the eval instead of silently shipping. See `evals/README.md`.
 
-Both eval paths return a structured result with pass rates, metrics, and
+All three eval paths return a structured result with pass rates, metrics, and
 quality gates.
 
 From VS Code, run:
 
 - `Evals: Rodar testes ML`
 - `Evals: Rodar testes IA`
+- `Evals: Rodar testes RAG (faithfulness)`
 
 Or from PowerShell:
 
 ```powershell
 .\scripts\run_ml_evals.ps1
 .\scripts\run_ai_evals.ps1
+.\scripts\run_rag_evals.ps1
 ```
 
 Synapse's product goal is a no-code ML and AI agent factory: the user describes

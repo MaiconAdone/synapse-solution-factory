@@ -256,4 +256,9 @@ LOCAL_TRAINING_DATASET_PATH=./data/learning/training_examples.jsonl
 "@
     Write-TextFile (Join-Path $Destino ".env.example") $Content
     Write-Host ".env.example criado." -ForegroundColor Green
+
+    # .env real (nao versionado, ja coberto pelo .gitignore) para que o projeto
+    # rode local-first sem exigir copia manual do .env.example.
+    Write-TextFile (Join-Path $Destino ".env") $Content
+    Write-Host ".env criado a partir do .env.example (ignorado pelo git)." -ForegroundColor Green
 }
