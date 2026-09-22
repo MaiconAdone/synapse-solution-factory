@@ -157,6 +157,20 @@ def iqr_bounds(series: pd.Series) -> tuple[float, float] | None:
     return float(q1 - 1.5 * iqr), float(q3 + 1.5 * iqr)
 
 
+def zscore_flags(series: pd.Series, threshold: float = 3.0) -> tuple[pd.Series, dict[str, float]] | None:
+    numeric = pd.to_numeric(series, errors="coerce")
+    clean = numeric.dropna()
+    if clean.shape[0] < 2:
+        return None
+    mean = float(clean.mean())
+    std = float(clean.std())
+    if std == 0 or math.isnan(std):
+        return None
+    z_scores = (numeric - mean) / std
+    flags = z_scores.abs() > threshold
+    return flags.fillna(False), {"mean": mean, "std": std, "threshold": threshold}
+
+
 def confidence_interval_mean(series: pd.Series, confidence: float = 0.95) -> dict[str, float] | None:
     clean = pd.to_numeric(series, errors="coerce").dropna()
     if clean.shape[0] < 2:
@@ -308,6 +322,7 @@ def treat_dataset(
 
     groups = infer_column_groups(df)
     outlier_summary: dict[str, dict[str, Any]] = {}
+    zscore_outlier_summary: dict[str, dict[str, Any]] = {}
     missing_summary = df.isna().sum().to_dict()
     categorical_frequency: dict[str, dict[str, Any]] = {}
     numeric_stats = {column: numeric_profile(df[column]) for column in groups["numeric"]}
@@ -371,6 +386,26 @@ def treat_dataset(
                     df[column] = df[column].clip(lower=lower, upper=upper)
                     actions.append(f"`{column}` winsorizada nos limites IQR [{lower:.4g}, {upper:.4g}].")
 
+        zscore_result = zscore_flags(df[column])
+        if zscore_result:
+            flags, zscore_info = zscore_result
+            zscore_count = int(flags.sum())
+            zscore_outlier_summary[column] = {
+                "method": "Z-score",
+                "mean": zscore_info["mean"],
+                "std": zscore_info["std"],
+                "threshold": zscore_info["threshold"],
+                "count": zscore_count,
+                "ratio": float(flags.mean()),
+            }
+            if zscore_count:
+                flag_column = f"{column}_is_outlier_zscore"
+                df[flag_column] = flags
+                actions.append(
+                    f"Outliers de `{column}` identificados por z-score "
+                    f"(|z| > {zscore_info['threshold']:.1f}); flag `{flag_column}` criada."
+                )
+
     for column in infer_column_groups(df)["categorical"]:
         if df[column].isna().any():
             mode = df[column].mode(dropna=True)
@@ -422,6 +457,7 @@ def treat_dataset(
         numeric_stats=numeric_stats,
         missing_summary=missing_summary,
         outlier_summary=outlier_summary,
+        zscore_outlier_summary=zscore_outlier_summary,
         categorical_frequency=categorical_frequency,
         advanced_statistics=advanced_statistics,
         actions=actions,
@@ -452,6 +488,7 @@ def build_report(
     numeric_stats: dict[str, dict[str, Any]],
     missing_summary: dict[str, int],
     outlier_summary: dict[str, dict[str, Any]],
+    zscore_outlier_summary: dict[str, dict[str, Any]],
     categorical_frequency: dict[str, dict[str, Any]],
     advanced_statistics: dict[str, Any],
     actions: list[str],
@@ -490,12 +527,23 @@ def build_report(
     lines.append("")
 
     if outlier_summary:
-        lines.append("### Outliers")
+        lines.append("### Outliers (IQR)")
         lines.append("")
         for column, summary in outlier_summary.items():
             lines.append(
                 f"- `{column}`: {summary['count']} outlier(s) por IQR "
                 f"({summary['ratio']:.1%}); acao: {summary['action']}."
+            )
+        lines.append("")
+
+    if zscore_outlier_summary:
+        lines.append("### Outliers (Z-score)")
+        lines.append("")
+        for column, summary in zscore_outlier_summary.items():
+            lines.append(
+                f"- `{column}`: {summary['count']} outlier(s) por z-score "
+                f"(|z| > {summary['threshold']:.1f}, media={summary['mean']:.4g}, "
+                f"desvio={summary['std']:.4g}); {summary['ratio']:.1%} das linhas."
             )
         lines.append("")
 
@@ -524,6 +572,7 @@ def build_report(
         "- Imputacao numerica usa media apenas quando a distribuicao parece menos assimetrica e sem outliers relevantes.",
         "- Categorias raras sao agrupadas para reduzir esparsidade e instabilidade em modelos futuros.",
         "- Outliers sao sinalizados por padrao, nao removidos automaticamente, preservando eventos raros plausiveis.",
+        "- IQR e z-score sao aplicados em paralelo como metodos independentes de deteccao; divergencia entre os dois e um sinal de assimetria/cauda pesada e deve orientar a escolha do metodo de tratamento.",
     ])
     if winsorize_outliers:
         lines.append("- Winsorizacao foi aplicada porque `--winsorize-outliers` foi solicitado explicitamente.")
@@ -630,7 +679,7 @@ def build_report(
         "## 5. Dataset final tratado",
         "",
         f"- Arquivo: `{output_path}`",
-        "- Mudancas rastreadas por flags `_was_missing` e `_is_outlier_iqr` quando aplicavel.",
+        "- Mudancas rastreadas por flags `_was_missing`, `_is_outlier_iqr` e `_is_outlier_zscore` quando aplicavel.",
         "",
         "## 6. Recomendacoes para analise/modelagem",
         "",

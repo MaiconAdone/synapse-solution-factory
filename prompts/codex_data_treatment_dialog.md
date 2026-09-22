@@ -2,7 +2,7 @@
 id: codex-data-treatment-dialog
 owner: orchestration-manager
 version: 0.1.0
-agents: 15 core agents, specialist pool up to 60
+agents: economic subset (orchestration-manager, data-engineering, data-science, testing-qa); specialists on demand
 workflow: new-ai-project
 ---
 
@@ -16,7 +16,10 @@ use o fluxo abaixo:
 
 1. Confirmar arquivo em `data/raw/` ou caminho informado pelo usuario.
 2. Rodar `Enterprise: Validar stack` quando a validacao ainda nao foi feita.
-3. Consultar o swarm com os 15 core agents em paralelo e registrar especialistas sob demanda se necessario.
+3. Ativar o subconjunto economico (`orchestration-manager`, `data-engineering`,
+   `data-science`, `testing-qa`); so escale para outros especialistas se a
+   tarefa realmente exigir (ex.: `machine-learning` quando o proximo passo for
+   treino), nunca os 60 por padrao.
 4. Executar `scripts/codex_data_treatment_dialog.ps1`.
 5. Ler o relatorio em `output/data_treatment/`.
 6. Explicar ao usuario:
@@ -28,21 +31,20 @@ use o fluxo abaixo:
 
 ## Papel Dos Agentes
 
+Subconjunto economico requerido para esta tarefa (definido em
+`scripts/codex_data_treatment_dialog.ps1`):
+
 - `orchestration-manager`: consolida contexto, decisoes e resposta final.
-- `product-strategy`: valida objetivo de negocio e criterio de aceite.
 - `data-engineering`: valida schema, tipos, contratos, paths e linhagem.
 - `data-science`: conduz diagnostico estatistico, ausentes, outliers e distribuicoes.
-- `machine-learning`: avalia prontidao para treino, baseline e model card.
-- `llm-engineering`: prepara resumo estruturado e prompts de proxima etapa.
-- `rag-engineering`: avalia se a base alimenta busca, chunks ou conhecimento.
-- `backend-engineering`: preserva contratos de entrada/saida.
-- `frontend-engineering`: ignora UI web; foco e terminal VS Code.
-- `integration-automation`: conecta Codex, scripts e tasks.
-- `security-compliance`: revisa privacidade, PII e riscos de dados sensiveis.
-- `observability-ops`: registra artefatos, custo, tempo e rastreabilidade.
-- `devops`: garante execucao local e reproducivel.
 - `testing-qa`: verifica saidas, relatorio e regressao.
-- `documentation`: atualiza runbook/checklist quando necessario.
+
+Especialistas sob demanda, apenas quando o cenario realmente exigir (nao
+ativar por padrao):
+
+- `machine-learning`: quando o proximo passo for treino/baseline/model card.
+- `security-compliance`: quando houver indicio de PII ou dado sensivel.
+- `rag-engineering`/`llm-engineering`: quando a base alimentar busca/RAG.
 
 Nunca remova outliers automaticamente sem instrucao explicita. Por padrao,
 crie flags e recomende revisao de dominio.
@@ -51,10 +53,13 @@ crie flags e recomende revisao de dominio.
 
 O script `scripts/treat_dataset.py` executa automaticamente a camada
 deterministica do prompt mestre: perfil basico, ausentes, duplicatas, colunas
-constantes, estatisticas numericas, outliers IQR, categorias raras, dataset
+constantes, estatisticas numericas, outliers por IQR e por z-score, testes de
+normalidade, correlacoes (Pearson/Spearman), associacao qui-quadrado,
+intervalos de confianca, bootstrap da media, categorias raras, dataset
 tratado e relatorio.
 
-Etapas avancadas como MICE, testes de normalidade, QQ-plot, correlacoes,
-multicolinearidade, testes de hipotese, intervalos de confianca e bootstrap
-devem ser tratadas como recomendacoes ou tarefas assistidas ate existirem
-implementacoes deterministicas e testes automatizados.
+Etapas avancadas como MICE, QQ-plot, transformacoes Box-Cox/Yeo-Johnson,
+diagnostico de multicolinearidade e selecao formal de teste
+parametrico/nao-parametrico ainda nao tem implementacao deterministica; trate
+como recomendacao ou tarefa assistida ate existir implementacao e teste
+automatizado (ver `config/data_treatment_policy.json`).

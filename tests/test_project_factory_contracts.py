@@ -579,7 +579,29 @@ def test_data_treatment_script_outputs_treated_dataset_and_report(tmp_path):
     assert "Alinhamento com prompt mestre" in report
     assert "Cobertura da politica de tratamento" in report
     assert "z_score_outlier_analysis" in report
-    assert "Outliers" in report
+    assert "Outliers (IQR)" in report
+    # z-score outlier detection is mathematically incapable of flagging any
+    # point at the default threshold with only 4 rows (max |z| < 3 for n=4),
+    # so this fixture only proves the section renders, not that it can flag.
+    # test_data_treatment_flags_outliers_by_zscore below proves the real flag.
+    assert "Outliers (Z-score)" in report
+
+
+def test_data_treatment_flags_outliers_by_zscore(tmp_path):
+    raw_path = tmp_path / "data" / "raw" / "medicoes.csv"
+    report_path = tmp_path / "output" / "data_treatment" / "medicoes_report.md"
+    raw_path.parent.mkdir(parents=True)
+    normal_values = [100, 102, 98, 101, 99, 100, 103, 97, 100, 101] * 2 + [100000]
+    rows = ["id,valor"] + [f"{index},{value}" for index, value in enumerate(normal_values)]
+    raw_path.write_text("\n".join(rows), encoding="utf-8")
+
+    result = treat_dataset(raw_path, report_path=report_path)
+
+    treated = result.output_path.read_text(encoding="utf-8")
+    report = report_path.read_text(encoding="utf-8")
+    assert "valor_is_outlier_zscore" in treated
+    assert "valor_is_outlier_iqr" in treated
+    assert "outlier(s) por z-score" in report
 
 
 def test_context_policy_filters_workspace_noise_before_llm_calls():

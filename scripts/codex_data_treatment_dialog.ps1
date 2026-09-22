@@ -52,22 +52,16 @@ $DialogContext = @{
     master_prompt = "prompts/master_data_treatment.md"
     data_treatment_policy = "config/data_treatment_policy.json"
     workflow = "new-ai-project"
+    # Economic subset curated for this task (statistical data treatment of a
+    # single dataset), not the full 15-agent core roster: activating
+    # backend/frontend/RAG/LLM engineering here would contradict the
+    # cost-aware "route by complexity" policy for a task that is just
+    # cleaning and profiling a CSV.
     required_agents = @(
         "orchestration-manager",
-        "product-strategy",
         "data-engineering",
         "data-science",
-        "machine-learning",
-        "llm-engineering",
-        "rag-engineering",
-        "backend-engineering",
-        "frontend-engineering",
-        "integration-automation",
-        "security-compliance",
-        "observability-ops",
-        "devops",
-        "testing-qa",
-        "documentation"
+        "testing-qa"
     )
     instructions = @(
         "Codex recebe o pedido pela caixa de dialogo do VS Code.",
