@@ -220,3 +220,83 @@ The specification keeps deterministic workflow state around probabilistic
 reasoning. High-risk stages stop for approval, tools remain simulated until
 authorized, and generated projects inherit the operational contracts as
 governance data without inheriting SYNAPSE's own project-factory scripts.
+
+## Scalable RAG and Vector Databases
+
+- Size retrieval before building it: corpus volume, QPS, latency budget,
+  tenancy, sensitivity and hosting are user decisions, not guesses.
+- Pick the index by scale (flat, HNSW, quantized HNSW, IVF-PQ/DiskANN) and
+  estimate memory before choosing a vector database.
+- Hybrid retrieval (BM25 + dense) fused by reciprocal rank, ACL filters before
+  ranking, reranking only on low confidence.
+- Version indexes per embedding model, reindex blue/green, promote only when
+  retrieval gates pass.
+
+Conceptual references without copied text:
+
+- *LLM Engineer's Handbook*, by Paul Iusztin and Maxime Labonne: feature and
+  ingestion pipelines feeding a vector database, separation of training and
+  inference pipelines, RAG evaluation.
+- *AI Engineering*, by Chip Huyen: retrieval as a system with its own metrics,
+  context construction and cost/latency tradeoffs.
+- *Introduction to Algorithms* (CLRS): graph search, clustering and complexity
+  budgets behind approximate nearest neighbor indexes.
+
+SYNAPSE application:
+
+- `config/rag_scalability_policy.json` and
+  `docs/specifications/scalable_rag_vector_db.md`.
+- `scripts/synapse_lib/vector_store.py`, `rag_retrieval.py` and
+  `rag_scalability.py`; `templates/rag/`.
+- `python scripts/run_evals.py retrieval` gates recall@k, MRR and nDCG.
+
+## Fine-Tuning and Model Adaptation
+
+- Adapt in order: prompt, RAG, then fine-tuning; knowledge gaps go to RAG,
+  behavior gaps go to fine-tuning.
+- Prefer parameter-efficient methods (LoRA/QLoRA), preference tuning and
+  distillation over full fine-tuning.
+- Dataset engineering is the work: dedup, leakage-free splits, PII removal,
+  human-scored examples and a data card.
+- Release only against a measured baseline, with no safety regression, human
+  approval and rollback to the base model.
+
+Conceptual references without copied text:
+
+- *AI Engineering*, by Chip Huyen: when to finetune versus prompt or retrieve,
+  dataset engineering and evaluation-driven adaptation.
+- *LLM Engineer's Handbook*, by Paul Iusztin and Maxime Labonne: supervised
+  fine-tuning, preference alignment and parameter-efficient training.
+- *Build a Large Language Model (From Scratch)*, by Sebastian Raschka:
+  fine-tuning for classification and instruction following and how to evaluate it.
+
+SYNAPSE application:
+
+- `config/fine_tuning_policy.json` and `docs/specifications/fine_tuning.md`.
+- `scripts/prepare_fine_tuning_dataset.py` prepares data without training;
+  `automatic_weight_updates` stays false.
+
+## Harness Engineering
+
+- The harness is everything around the model: context map, tools and
+  permissions, loop budgets and stop conditions, verification, traces and
+  feedback.
+- Prove agent behavior with repeated trials: pass@k for capability, pass^k for
+  reliability.
+- Enforce important rules mechanically with tests and validators, not prose.
+
+Conceptual references without copied text:
+
+- *Production LLMs*, by Bouchard and Peters: reliability, monitoring,
+  guardrails and fallbacks around model calls.
+- *Building Applications with AI Agents*, by Michael Albada: agent evaluation
+  and improvement loops.
+- *Cybernetics*, by Norbert Wiener: feedback signals and control loops with
+  human intervention thresholds.
+
+SYNAPSE application:
+
+- `config/harness_engineering_policy.json` and
+  `docs/specifications/harness_engineering.md`.
+- `scripts/audit_harness.py` and `scripts/synapse_lib/harness_service.py`;
+  generated projects ship `tests/test_harness_contract.py`.

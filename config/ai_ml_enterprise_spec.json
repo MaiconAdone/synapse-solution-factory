@@ -189,23 +189,32 @@
       "track_cached_uncached_input_and_output_tokens",
       "never_activate_all_60_agents_without_explicit_high_complexity_justification"
     ],
+    "activation_targets_source": "config/cost_optimization_policy.json activation_profiles",
     "activation_targets": {
-      "simple": 3,
-      "standard": 5,
-      "advanced": 8,
-      "enterprise": 15,
-      "extreme": 60
-    }
+      "simple": 1,
+      "standard": 3,
+      "advanced": 5,
+      "enterprise": 8,
+      "extreme": 15
+    },
+    "all_60_agents": "only with explicit high-complexity justification and human approval"
   },
   "vector_databases": {
+    "policy_file": "config/rag_scalability_policy.json",
     "compatible_targets": [
       "pinecone",
       "chromadb",
       "faiss",
       "qdrant",
       "weaviate",
-      "ruvector"
+      "pgvector",
+      "milvus",
+      "opensearch-elasticsearch"
     ],
+    "operational_memory_backend": "ruvector (agent memory, not the RAG corpus index)",
+    "scale_tiers": ["local", "team", "enterprise", "massive"],
+    "index_types": ["flat", "hnsw", "hnsw_quantized", "ivf_pq_or_diskann"],
+    "hybrid_retrieval": "bm25_plus_dense_with_reciprocal_rank_fusion",
     "required_design_fields": [
       "chunking_strategy",
       "chunk_overlap",
@@ -219,6 +228,17 @@
       "chunk_overlap_tokens": 120,
       "parent_child_enabled": true
     }
+  },
+  "fine_tuning": {
+    "policy_file": "config/fine_tuning_policy.json",
+    "adaptation_ladder": ["prompt_engineering", "rag", "fine_tuning", "continued_pretraining"],
+    "default_technique_open_weight": "lora",
+    "automatic_weight_updates": false
+  },
+  "harness_engineering": {
+    "policy_file": "config/harness_engineering_policy.json",
+    "layers": ["coding_agent_harness", "agent_runtime_harness", "eval_harness"],
+    "reliability_metric": "pass_hat_k"
   },
   "sdd": {
     "required_outputs": [

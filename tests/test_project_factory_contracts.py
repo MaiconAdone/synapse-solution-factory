@@ -856,6 +856,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     ("project_type", "project_name", "expected_capabilities"),
     [
         ("ML", "generated_ml_project", {"ml": True, "ai": False, "rag": False, "data_treatment": True}),
+        ("IA", "generated_ia_project", {"ml": False, "ai": True, "rag": True, "data_treatment": True}),
         (
             "ML + IA (Hibrido)",
             "generated_hybrid_project",
@@ -963,7 +964,22 @@ def test_generated_solution_project_matches_selected_universe(
     assert settings["task.allowAutomaticTasks"] == "on"
     assert not (project / "adonex").exists()
 
+    assert (project / "tests" / "test_harness_contract.py").exists()
+    assert (project / "config" / "harness_engineering_policy.json").exists()
+    assert "tests/test_harness_contract.py" in runtime["validation"]["required_practice_paths"]
+    fleets = {fleet["id"] for fleet in json.loads((project / "config" / "agent_fleets.json").read_text(encoding="utf-8-sig"))["fleets"]}
+    for fleet in analysis["swarm_strategy"]["recommended_fleets"]:
+        assert fleet in fleets, fleet
+    task_labels = {task["label"] for task in tasks["tasks"]}
+    assert "Synapse: Auditar harness engineering" in task_labels
+
     if expected_capabilities["ai"]:
+        assert (project / "config" / "rag_scalability_policy.json").exists()
+        assert (project / "config" / "fine_tuning_policy.json").exists()
+        assert (project / "templates" / "rag" / "rag_pipeline.py").exists()
+        assert (project / "evals" / "retrieval_cases.jsonl").exists()
+        assert "Evals: Rodar retrieval hibrido (recall@k, MRR, nDCG)" in task_labels
+        assert analysis["rag_scalability"]["active"] is True
         assert (project / "config" / "ai_framework_selection.json").exists()
         assert (project / "docs" / "specifications" / "technology_layer.md").exists()
         assert "docs/specifications/technology_layer.md" in runtime["validation"]["required_practice_paths"]
@@ -971,6 +987,11 @@ def test_generated_solution_project_matches_selected_universe(
         assert (project / "tests" / "test_ai_contract.py").exists()
     else:
         assert not (project / "config" / "ai_framework_selection.json").exists()
+        assert not (project / "config" / "rag_scalability_policy.json").exists()
+        assert not (project / "config" / "fine_tuning_policy.json").exists()
+        assert not (project / "vector_db").exists()
+        assert not (project / "templates" / "rag").exists()
+        assert not (project / "evals" / "retrieval_cases.jsonl").exists()
         assert not (project / "rag_pipelines").exists()
         assert not (project / "tests" / "test_ai_contract.py").exists()
 

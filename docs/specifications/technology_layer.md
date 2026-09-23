@@ -28,13 +28,17 @@ specialist routing.
 - Knowledge and retrieval: Vector DBs, RAG frameworks, KAG / Knowledge Graph.
 - MLOps and serving: FastAPI.
 - Tool boundaries: MCP servers.
+- Model adaptation: Fine-tuning / PEFT (`config/fine_tuning_policy.json`).
+- Reliability: Agent / Eval Harness (`config/harness_engineering_policy.json`).
 
 ## Required Outputs
 
 - `technology_layer`: recommended technologies, capabilities, categories, and templates.
 - `architecture_blueprint`: local-first architecture components and framework links.
 - `pipeline_blueprints`: discovery, RAG, agentic execution, automation, ingestion, or MLOps stages.
-- `solution_templates`: template paths to scaffold or adapt.
+- `solution_templates`: existing files under `templates/` to copy or adapt.
+- `solution_scaffold_targets`: files the generated project should create for
+  technologies that have no ready-made template in Synapse.
 - `evaluation_plan`: tests and evals needed before release.
 - `production_risks`: risks that must be handled in design and review.
 

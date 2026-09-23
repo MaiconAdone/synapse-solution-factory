@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Any
 
 from scripts.synapse_lib.ai_framework_selector import AiFrameworkSelector
+from scripts.synapse_lib.fine_tuning_service import AdaptationAdvisor
+from scripts.synapse_lib.rag_scalability import RagScalabilityPlanner, RagScaleRequirements
+
+AI_UNIVERSES = {"ia", "chatbolt", "hybrid"}
 
 
 class BusinessSolutionAnalyzer:
@@ -18,6 +22,9 @@ class BusinessSolutionAnalyzer:
         self.ml_foundations_path = self.root / "config" / "ml_foundations_policy.json"
         self.ml_foundations_policy = self._load_ml_foundations_policy()
         self.technology_selector = AiFrameworkSelector()
+        self.harness_policy = self._load_optional_json("config/harness_engineering_policy.json")
+        self.runtime_manifest = self._load_optional_json("config/runtime_manifest.json")
+        self.transformation_contract = self._load_optional_json("config/business_transformation.json")
 
     def analyze(
         self,
@@ -43,12 +50,16 @@ class BusinessSolutionAnalyzer:
             )
         )
         ml_match = self._best_match(text, self.catalog["ml_archetypes"])
-        ai_match = self._best_match(text, self.catalog["ai_archetypes"])
+        ai_match = self._ai_archetype_match(text)
         domain_match = self._best_match(text, self.catalog["domains"])
         requested = self._normalize_universe(requested_universe or solution_focus or "hybrid")
         recommended = self._recommend_universe(requested, ml_match, ai_match)
-        stack = self._solution_stack(recommended, ml_match, ai_match)
-        technology_selection = self.technology_selector.select(text, universe=recommended)
+        # The universe the user chose is the one the factory generates, so every
+        # artifact, test, eval and fleet below follows it. A different
+        # recommendation is advisory and must be confirmed in the chat.
+        effective = requested
+        stack = self._solution_stack(effective, ml_match, ai_match)
+        technology_selection = self.technology_selector.select(text, universe=effective)
         technology_layer = technology_selection.get("technology_layer", {})
 
         has_business_problem = bool((business_problem or "").strip())
@@ -57,6 +68,12 @@ class BusinessSolutionAnalyzer:
             "status": "analyzed" if has_business_problem else "pending_business_problem",
             "requested_universe": requested,
             "recommended_universe": recommended,
+            "effective_universe": effective,
+            "universe_confirmation": (
+                ""
+                if recommended == effective
+                else f"Analyzer suggests '{recommended}' but the project is built as '{effective}'; confirm the universe with the user in chat."
+            ),
             "dialog_context": {
                 "project_goal": project_goal or "",
                 "business_problem": business_problem or "",
@@ -72,17 +89,23 @@ class BusinessSolutionAnalyzer:
             "ai_archetype": self._public_match(ai_match),
             "solution_stack": stack,
             "technology_layer": technology_layer,
-            "ml_foundations": self._ml_foundations(recommended, ml_match),
+            "ml_foundations": self._ml_foundations(effective, ml_match),
             "architecture_blueprint": technology_selection.get("architecture_blueprint", {}),
             "pipeline_blueprints": technology_selection.get("pipeline_blueprints", []),
             "solution_templates": technology_selection.get("solution_templates", []),
-            "architecture_decision": self._architecture_decision(recommended, stack),
-            "data_strategy": self._data_strategy(recommended, ml_match),
-            "test_strategy": self._test_strategy(recommended),
-            "eval_strategy": self._eval_strategy(recommended, ml_match, ai_match),
-            "swarm_strategy": self._swarm_strategy(recommended),
-            "book_alignment": self._book_alignment(ml_match, ai_match),
-            "required_artifacts": self._required_artifacts(recommended, ml_match, ai_match),
+            "solution_scaffold_targets": technology_selection.get("solution_scaffold_targets", []),
+            "rag_scalability": self._rag_scalability(effective, text),
+            "model_adaptation": self._model_adaptation(effective, text),
+            "harness_engineering": self._harness_engineering(effective),
+            "solution_agents": self._solution_agents(effective, stack),
+            "business_transformation": self._business_transformation(text),
+            "architecture_decision": self._architecture_decision(effective, stack),
+            "data_strategy": self._data_strategy(effective, ml_match),
+            "test_strategy": self._test_strategy(effective),
+            "eval_strategy": self._eval_strategy(effective, ml_match, ai_match),
+            "swarm_strategy": self._swarm_strategy(effective, text),
+            "book_alignment": self._book_alignment(effective, ml_match, ai_match),
+            "required_artifacts": self._required_artifacts(effective, ml_match, ai_match),
         }
 
     def to_markdown(self, analysis: dict[str, Any]) -> str:
@@ -104,12 +127,19 @@ class BusinessSolutionAnalyzer:
         tests = "\n".join(f"- {item}" for item in analysis["test_strategy"])
         evals = "\n".join(f"- {item}" for item in analysis["eval_strategy"])
         books = "\n".join(f"- {item}" for item in analysis["book_alignment"])
+        scaffold = "\n".join(f"- {item}" for item in analysis.get("solution_scaffold_targets", [])) or "- none"
+        rag_scale = analysis.get("rag_scalability", {})
+        rag_plan = rag_scale.get("plan", {})
+        adaptation = analysis.get("model_adaptation", {})
+        harness = analysis.get("harness_engineering", {})
         return "\n".join(
             [
                 "# Business Solution Analysis",
                 "",
                 f"- Requested universe: {analysis['requested_universe']}",
                 f"- Recommended universe: {analysis['recommended_universe']}",
+                f"- Effective universe (generated): {analysis.get('effective_universe', analysis['requested_universe'])}",
+                f"- Universe confirmation: {analysis.get('universe_confirmation') or 'not needed'}",
                 f"- Domain: {analysis['domain']['id']} (score {analysis['domain']['score']})",
                 f"- ML archetype: {analysis['ml_archetype']['id']} (score {analysis['ml_archetype']['score']})",
                 f"- AI archetype: {analysis['ai_archetype']['id']} (score {analysis['ai_archetype']['score']})",
@@ -129,6 +159,43 @@ class BusinessSolutionAnalyzer:
                 "### Templates",
                 "",
                 templates,
+                "",
+                "### Scaffold Targets",
+                "",
+                scaffold,
+                "",
+                "## Scalable RAG and Vector DB",
+                "",
+                f"- Active: {rag_scale.get('active', False)}",
+                f"- Policy: {rag_scale.get('policy_path', '')}",
+                f"- Tier: {rag_plan.get('tier', 'n/a')} ({rag_plan.get('status', 'n/a')})",
+                f"- Vector store candidates: {', '.join(rag_plan.get('vector_store_candidates', []))}",
+                f"- Pending user decisions: {', '.join(rag_plan.get('pending_user_decisions', [])) or 'none'}",
+                "",
+                "## Model Adaptation (Fine-Tuning)",
+                "",
+                f"- Active: {adaptation.get('active', False)}",
+                f"- Recommended stage: {adaptation.get('recommended_stage', 'n/a')}",
+                f"- Fine-tuning blockers: {', '.join(adaptation.get('fine_tuning_blockers', [])) or 'none'}",
+                f"- Reason: {adaptation.get('reason', '')}",
+                "",
+                "## Solution Agents",
+                "",
+                f"- Active: {analysis.get('solution_agents', {}).get('active', False)}",
+                f"- Architecture: {analysis.get('solution_agents', {}).get('architecture', 'n/a')}",
+                f"- Blueprints: {analysis.get('solution_agents', {}).get('blueprints_path', '')}",
+                "",
+                "## Business Transformation",
+                "",
+                f"- Active: {analysis.get('business_transformation', {}).get('active', False)}",
+                f"- Signals: {', '.join(analysis.get('business_transformation', {}).get('signals', [])) or 'none'}",
+                f"- Workflow: {analysis.get('business_transformation', {}).get('workflow', '')}",
+                "",
+                "## Harness Engineering",
+                "",
+                f"- Policy: {harness.get('policy_path', '')}",
+                f"- Components: {', '.join(harness.get('components', []))}",
+                f"- Audit: {harness.get('audit_command', '')}",
                 "",
                 "## ML Foundations",
                 "",
@@ -164,6 +231,29 @@ class BusinessSolutionAnalyzer:
             score = len(matched)
             if score > best["score"]:
                 best = {"item": item, "score": score, "matched_keywords": matched}
+        return best
+
+    def _ai_archetype_match(self, text: str) -> dict[str, Any]:
+        archetypes = self.catalog["ai_archetypes"]
+        best = self._best_match(text, archetypes)
+        matches = {item.get("id"): self._best_match(text, [item]) for item in archetypes}
+        score = {archetype_id: match["score"] for archetype_id, match in matches.items()}
+        composite = matches.get("chatbot_rag_agent")
+        if not composite or best["item"].get("id") in {"chatbot_rag_agent", "voice_coding_agent"}:
+            return best
+        # A conversation that also executes actions, or a tie with the composite
+        # archetype, is chatbot + RAG + agent rather than a plain chatbot or agent.
+        conversational_action = score.get("chatbot", 0) > 0 and score.get("agent", 0) > 0
+        tie = score.get("chatbot_rag_agent", 0) > 0 and score["chatbot_rag_agent"] >= best["score"]
+        if conversational_action or tie:
+            keywords = list(
+                dict.fromkeys(
+                    keyword
+                    for archetype_id in ("chatbot_rag_agent", "chatbot", "agent", "rag")
+                    for keyword in matches.get(archetype_id, {"matched_keywords": []})["matched_keywords"]
+                )
+            )
+            return {"item": composite["item"], "score": len(keywords), "matched_keywords": keywords}
         return best
 
     def _public_match(self, match: dict[str, Any]) -> dict[str, Any]:
@@ -248,7 +338,12 @@ class BusinessSolutionAnalyzer:
         }
 
     def _test_strategy(self, universe: str) -> list[str]:
-        tests = ["tests/test_project_contract.py", "tests/test_evals_contract.py", "tests/test_data_contract.py"]
+        tests = [
+            "tests/test_project_contract.py",
+            "tests/test_evals_contract.py",
+            "tests/test_data_contract.py",
+            "tests/test_harness_contract.py",
+        ]
         if universe in {"ml", "hybrid"}:
             tests.append("tests/test_ml_contract.py")
         if universe in {"ia", "chatbolt", "hybrid"}:
@@ -261,27 +356,152 @@ class BusinessSolutionAnalyzer:
         evals = ["evals/project_cases.jsonl", "evals/quality_gates.yaml"]
         if universe in {"ml", "hybrid"}:
             evals.append(f"evals/ml_cases.jsonl using {', '.join(ml_match['item'].get('metrics', []))}")
-        if universe in {"ia", "chatbolt", "hybrid"}:
-            evals.extend(["evals/prompt_cases.jsonl", "evals/rag_cases.jsonl"])
+        if universe in AI_UNIVERSES:
+            evals.extend(
+                [
+                    "evals/prompt_cases.jsonl",
+                    "evals/rag_cases.jsonl",
+                    "evals/retrieval_cases.jsonl using recall_at_k, mrr, ndcg_at_k",
+                    "evals/tool_workflow_cases.jsonl using pass^k over repeated trials",
+                ]
+            )
         if universe == "chatbolt":
             evals.append("evals/chatbot_cases.jsonl")
-        if ai_match["item"].get("id") in {"agent", "chatbot_rag_agent"}:
-            evals.append("evals/tool_workflow_cases.jsonl")
         return evals
 
-    def _swarm_strategy(self, universe: str) -> dict[str, Any]:
+    def _swarm_strategy(self, universe: str, text: str = "") -> dict[str, Any]:
+        # Single source of truth: runtime_manifest generated_project_swarm_strategy,
+        # whose fleet ids are validated against config/agent_fleets.json in tests.
+        fleets_by_universe = (
+            self.runtime_manifest.get("generated_project_swarm_strategy", {}).get("recommended_fleets_by_universe", {})
+        )
         return {
             "default": "start_with_one_orchestrator",
             "core_agents": 15,
             "max_agents": 60,
             "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
-            "recommended_fleets": {
-                "ml": ["ml_fleet", "data_fleet", "quality_fleet"],
-                "ia": ["rag_fleet", "mcp_fleet", "security_fleet"],
-                "chatbolt": ["rag_fleet", "mcp_fleet", "quality_fleet"],
-                "hybrid": ["project_factory_fleet", "ml_fleet", "rag_fleet", "cost_optimization_fleet"],
-            }.get(universe, ["project_factory_fleet"]),
+            "recommended_fleets": list(
+                dict.fromkeys(
+                    [
+                        *fleets_by_universe.get(universe, ["ml_fleet", "rag_fleet"]),
+                        *(["business_transformation_fleet"] if self._business_transformation(text)["active"] else []),
+                    ]
+                )
+            ),
         }
+
+    def _business_transformation(self, text: str) -> dict[str, Any]:
+        signals = [
+            signal
+            for signal in self.transformation_contract.get("activation_signals", [])
+            if self._keyword_matches(text, signal)
+        ]
+        return {
+            "active": bool(signals),
+            "signals": signals,
+            "contract": "config/business_transformation.json",
+            "workflow": "config/workflows/synapse/business-transformation.json",
+            "brief_template": "templates/business/transformation_brief.json",
+            "run_command": "python scripts/run_business_transformation.py --brief <brief.json>",
+            "rule": "Collect owner, process map, KPI baselines/targets, opportunity scores and risk factors from the user; execution stays simulated until MCP tools are authorized.",
+        }
+
+    def _solution_agents(self, universe: str, stack: list[str]) -> dict[str, Any]:
+        if universe not in AI_UNIVERSES:
+            return {"active": False, "reason": "ML universe ships models, not runtime agents."}
+        multiagent = "rag" in stack and "agents" in stack
+        return {
+            "active": True,
+            "architecture": "orchestrator_with_specialists" if multiagent else "single_agent",
+            "reason": (
+                "RAG plus tool execution: orchestrator delegates to a knowledge retriever and an approval-gated action executor."
+                if multiagent
+                else "Single agent first; escalate only when another domain, RAG or MCP is required."
+            ),
+            "blueprints_path": "config/solution_agents.json",
+            "contract": "config/agent_blueprint_contract.json",
+            "workflow": "config/workflows/synapse/agent-build.json",
+            "scaffold_command": "python scripts/scaffold_solution_agents.py --project-root .",
+        }
+
+    def _rag_scalability(self, universe: str, text: str) -> dict[str, Any]:
+        if universe not in AI_UNIVERSES:
+            return {"active": False, "reason": "No retrieval layer in the ML universe."}
+        # Only explicit mentions are used; everything else stays a pending user decision.
+        requirements = RagScaleRequirements(
+            existing_database=self._first_signal(
+                text,
+                {"postgresql": "postgres", "postgres": "postgres", "opensearch": "opensearch", "elasticsearch": "elasticsearch"},
+            ),
+            multi_tenant=True
+            if self._first_signal(text, {"multi-tenant": 1, "multi tenant": 1, "multitenant": 1, "multiempresa": 1})
+            else None,
+            hosting=self._first_signal(
+                text,
+                {"self-hosted": "self_hosted", "on-premise": "self_hosted", "on premise": "self_hosted", "gerenciado": "managed"},
+            ),
+            data_sensitivity=self._first_signal(
+                text,
+                {
+                    "restrito": "restricted",
+                    "restritos": "restricted",
+                    "restricted": "restricted",
+                    "confidencial": "confidential",
+                    "confidenciais": "confidential",
+                    "confidential": "confidential",
+                    "dados sensiveis": "confidential",
+                    "lgpd": "confidential",
+                },
+            ),
+        )
+        return {
+            "active": True,
+            "policy_path": "config/rag_scalability_policy.json",
+            "spec_path": "docs/specifications/scalable_rag_vector_db.md",
+            "plan": RagScalabilityPlanner(root=self.root).plan(requirements),
+            "rule": "Ask the user every pending decision before choosing the production vector store.",
+        }
+
+    def _model_adaptation(self, universe: str, text: str) -> dict[str, Any]:
+        if universe not in AI_UNIVERSES:
+            return {
+                "active": False,
+                "recommended_stage": "not_applicable",
+                "reason": "Classical ML training is governed by config/ml_foundations_policy.json.",
+            }
+        advice = AdaptationAdvisor().recommend(text, universe)
+        advice["policy_path"] = "config/fine_tuning_policy.json"
+        advice["spec_path"] = "docs/specifications/fine_tuning.md"
+        return advice
+
+    def _harness_engineering(self, universe: str) -> dict[str, Any]:
+        components = [
+            component["id"]
+            for component in self.harness_policy.get("components", [])
+            if universe in component.get("applies_to", [])
+        ]
+        eval_harness = self.harness_policy.get("eval_harness", {})
+        return {
+            "active": bool(self.harness_policy),
+            "policy_path": "config/harness_engineering_policy.json",
+            "spec_path": "docs/specifications/harness_engineering.md",
+            "components": components,
+            "trials_per_agent_case": eval_harness.get("trials_per_agent_case", 3),
+            "reliability_gate_pass_hat_k_min": eval_harness.get("reliability_gate_pass_hat_k_min", 0.8),
+            "audit_command": "python scripts/audit_harness.py",
+        }
+
+    def _first_signal(self, text: str, mapping: dict[str, Any]) -> Any:
+        for keyword, value in mapping.items():
+            if self._keyword_matches(text, keyword):
+                return value
+        return None
+
+    def _load_optional_json(self, relative_path: str) -> dict[str, Any]:
+        path = self.root / relative_path
+        if not path.exists():
+            return {}
+        return json.loads(path.read_text(encoding="utf-8-sig"))
 
     def _required_artifacts(self, universe: str, ml_match: dict[str, Any], ai_match: dict[str, Any]) -> list[str]:
         artifacts = ["docs/briefings/business_solution_analysis.md", "config/business_solution_analysis.json"]
@@ -289,18 +509,43 @@ class BusinessSolutionAnalyzer:
         if universe in {"ml", "hybrid"}:
             artifacts.extend(["config/ml_foundations_policy.json", "docs/specifications/ml_foundations.md"])
             artifacts.extend(ml_match["item"].get("required_artifacts", []))
-        if universe in {"ia", "chatbolt", "hybrid"}:
-            artifacts.extend(ai_match["item"].get("required_artifacts", []))
+        if universe in AI_UNIVERSES:
+            # Chatbot artifacts are generated only for the Chatbolt universe.
+            artifacts.extend(
+                artifact
+                for artifact in ai_match["item"].get("required_artifacts", [])
+                if universe == "chatbolt" or "chatbot" not in artifact
+            )
+            artifacts.append("config/solution_agents.json")
+            artifacts.extend(
+                [
+                    "config/rag_scalability_policy.json",
+                    "docs/specifications/scalable_rag_vector_db.md",
+                    "evals/retrieval_cases.jsonl",
+                    "config/fine_tuning_policy.json",
+                    "docs/specifications/fine_tuning.md",
+                    "evals/tool_workflow_cases.jsonl",
+                ]
+            )
+        artifacts.extend(["config/harness_engineering_policy.json", "docs/specifications/harness_engineering.md"])
         artifacts.extend(self._test_strategy(universe))
         return list(dict.fromkeys(artifacts))
 
-    def _book_alignment(self, ml_match: dict[str, Any], ai_match: dict[str, Any]) -> list[str]:
+    def _book_alignment(self, universe: str, ml_match: dict[str, Any], ai_match: dict[str, Any]) -> list[str]:
         alignment = [
             "AI Engineering: define quality, cost, latency, safety, and evaluation gates before scaling models or agents.",
             "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
             "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
             "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
+            "Harness engineering (Production LLMs, Building Applications with AI Agents, Cybernetics): budgets, stop conditions, repeated-trial evals and feedback loops around every agent.",
         ]
+        if universe in AI_UNIVERSES:
+            alignment.extend(
+                [
+                    "Scalable RAG (LLM Engineer's Handbook, AI Engineering, Introduction to Algorithms): sized vector indexes, hybrid retrieval with rank fusion, versioned reindexing and retrieval gates.",
+                    "Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model From Scratch): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data.",
+                ]
+            )
         if ml_match["item"].get("id") == "speech_recognition":
             alignment.extend(
                 [

@@ -1,0 +1,101 @@
+{
+  "schema": "synapse-harness-engineering-policy.v1",
+  "owner": "synapse",
+  "purpose": "Engineer the system around the model - context, tools, control loop, verification, observability and feedback - so agents (Claude Code, Codex and generated project agents) act reliably, and every capability is proven by a reproducible eval harness.",
+  "applies_to_universes": ["ml", "ia", "chatbolt", "hybrid"],
+  "spec_path": "docs/specifications/harness_engineering.md",
+  "reference_implementation": {
+    "service": "scripts/synapse_lib/harness_service.py",
+    "cli": "scripts/audit_harness.py",
+    "spec_template": "templates/harness/agent_harness_spec.md"
+  },
+  "harness_layers": {
+    "coding_agent_harness": "How Claude Code and Codex operate this repository: instruction maps, permissions, hooks, validation commands and shared memory.",
+    "agent_runtime_harness": "How agents inside a generated solution run: tool gateway, budgets, stop conditions, approval gates, traces.",
+    "eval_harness": "How any capability is proven: versioned cases, graders, repeated trials, gates and CI."
+  },
+  "components": [
+    {
+      "id": "context_map",
+      "goal": "Agents find the rules and the map of the repository without reading everything.",
+      "evidence_all": ["AGENTS.md", "CLAUDE.md", "config/context_policy.json"],
+      "applies_to": ["ml", "ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "tool_boundary",
+      "goal": "Least-privilege tools with explicit allowed, approval-required and forbidden actions.",
+      "evidence_all": ["config/agent_trust_framework.json", "guardrails/policy.yaml"],
+      "applies_to": ["ml", "ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "control_loop",
+      "goal": "Budgets and stop conditions bound every agent run.",
+      "evidence_all": ["config/cost_optimization_policy.json", "config/agent_blueprint_contract.json"],
+      "loop_limits": {
+        "max_steps": 25,
+        "max_tool_calls": 40,
+        "max_retries_per_tool": 2,
+        "retry_backoff": "exponential",
+        "repeat_call_loop_threshold": 3,
+        "wall_clock_timeout_seconds": 600
+      },
+      "applies_to": ["ml", "ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "verification",
+      "goal": "Deterministic tests and evals decide completion, not the model's own claim.",
+      "evidence_all": ["tests", "evals/quality_gates.yaml"],
+      "applies_to": ["ml", "ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "agent_evals",
+      "goal": "Tool-using behavior has its own cases (right tool, right arguments, approval respected).",
+      "evidence_all": ["evals/tool_workflow_cases.jsonl"],
+      "applies_to": ["ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "agent_blueprints",
+      "goal": "Every runtime agent of the solution has a validated blueprint: objective, tools, authority, model tier, budget, evals and escalation.",
+      "evidence_all": ["config/solution_agents.json", "config/workflows/synapse/agent-build.json"],
+      "applies_to": ["ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "observability",
+      "goal": "Every run leaves a trace: model, prompt version, tools, tokens, latency, outcome.",
+      "evidence_all": ["llm_ops/observability.yaml"],
+      "applies_to": ["ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "feedback_loop",
+      "goal": "Failures and approved examples become new eval cases and memory, never silent weight updates.",
+      "evidence_all": ["config/agent_improvement_loop.json"],
+      "applies_to": ["ml", "ia", "chatbolt", "hybrid"]
+    },
+    {
+      "id": "safe_execution",
+      "goal": "Side effects are simulated first, idempotent, reversible or approval-gated.",
+      "evidence_all": ["config/business_transformation.json", "scripts/synapse_lib/business_transformation.py"],
+      "applies_to": ["ml", "ia", "chatbolt", "hybrid"]
+    }
+  ],
+  "eval_harness": {
+    "case_fields": ["id", "input", "expected", "grader", "tags"],
+    "grader_order": ["deterministic", "schema", "model_graded_with_rubric", "human"],
+    "grader_rule": "Use the cheapest grader that can decide; model-graded checks need a written rubric and periodic human agreement checks.",
+    "trials_per_agent_case": 3,
+    "metrics": {
+      "pass_at_k": "probability that at least one of k trials succeeds (capability)",
+      "pass_hat_k": "probability that all k trials succeed (reliability)"
+    },
+    "reliability_gate_pass_hat_k_min": 0.8,
+    "reproducibility": ["record model id", "record prompt version", "temperature 0 when supported", "fixed dataset hash"],
+    "flaky_case_policy": "quarantine with an owner and a fix-by date; never delete a failing case to go green",
+    "ci_rule": "Deterministic suites run on every change; model-backed suites run before release."
+  },
+  "mechanical_enforcement": [
+    "structural contract tests guard architecture and generated-project boundaries",
+    "every referenced repository path must exist or be declared as generated/runtime",
+    "validation scripts fail loudly instead of warning"
+  ],
+  "readiness_rule": "A project is harness-ready when every component that applies to its universe has its evidence present."
+}

@@ -6,6 +6,13 @@ from typing import Any
 from scripts.synapse_lib.schemas.evals import EvalCaseResult
 from scripts.synapse_lib.schemas.models import ModelPredictionRequest
 from scripts.synapse_lib.model_service import ModelService
+from scripts.synapse_lib.rag_retrieval import (
+    HybridRetriever,
+    index_files,
+    mean_reciprocal_rank,
+    ndcg_at_k,
+    recall_at_k,
+)
 
 
 class EvalServiceError(ValueError):
@@ -60,6 +67,79 @@ class EvalService:
             metrics["avg_term_coverage"] = float(sum(coverage_scores) / len(coverage_scores))
         passed = self._passed(results)
         return self._response("rag", passed, metrics, gates, results)
+
+    def run_retrieval_eval(self, cases_path: str = "evals/retrieval_cases.jsonl") -> dict[str, Any]:
+        """Index the bootstrap corpus with the hybrid retriever and gate recall/MRR/nDCG.
+
+        Unlike run_rag_eval (grounding of golden answers), this measures whether
+        retrieval actually ranks the labeled source in the top k.
+        """
+        cases = self._load_jsonl(cases_path)
+        gates = self._load_quality_gates().get("retrieval", {})
+        k = int(gates.get("k", 5))
+        policy_path = self.root / "config" / "rag_scalability_policy.json"
+        if not policy_path.exists():
+            raise EvalServiceError("config/rag_scalability_policy.json is required for retrieval evals")
+        policy = json.loads(policy_path.read_text(encoding="utf-8-sig"))
+        corpus = sorted(
+            {
+                path.relative_to(self.root).as_posix()
+                for pattern in policy["evaluation"]["bootstrap_corpus_globs"]
+                for path in self.root.glob(pattern)
+                if path.is_file()
+            }
+        )
+        retriever = HybridRetriever(
+            rrf_k=int(policy["retrieval"]["rrf_k"]),
+            low_confidence_below=float(policy["retrieval"]["rerank_only_when_confidence_below"]),
+        )
+        index_files(
+            retriever,
+            self.root,
+            corpus,
+            int(policy["chunking"]["chunk_size_tokens"]),
+            int(policy["chunking"]["chunk_overlap_tokens"]),
+        )
+
+        results = []
+        for case in cases:
+            relevant = {str(source) for source in case.get("relevant_sources", [])}
+            ranked_sources = retriever.retrieve(str(case.get("query", "")), k=k * 4).sources()
+            metrics = {
+                "recall_at_k": recall_at_k(ranked_sources, relevant, k),
+                "mrr": mean_reciprocal_rank(ranked_sources, relevant),
+                "ndcg_at_k": ndcg_at_k(ranked_sources, relevant, k),
+            }
+            checks = {
+                "case_has_id": bool(case.get("id")),
+                "case_has_query": bool(case.get("query")),
+                "relevant_sources_in_corpus": bool(relevant) and relevant.issubset(set(corpus)),
+                "relevant_source_in_top_k": metrics["recall_at_k"] > 0,
+            }
+            notes = [] if checks["relevant_source_in_top_k"] else [f"top sources: {ranked_sources[:k]}"]
+            results.append(
+                EvalCaseResult(
+                    id=str(case.get("id", "unknown")),
+                    passed=all(checks.values()),
+                    checks=checks,
+                    metrics=metrics,
+                    notes=notes,
+                )
+            )
+
+        metrics = self._aggregate_results(results)
+        for name in ("recall_at_k", "mrr", "ndcg_at_k"):
+            values = [result.metrics[name] for result in results]
+            metrics[name] = float(sum(values) / len(values)) if values else 0.0
+        metrics["corpus_documents"] = float(len(corpus))
+        passed = (
+            bool(results)
+            and all(result.checks["relevant_sources_in_corpus"] for result in results)
+            and metrics["recall_at_k"] >= float(gates.get("recall_at_k_min", 0.8))
+            and metrics["mrr"] >= float(gates.get("mrr_min", 0.5))
+            and metrics["ndcg_at_k"] >= float(gates.get("ndcg_at_k_min", 0.5))
+        )
+        return self._response("retrieval", passed, metrics, gates, results)
 
     def _evaluate_rag_case(self, case: dict[str, Any], gates: dict[str, Any]) -> EvalCaseResult:
         # Deterministic, LLM-free proxy for faithfulness: instead of asking a

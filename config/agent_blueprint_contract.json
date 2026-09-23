@@ -22,22 +22,20 @@
     "quality_gate"
   ],
   "model_strategy": {
-    "local_first_allowed": true,
-    "free_local_models": [
-      "nomic-embed-text:latest",
-      "qwen2.5-coder:3b",
-      "qwen3:8b",
-      "deepseek-coder-v2:lite",
-      "qwen2.5-coder:14b",
-      "qwen3:14b",
-      "deepseek-r1:14b",
-      "qwen2.5-coder:32b"
-    ],
+    "source": "config/model_providers.json and config/cost_optimization_policy.json model_routing",
+    "providers": ["openai", "anthropic"],
+    "local_models": "disabled while config/runtime_manifest.json local_llm.enabled is false",
+    "model_tiers": {
+      "economy": "classification, routing, summarization, schema checks (e.g. Claude Haiku)",
+      "balanced": "implementation, rag answering, agent design, tool calling (e.g. Claude Sonnet)",
+      "strong": "architecture, security, conflict resolution, final decisions (e.g. Claude Opus); requires justification"
+    },
+    "default_tier": "economy",
     "teacher_review_models": ["gpt", "claude"],
-    "escalate_to_paid_model_when": [
+    "escalate_to_strong_tier_when": [
       "architecture_is_critical",
       "security_or_compliance_risk",
-      "local_model_output_fails_validation",
+      "lower_tier_output_fails_validation",
       "production_release_decision"
     ]
   },
@@ -73,8 +71,10 @@
     "authority_levels": ["advisory", "drafting", "tool_use", "external_action"],
     "default_authority_level": "advisory",
     "external_action_requires_human_approval": true,
-    "model_access": "via_llm_gateway_only"
+    "model_access": "via_llm_gateway_only",
+    "llm_gateway": "provider adapter in the solution that enforces model tier, token budget, sensitive-content blocking and trace logging"
   },
+  "solution_agents_file": "config/solution_agents.json",
   "a2a_message_contract": {
     "enabled": true,
     "transport": "synapse-peers",

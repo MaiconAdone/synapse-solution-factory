@@ -68,10 +68,10 @@
       "role_specific_context_filtering"
     ],
     "recommended_fleets_by_universe": {
-      "ml": ["ml_fleet", "data_fleet", "quality_fleet"],
+      "ml": ["ml_fleet", "security_fleet"],
       "ia": ["rag_fleet", "mcp_fleet", "security_fleet"],
-      "chatbolt": ["rag_fleet", "mcp_fleet", "quality_fleet"],
-      "hybrid": ["project_factory_fleet", "ml_fleet", "rag_fleet", "cost_optimization_fleet"]
+      "chatbolt": ["rag_fleet", "mcp_fleet", "security_fleet"],
+      "hybrid": ["ml_fleet", "rag_fleet", "mcp_fleet", "cost_optimization_fleet"]
     },
     "context_policy": "send_only_role_specific_context",
     "cloud_model_policy": "openai_claude_direct",
@@ -115,12 +115,31 @@
     "training_dataset_path": "data/learning/training_examples.jsonl",
     "promotion_requires_evals_and_human_approval": true
   },
+  "fine_tuning": {
+    "enabled": true,
+    "policy_file": "config/fine_tuning_policy.json",
+    "spec_file": "docs/specifications/fine_tuning.md",
+    "dataset_cli": "scripts/prepare_fine_tuning_dataset.py",
+    "automatic_weight_updates": false,
+    "requires_baseline_evals_and_human_approval": true
+  },
+  "harness_engineering": {
+    "enabled": true,
+    "policy_file": "config/harness_engineering_policy.json",
+    "spec_file": "docs/specifications/harness_engineering.md",
+    "audit_cli": "scripts/audit_harness.py",
+    "reliability_metric": "pass_hat_k"
+  },
   "business_transformation": {
     "enabled": true,
     "config_file": "config/business_transformation.json",
     "prompt_file": "prompts/business_transformation.md",
     "workflow_file": "config/workflows/synapse/business-transformation.json",
     "agent_profiles_file": "agents/definitions/business_transformation_agents.yaml",
+    "engine": "scripts/synapse_lib/business_transformation.py",
+    "cli": "scripts/run_business_transformation.py",
+    "eval_cases": "evals/business_transformation_cases.jsonl",
+    "brief_template": "templates/business/transformation_brief.json",
     "simulation_first": true,
     "human_approval_levels": ["HIGH", "CRITICAL"],
     "inherited_by_generated_projects": true
@@ -183,10 +202,18 @@
   },
   "rag": {
     "ready": true,
-    "implementation_status": "specification_only",
+    "implementation_status": "reference_implementation_local",
+    "scalability_policy_file": "config/rag_scalability_policy.json",
+    "spec_file": "docs/specifications/scalable_rag_vector_db.md",
+    "reference_modules": [
+      "scripts/synapse_lib/vector_store.py",
+      "scripts/synapse_lib/rag_retrieval.py",
+      "scripts/synapse_lib/rag_scalability.py"
+    ],
+    "retrieval_eval_command": "python scripts/run_evals.py retrieval",
     "limitations": [
-      "local lexical/vector-light index is intended for project bootstrap and offline evaluation",
-      "production vector store integration is still optional by adapter",
+      "the local hashing embedder is lexical, intended for bootstrap, offline evaluation and contract tests",
+      "production vector stores plug in through the VectorStore protocol (templates/rag/vector_db_adapter.py)",
       "GraphRAG remains a governed advanced strategy, not the default retrieval path"
     ],
     "advanced_strategies": [
@@ -288,6 +315,7 @@
     ],
     "required_workflows": [
       "new-ai-project",
+      "agent-build",
       "rag-build",
       "ml-release",
       "business-transformation"
@@ -307,6 +335,14 @@
       "config/ml_foundations_policy.json",
       "config/business_solution_catalog.json",
       "config/business_transformation.json",
+      "config/rag_scalability_policy.json",
+      "config/fine_tuning_policy.json",
+      "config/harness_engineering_policy.json",
+      "docs/specifications/scalable_rag_vector_db.md",
+      "docs/specifications/fine_tuning.md",
+      "docs/specifications/harness_engineering.md",
+      "evals/retrieval_cases.jsonl",
+      "evals/tool_workflow_cases.jsonl",
       "docs/specifications/llm_solution_factory_governance.md",
       "docs/specifications/technology_layer.md",
       "docs/specifications/ml_foundations.md",

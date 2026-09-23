@@ -85,6 +85,11 @@ Test-RelativePath "agentic_mesh_spec" "docs\specifications\agentic_mesh_governan
 Test-RelativePath "agentic_patterns_spec" "docs\specifications\agentic_architectural_patterns.md" "Especificacao de padroes arquiteturais agentic existe"
 Test-RelativePath "agent_fleet_certification" "docs\checklists\agent_fleet_certification.md" "Checklist de certificacao de fleets existe"
 Test-RelativePath "agent_sre_runbook" "docs\runbooks\agent_sre.md" "Runbook Agent SRE existe"
+Test-RelativePath "harness_engineering_policy" "config\harness_engineering_policy.json" "Politica de harness engineering existe"
+Test-RelativePath "harness_engineering_spec" "docs\specifications\harness_engineering.md" "Especificacao de harness engineering existe"
+Test-RelativePath "harness_contract_test" "tests\test_harness_contract.py" "Teste de contrato do harness existe"
+Test-RelativePath "business_transformation_engine" "scripts\synapse_lib\business_transformation.py" "Motor de transformacao empresarial existe"
+Test-RelativePath "business_transformation_cases" "evals\business_transformation_cases.jsonl" "Casos de eval de transformacao empresarial existem"
 Test-RelativePath "data_raw" "data\raw" "Pasta data/raw existe"
 Test-RelativePath "uploads_images" "data\uploads\images" "Pasta de upload de imagens existe"
 Test-RelativePath "uploads_files" "data\uploads\files" "Pasta de upload de arquivos existe"
@@ -172,6 +177,13 @@ if (Test-Path $UniversePath) {
         Add-Check "data_treatment_enabled" "Tratamento de dados ativo" ([bool]$Universe.capabilities.data_treatment) "data_treatment=$($Universe.capabilities.data_treatment)"
         Add-Check "swarm_core_capability" "Capacidade swarm core agents=15" ([int]$Universe.capabilities.swarm_core_agents -eq 15) "swarm_core_agents=$($Universe.capabilities.swarm_core_agents)"
         Add-Check "swarm_max_capability" "Capacidade swarm max agents=60" ([int]$Universe.capabilities.swarm_max_agents -eq 60) "swarm_max_agents=$($Universe.capabilities.swarm_max_agents)"
+        if ([bool]$Universe.capabilities.ai) {
+            Test-RelativePath "rag_scalability_policy" "config\rag_scalability_policy.json" "Politica de RAG escalavel e vector DB existe"
+            Test-RelativePath "fine_tuning_policy" "config\fine_tuning_policy.json" "Politica de fine-tuning existe"
+            Test-RelativePath "retrieval_eval_cases" "evals\retrieval_cases.jsonl" "Casos de eval de retrieval existem"
+            Test-RelativePath "solution_agents" "config\solution_agents.json" "Blueprints dos agentes da solucao existem"
+            Test-RelativePath "agent_build_workflow" "config\workflows\synapse\agent-build.json" "Workflow agent-build existe"
+        }
     }
     catch {
         Add-Check "universe_json" "Project universe e JSON valido" $false $_.Exception.Message

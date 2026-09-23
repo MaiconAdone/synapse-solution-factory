@@ -1,0 +1,240 @@
+{
+  "schema": "synapse-rag-scalability-policy.v1",
+  "owner": "synapse",
+  "purpose": "Turn RAG from a bootstrap pipeline into a governed, scalable retrieval system: sized vector storage, hybrid retrieval, versioned indexes, tenant-safe filtering, caching, and retrieval evals before release.",
+  "applies_to_universes": ["ia", "chatbolt", "hybrid"],
+  "spec_path": "docs/specifications/scalable_rag_vector_db.md",
+  "reference_implementation": {
+    "vector_store": "scripts/synapse_lib/vector_store.py",
+    "retrieval": "scripts/synapse_lib/rag_retrieval.py",
+    "planner": "scripts/synapse_lib/rag_scalability.py",
+    "pipeline_template": "templates/rag/rag_pipeline.py",
+    "adapter_template": "templates/rag/vector_db_adapter.py",
+    "note": "The local store, hashing embedder and BM25 index are dependency-free (numpy only) and exist for bootstrap, offline evals and contract tests. Production vector stores plug in through the same VectorStore protocol."
+  },
+  "required_user_decisions": [
+    "expected_corpus_chunks_in_12_months",
+    "peak_queries_per_second",
+    "p95_retrieval_latency_budget_ms",
+    "multi_tenant_isolation_required",
+    "data_sensitivity",
+    "hosting_constraint_self_hosted_or_managed",
+    "existing_database_platform"
+  ],
+  "scale_tiers": [
+    {
+      "id": "local",
+      "max_chunks": 100000,
+      "topology": "single_process",
+      "default_index": "flat",
+      "store_candidates": ["synapse-local", "faiss", "chromadb"],
+      "replicas": 1,
+      "shards": 1
+    },
+    {
+      "id": "team",
+      "max_chunks": 5000000,
+      "topology": "single_node_server",
+      "default_index": "hnsw",
+      "store_candidates": ["pgvector", "qdrant", "chromadb"],
+      "replicas": 1,
+      "shards": 1
+    },
+    {
+      "id": "enterprise",
+      "max_chunks": 100000000,
+      "topology": "replicated_cluster",
+      "default_index": "hnsw_quantized",
+      "store_candidates": ["qdrant", "weaviate", "milvus", "pinecone"],
+      "replicas": 2,
+      "shards": 4
+    },
+    {
+      "id": "massive",
+      "max_chunks": null,
+      "topology": "distributed_cluster",
+      "default_index": "ivf_pq_or_diskann",
+      "store_candidates": ["milvus", "pinecone"],
+      "replicas": 3,
+      "shards": 16
+    }
+  ],
+  "vector_store_catalog": [
+    {
+      "id": "synapse-local",
+      "kind": "in_process",
+      "strengths": ["zero_dependencies", "deterministic_tests", "offline_evals"],
+      "limits": ["single_process", "no_persistence_guarantees", "not_for_production_traffic"],
+      "filtering": "pre_filter_metadata_and_acl",
+      "hybrid_search": "bm25_plus_dense_rrf"
+    },
+    {
+      "id": "faiss",
+      "kind": "library",
+      "strengths": ["fast_exact_and_ann_search", "flat_ivf_hnsw_pq_indexes", "gpu_option"],
+      "limits": ["no_native_metadata_filtering", "persistence_and_serving_are_yours"],
+      "filtering": "external",
+      "hybrid_search": "external"
+    },
+    {
+      "id": "chromadb",
+      "kind": "embedded_or_server",
+      "strengths": ["simple_api", "metadata_filters", "fast_prototyping"],
+      "limits": ["limited_horizontal_scaling"],
+      "filtering": "native",
+      "hybrid_search": "limited"
+    },
+    {
+      "id": "pgvector",
+      "kind": "postgres_extension",
+      "strengths": ["reuse_existing_postgres", "sql_filters_and_joins", "transactions", "hnsw_and_ivfflat"],
+      "limits": ["vertical_scaling_first", "index_build_memory_on_large_tables"],
+      "filtering": "native_sql",
+      "hybrid_search": "with_postgres_full_text_search_plus_rrf"
+    },
+    {
+      "id": "qdrant",
+      "kind": "vector_server",
+      "strengths": ["payload_filtering", "sparse_dense_hybrid", "scalar_binary_product_quantization", "sharding_and_replication"],
+      "limits": ["separate_service_to_operate"],
+      "filtering": "native",
+      "hybrid_search": "native_sparse_dense"
+    },
+    {
+      "id": "weaviate",
+      "kind": "vector_server",
+      "strengths": ["native_bm25_hybrid", "native_multi_tenancy", "replication"],
+      "limits": ["separate_service_to_operate"],
+      "filtering": "native",
+      "hybrid_search": "native"
+    },
+    {
+      "id": "milvus",
+      "kind": "distributed_vector_database",
+      "strengths": ["billion_scale", "many_index_types_including_diskann_and_gpu", "partitions"],
+      "limits": ["higher_operational_complexity"],
+      "filtering": "native",
+      "hybrid_search": "native_sparse_dense"
+    },
+    {
+      "id": "pinecone",
+      "kind": "managed_service",
+      "strengths": ["serverless_operations", "namespaces", "metadata_filters", "sparse_dense"],
+      "limits": ["cloud_data_residency_review", "vendor_lock_in"],
+      "filtering": "native",
+      "hybrid_search": "native_sparse_dense"
+    },
+    {
+      "id": "opensearch-elasticsearch",
+      "kind": "search_engine",
+      "strengths": ["reuse_existing_search_cluster", "strong_bm25", "knn_plugin"],
+      "limits": ["vector_tuning_less_specialized"],
+      "filtering": "native",
+      "hybrid_search": "native"
+    }
+  ],
+  "store_selection_rules": [
+    {"when": "existing_database_platform == postgres and tier in [local, team]", "prefer": "pgvector"},
+    {"when": "data_sensitivity in [confidential, restricted] or hosting == self_hosted", "exclude": ["pinecone"]},
+    {"when": "multi_tenant_isolation_required", "prefer_capability": "native_multi_tenancy_or_namespaces"},
+    {"when": "existing search cluster (opensearch/elasticsearch)", "consider": "opensearch-elasticsearch"},
+    {"when": "tier == local", "prefer": "synapse-local for tests, faiss or chromadb for prototypes"}
+  ],
+  "index_policy": {
+    "flat": {
+      "use_when": "chunks <= 100000 or exact recall is mandatory",
+      "recall": "exact"
+    },
+    "hnsw": {
+      "use_when": "100000 < chunks <= 50000000 and vectors fit in RAM",
+      "params": {"m": 16, "ef_construction": 200, "ef_search": 100},
+      "tuning_rule": "raise ef_search until recall_at_k meets the gate, then stop; raise m only for high-dimensional or hard corpora"
+    },
+    "hnsw_quantized": {
+      "use_when": "memory is the bottleneck at enterprise tier",
+      "quantization": "scalar_int8 by default; binary only with rescoring on full vectors",
+      "params": {"m": 16, "ef_construction": 200, "ef_search": 128}
+    },
+    "ivf_pq_or_diskann": {
+      "use_when": "hundreds of millions of vectors or SSD-resident indexes",
+      "params": {"nlist_rule": "about 4 * sqrt(num_vectors)", "nprobe_start": 16},
+      "tuning_rule": "tune nprobe or search list size against recall_at_k and p95 latency"
+    },
+    "memory_estimate": "raw_bytes = chunks * dimension * 4 (float32); hnsw_link_bytes ~= chunks * m * 2 * 4; int8 quantization divides raw vector bytes by 4"
+  },
+  "chunking": {
+    "strategy": "structure_aware_with_overlap",
+    "chunk_size_tokens": 800,
+    "chunk_overlap_tokens": 120,
+    "parent_child_enabled": true,
+    "stable_chunk_id": "hash(source_id, chunk_index, content_hash)",
+    "required_metadata": [
+      "source_id",
+      "document_id",
+      "chunk_index",
+      "content_hash",
+      "embedding_model",
+      "index_version",
+      "tenant_id",
+      "permissions",
+      "created_at"
+    ]
+  },
+  "retrieval": {
+    "default_mode": "hybrid",
+    "dense_candidates": 50,
+    "lexical_candidates": 50,
+    "fusion": "reciprocal_rank_fusion",
+    "rrf_k": 60,
+    "final_top_k": 6,
+    "rerank_only_when_confidence_below": 0.72,
+    "filter_before_ranking": true,
+    "graph_rag_only_when_relationship_queries": true
+  },
+  "index_lifecycle": {
+    "naming": "{collection}__{embedding_model}__v{version}",
+    "serve_through_alias": true,
+    "never_mix_embedding_models_in_one_index": true,
+    "reindex_triggers": [
+      "embedding_model_change",
+      "chunking_policy_change",
+      "retrieval_eval_regression",
+      "metadata_schema_change"
+    ],
+    "reindex_strategy": "blue_green: build new version, run retrieval evals, switch alias, keep previous version for rollback",
+    "incremental_ingestion": "skip unchanged content_hash, upsert changed chunks, tombstone deleted sources",
+    "freshness_sla_hours_default": 24
+  },
+  "multi_tenancy_and_security": {
+    "acl_enforced_in_retrieval_layer": true,
+    "never_rely_on_prompt_for_access_control": true,
+    "isolation_levels": {
+      "low": "shared collection + tenant_id filter",
+      "high": "collection or namespace per tenant",
+      "restricted": "dedicated deployment per tenant"
+    },
+    "pii_redaction_before_embedding": true,
+    "secrets_never_indexed": true
+  },
+  "caching": {
+    "embedding_cache_key": "embedding_model + content_hash",
+    "semantic_cache_similarity_threshold": 0.95,
+    "semantic_cache_ttl_hours": 24,
+    "invalidate_on_index_version_change": true
+  },
+  "evaluation": {
+    "cases_path": "evals/retrieval_cases.jsonl",
+    "bootstrap_corpus_globs": [
+      "docs/specifications/*.md",
+      "playbooks/*.md",
+      "rag_pipelines/*.md",
+      "guardrails/*.yaml"
+    ],
+    "metrics": ["recall_at_k", "mrr", "ndcg_at_k", "context_precision", "faithfulness", "p95_latency_ms", "cost_per_1k_queries", "index_freshness_lag_hours"],
+    "release_rule": "An index version is promoted only when retrieval gates in evals/quality_gates.yaml pass on the labeled query set."
+  },
+  "observability": {
+    "log_fields": ["query_id", "index_version", "embedding_model", "filters_applied", "dense_top_score", "fused_ranks", "reranked", "latency_ms", "chunks_returned"],
+    "alerts": ["recall_regression", "p95_latency_over_budget", "freshness_lag_over_sla", "empty_result_rate_spike"]
+  }
+}

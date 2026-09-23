@@ -119,12 +119,13 @@ Trust framework obrigatorio:
 
 Fleets atuais:
 
-- `project_factory_fleet`
+- `project_factory_fleet` (somente no Synapse; removida dos projetos gerados)
 - `ml_fleet`
 - `rag_fleet`
 - `mcp_fleet`
 - `security_fleet`
 - `cost_optimization_fleet`
+- `business_transformation_fleet`
 
 Antes de criar agents, RAG, MCP ou workflows IA:
 
@@ -312,6 +313,35 @@ Use:
 - CrewAI/Swarms para times de agentes por papeis.
 - AutoGen para conversas multiagentes, pesquisa colaborativa e times researcher/coder/reviewer.
 - Dify/Flowise para no-code ou visual builders.
+
+## RAG Escalavel, Vector DB, Fine-Tuning e Harness Engineering
+
+- RAG escalavel e vector DB: `config/rag_scalability_policy.json` e
+  `docs/specifications/scalable_rag_vector_db.md`. Pergunte ao usuario volume
+  do corpus, QPS, latencia, multi-tenant, sensibilidade e hospedagem antes de
+  escolher o vector database; o analisador devolve essas lacunas em
+  `rag_scalability.plan.pending_user_decisions`.
+- Fine-tuning: `config/fine_tuning_policy.json`. Ordem prompt -> RAG ->
+  fine-tuning; exige baseline medido, dataset curado
+  (`scripts/prepare_fine_tuning_dataset.py`) e aprovacao humana. Pesos nunca
+  mudam automaticamente.
+- Harness engineering: `config/harness_engineering_policy.json`. Todo agente
+  tem mapa de contexto, fronteira de ferramentas, limites do loop, verificacao,
+  observabilidade e feedback; audite com `python scripts/audit_harness.py`.
+- Gate de retrieval: `python scripts/run_evals.py retrieval` (recall@k, MRR, nDCG).
+- Agentes da solucao (runtime) ficam em `config/solution_agents.json`, gerados
+  do ADR e validados contra `config/agent_blueprint_contract.json`
+  (`python scripts/scaffold_solution_agents.py --validate-only`); siga o
+  workflow `agent-build`. Nao invente ferramentas: confirme inventario,
+  permissoes e matriz de aprovacao com o usuario. Nao confunda com os 60
+  agentes construtores do swarm.
+- O universo escolhido pelo usuario e o gerado (`effective_universe`); se o ADR
+  trouxer `universe_confirmation`, confirme o universo no chat.
+- Transformacao empresarial: `config/business_transformation.json` e fonte
+  unica; rode `python scripts/run_business_transformation.py --brief <brief>`.
+  Pergunte ao usuario owner, processo, KPIs (baseline/meta), notas 1-5 e fatores
+  de risco listados em `pending_user_decisions`. HIGH exige aprovacao; CRITICAL
+  nunca executa acao externa. Execucao real so via tool MCP autorizada.
 
 ## Memoria e RAG
 

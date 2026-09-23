@@ -17,11 +17,21 @@ pipeline:
   embed:
     owner: rag-engineering
     dimension: 384
+    one_model_per_index: true
+  index:
+    owner: rag-engineering
+    policy: config/rag_scalability_policy.json
+    naming: "{collection}__{embedding_model}__v{version}"
+    serve_through_alias: true
+    reindex: blue_green
   retrieve:
     owner: rag-engineering
     methods:
       - semantic
+      - bm25
       - metadata_filter
+      - acl_filter
+    fusion: reciprocal_rank_fusion
   rerank:
     owner: llm-engineering
     enabled: true
@@ -30,8 +40,11 @@ pipeline:
     citations_required: true
   evaluate:
     owner: testing-qa
+    cases: evals/retrieval_cases.jsonl
     metrics:
       - recall_at_k
+      - mrr
+      - ndcg_at_k
       - faithfulness
       - answer_relevance
 

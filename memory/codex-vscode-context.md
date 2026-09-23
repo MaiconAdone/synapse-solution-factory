@@ -42,3 +42,21 @@ Objetivo: compartilhar contexto de trabalho entre Codex e o chat do VS Code.
 Arquivos tocados: `memory/codex-vscode-context.md`, `.github/copilot-instructions.md`, `memory/README.md`.
 Decisoes: usar arquivo versionado no workspace como fonte de verdade curta; evitar depender de memoria interna/efemera de extensoes.
 Proximo passo: ao usar o chat do VS Code, pedir explicitamente para considerar `.github/copilot-instructions.md`, `AGENTS.md` e este arquivo quando a extensao nao carregar instrucoes automaticamente.
+
+Data: 2026-09-23
+Objetivo: adicionar RAG escalavel/vector DB, governanca de fine-tuning e harness engineering; auditar os 4 universos.
+Arquivos tocados: `config/rag_scalability_policy.json`, `config/fine_tuning_policy.json`, `config/harness_engineering_policy.json`, `docs/specifications/{scalable_rag_vector_db,fine_tuning,harness_engineering}.md`, `scripts/synapse_lib/{vector_store,rag_retrieval,rag_scalability,fine_tuning_service,harness_service,text_utils}.py`, `templates/`, analisador, fabrica, diagnose, validate, testes.
+Decisoes: politicas JSON como fonte de verdade; analisador devolve decisoes de escala pendentes em vez de adivinhar; fine-tuning so com baseline medido e aprovacao humana; analisador permanece stdlib-only; fleets recomendadas lidas do runtime_manifest (removidas data_fleet/quality_fleet inexistentes); templates fantasmas viraram `scaffold_targets`.
+Proximo passo: ao criar projeto IA/Chatbolt/Hibrido, perguntar ao usuario volume do corpus, QPS, latencia, multi-tenant, sensibilidade e hospedagem antes de escolher o vector DB.
+
+Data: 2026-09-23
+Objetivo: auditar agentes agenticos do universo IA.
+Arquivos tocados: analisador (effective_universe, arquetipo composto), `config/business_solution_catalog.json`, `config/agent_blueprint_contract.json`, `config/workflows/synapse/agent-build.json`, `scripts/synapse_lib/solution_agents.py`, `scripts/scaffold_solution_agents.py`, fabrica, diagnose, validate, README/CLAUDE/AGENTS.
+Decisoes: universo escolhido pelo usuario e o gerado (recomendacao diferente vira universe_confirmation); agentes runtime da solucao em config/solution_agents.json separados dos 60 construtores; contrato de blueprint alinhado a OpenAI/Anthropic (sem modelos locais).
+Proximo passo: em projeto IA, confirmar com o usuario inventario de ferramentas, permissoes e matriz de aprovacao do action-executor.
+
+Data: 2026-09-23
+Objetivo: tornar real a camada de agentes empresariais (transformacao empresarial).
+Arquivos tocados: `config/business_transformation.json` (v2), workflow e YAML de perfis alinhados, `scripts/synapse_lib/business_transformation.py`, `scripts/run_business_transformation.py`, `templates/business/transformation_brief.json`, `evals/business_transformation_cases.jsonl`, analisador, fabrica, diagnose, validate, docs.
+Decisoes: motor deterministico stdlib com 14 estagios; risco por regras explicitas (fator ausente = HIGH); CRITICAL nunca executa acao externa; tools sempre simuladas ate MCP autorizado; analisador adiciona business_transformation_fleet em pedidos de processo/KPI.
+Proximo passo: para um caso real, coletar do usuario owner, processo, KPIs baseline/meta, notas 1-5 e fatores de risco por oportunidade.

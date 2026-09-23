@@ -51,6 +51,29 @@ Require-Path "config\data_treatment_policy.json"
 Require-Path "config\workflows\synapse\new-ai-project.json"
 Require-Path "config\workflows\synapse\rag-build.json"
 Require-Path "config\workflows\synapse\ml-release.json"
+Require-Path "config\rag_scalability_policy.json"
+Require-Path "config\fine_tuning_policy.json"
+Require-Path "config\harness_engineering_policy.json"
+Require-Path "docs\specifications\scalable_rag_vector_db.md"
+Require-Path "docs\specifications\fine_tuning.md"
+Require-Path "docs\specifications\harness_engineering.md"
+Require-Path "scripts\synapse_lib\vector_store.py"
+Require-Path "scripts\synapse_lib\rag_retrieval.py"
+Require-Path "scripts\synapse_lib\rag_scalability.py"
+Require-Path "scripts\synapse_lib\fine_tuning_service.py"
+Require-Path "scripts\synapse_lib\harness_service.py"
+Require-Path "evals\retrieval_cases.jsonl"
+Require-Path "evals\tool_workflow_cases.jsonl"
+Require-Path "templates\rag\rag_pipeline.py"
+Require-Path "templates\rag\vector_db_adapter.py"
+Require-Path "config\workflows\synapse\agent-build.json"
+Require-Path "config\solution_agents.json"
+Require-Path "scripts\synapse_lib\solution_agents.py"
+Require-Path "scripts\scaffold_solution_agents.py"
+Require-Path "scripts\synapse_lib\business_transformation.py"
+Require-Path "scripts\run_business_transformation.py"
+Require-Path "evals\business_transformation_cases.jsonl"
+Require-Path "templates\business\transformation_brief.json"
 
 python -m compileall scripts tests | Out-Host
 if ($LASTEXITCODE -ne 0) {
@@ -92,6 +115,26 @@ if ($LASTEXITCODE -ne 0) {
 python -c "import json, re; from pathlib import Path; m=json.loads(Path('config/runtime_manifest.json').read_text(encoding='utf-8-sig')); required=m['validation']['required_agents']; specialists=m['validation']['specialist_agents']; workflow=json.loads(Path('config/workflows/synapse/new-ai-project.json').read_text(encoding='utf-8-sig')); groups=workflow['execution']['parallelGroups']; parallel=[agent for group in groups for agent in group]; steps={step['agent'] for step in workflow['steps']}; yaml_ids=re.findall(r'(?m)^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$', Path('agents/definitions/enterprise_agents.yaml').read_text(encoding='utf-8-sig')); assert len(required)==15, required; assert len(specialists)==45, specialists; assert len(yaml_ids)==60 and len(set(yaml_ids))==60, yaml_ids; assert len(parallel)==15 and len(set(parallel))==15, parallel; assert set(parallel)==set(required), {'parallel': parallel, 'required': required}; assert set(required).issubset(steps), {'missing_step_agents': sorted(set(required)-steps)}; assert set(yaml_ids)==set(required+specialists), {'yaml_ids': yaml_ids, 'expected': required+specialists}; print('new_project_60_agent_contract_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Workflow new-ai-project deve conter 15 core agents em paralelo e YAML deve conter 60 agentes")
+}
+
+python -c "import json; from pathlib import Path; load=lambda p: json.loads(Path(p).read_text(encoding='utf-8-sig')); m=load('config/runtime_manifest.json'); fleets={f['id'] for f in load('config/agent_fleets.json')['fleets']}; rec=m['generated_project_swarm_strategy']['recommended_fleets_by_universe']; bad={u: [f for f in ids if f not in fleets or f=='project_factory_fleet'] for u, ids in rec.items()}; assert not any(bad.values()), bad; cost={k: v['active_agent_limit'] for k, v in load('config/cost_optimization_policy.json')['activation_profiles'].items()}; spec=load('config/ai_ml_enterprise_spec.json')['cost_aware_orchestration']['activation_targets']; assert spec==cost, (spec, cost); ft=load('config/fine_tuning_policy.json'); assert ft['provider_rules']['automatic_weight_updates'] is False; assert ft['release_gates']['human_approval_required'] is True; h=load('config/harness_engineering_policy.json'); assert h['eval_harness']['reliability_gate_pass_hat_k_min']>0; missing=[t for tech in load('config/ai_framework_selection.json')['technology_catalog'] for t in tech.get('templates', []) if not Path(t).exists()]; assert not missing, missing; print('ai_engineering_extensions_ok')" | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Falha na coerencia de fleets, perfis de custo, fine-tuning, harness ou templates")
+}
+
+python scripts\scaffold_solution_agents.py --validate-only | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Blueprints de config/solution_agents.json violam o agent blueprint contract")
+}
+
+python scripts\run_business_transformation.py --cases evals\business_transformation_cases.jsonl | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Casos de transformacao empresarial (risco, autonomia, aprovacao) nao passaram")
+}
+
+python scripts\run_evals.py retrieval | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Gates de retrieval hibrido (evals/retrieval_cases.jsonl) nao passaram")
 }
 
 if ($Errors.Count -gt 0) {

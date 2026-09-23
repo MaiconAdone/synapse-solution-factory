@@ -52,5 +52,16 @@
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso,
   dados/fontes disponiveis ou nivel de risco, pergunte ao usuario pela conversa
   antes de implementar. Nao invente essas informacoes.
+- RAG escalavel e vector DB seguem `config/rag_scalability_policy.json`;
+  fine-tuning segue `config/fine_tuning_policy.json` (prompt -> RAG ->
+  fine-tuning, baseline medido e aprovacao humana); todo agente segue
+  `config/harness_engineering_policy.json` (`python scripts/audit_harness.py`).
+- Agentes da solucao (runtime) ficam em `config/solution_agents.json`,
+  validados contra `config/agent_blueprint_contract.json` e construidos pelo
+  workflow `agent-build`; ferramentas sao confirmadas com o usuario.
+- Transformacao empresarial roda pelo motor
+  `scripts/synapse_lib/business_transformation.py` a partir de
+  `config/business_transformation.json`; decisoes pendentes sao perguntadas no
+  chat e acoes HIGH/CRITICAL exigem aprovacao humana.
 - Respeitar os provedores fixos: Codex/OpenAI e Claude Code/Anthropic.
 - Edicoes e comandos continuam sujeitos a aprovacao humana conforme o risco.

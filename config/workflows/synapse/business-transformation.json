@@ -5,21 +5,28 @@
     "mode": "stateful-governed",
     "coordination": "orchestration-manager",
     "simulationFirst": true,
-    "humanApprovalFor": ["HIGH", "CRITICAL"],
-    "functionalAgentProfiles": "agents/definitions/business_transformation_agents.yaml"
+    "humanApprovalFor": [
+      "HIGH",
+      "CRITICAL"
+    ],
+    "functionalAgentProfiles": "agents/definitions/business_transformation_agents.yaml",
+    "contract": "config/business_transformation.json",
+    "engine": "scripts/synapse_lib/business_transformation.py"
   },
   "steps": [
-    {"name": "intake", "agent": "orchestration-manager"},
-    {"name": "diagnosis", "agent": "product-strategy"},
-    {"name": "process_mapping", "agent": "business-value-analyst"},
-    {"name": "data_readiness", "agent": "data-science"},
-    {"name": "opportunity_identification", "agent": "llm-engineering"},
-    {"name": "automation_architecture", "agent": "integration-automation"},
-    {"name": "kpi_design", "agent": "metrics-instrumentation"},
-    {"name": "risk_governance", "agent": "security-compliance"},
-    {"name": "human_approval", "agent": "policy-guardrails-engineer"},
-    {"name": "simulation", "agent": "testing-qa"},
-    {"name": "impact_evaluation", "agent": "business-value-analyst"},
-    {"name": "final_report", "agent": "documentation"}
+    {"name": "intake", "agent": "orchestration-manager", "profile": "orchestrator"},
+    {"name": "diagnosis", "agent": "product-strategy", "profile": "business-transformation"},
+    {"name": "process_mapping", "agent": "business-value-analyst", "profile": "process-mapping"},
+    {"name": "data_readiness", "agent": "data-science", "profile": "data-analysis"},
+    {"name": "opportunity_identification", "agent": "product-strategy", "profile": "business-transformation", "supporting_agents": ["llm-engineering"]},
+    {"name": "prioritization", "agent": "product-strategy", "profile": "business-transformation"},
+    {"name": "automation_architecture", "agent": "integration-automation", "profile": "automation-architect"},
+    {"name": "kpi_design", "agent": "metrics-instrumentation", "profile": "kpi-monitor"},
+    {"name": "execution_planning", "agent": "orchestration-manager", "profile": "orchestrator"},
+    {"name": "risk_governance", "agent": "security-compliance", "profile": "risk-governance"},
+    {"name": "human_approval", "agent": "policy-guardrails-engineer", "profile": "human-approval"},
+    {"name": "simulation", "agent": "integration-automation", "profile": "automation-architect", "supporting_agents": ["testing-qa"]},
+    {"name": "impact_evaluation", "agent": "metrics-instrumentation", "profile": "kpi-monitor", "supporting_agents": ["business-value-analyst"]},
+    {"name": "final_report", "agent": "orchestration-manager", "profile": "orchestrator", "supporting_agents": ["documentation"]}
   ]
 }

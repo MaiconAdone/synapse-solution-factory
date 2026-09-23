@@ -1,0 +1,18 @@
+{
+  "name": "agent-build",
+  "description": "Design, bound, evaluate and certify the runtime agents of an IA, Chatbolt or Hybrid solution.",
+  "contract": "config/agent_blueprint_contract.json",
+  "blueprints": "config/solution_agents.json",
+  "steps": [
+    {"name": "decide_single_or_multiagent", "agent": "orchestration-manager"},
+    {"name": "draft_agent_blueprints", "agent": "llm-engineering"},
+    {"name": "confirm_tool_inventory_with_user", "agent": "product-strategy"},
+    {"name": "define_tool_contracts_and_mcp_boundaries", "agent": "integration-automation"},
+    {"name": "threat_model_tools_and_approval_matrix", "agent": "security-compliance"},
+    {"name": "wire_retrieval_for_knowledge_agents", "agent": "rag-engineering"},
+    {"name": "build_agent_eval_cases", "agent": "testing-qa"},
+    {"name": "run_repeated_trials_pass_hat_k", "agent": "testing-qa"},
+    {"name": "audit_harness_and_traces", "agent": "observability-ops"},
+    {"name": "human_approval_for_external_actions", "agent": "orchestration-manager"}
+  ]
+}

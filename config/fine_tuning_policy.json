@@ -1,0 +1,107 @@
+{
+  "schema": "synapse-fine-tuning-policy.v1",
+  "owner": "synapse",
+  "purpose": "Decide when a solution should adapt model weights instead of prompts or retrieval, and gate every fine-tuning run behind dataset quality, baseline evals, privacy review and human approval.",
+  "applies_to_universes": ["ia", "chatbolt", "hybrid"],
+  "not_applicable_reason_for_ml": "Classical ML training is governed by config/ml_foundations_policy.json; this policy covers LLM, embedding and reranker adaptation.",
+  "spec_path": "docs/specifications/fine_tuning.md",
+  "reference_implementation": {
+    "service": "scripts/synapse_lib/fine_tuning_service.py",
+    "cli": "scripts/prepare_fine_tuning_dataset.py",
+    "card_template": "templates/fine_tuning/model_adaptation_card.md"
+  },
+  "adaptation_ladder": [
+    {
+      "stage": "prompt_engineering",
+      "solves": ["instruction_clarity", "output_contracts", "few_shot_behavior"],
+      "cost": "lowest"
+    },
+    {
+      "stage": "rag",
+      "solves": ["missing_or_changing_knowledge", "citations", "tenant_specific_facts"],
+      "cost": "low_to_medium"
+    },
+    {
+      "stage": "fine_tuning",
+      "solves": ["consistent_format_or_style", "narrow_task_accuracy", "tool_call_reliability", "latency_or_cost_via_smaller_model", "domain_embedding_quality"],
+      "cost": "medium_to_high"
+    },
+    {
+      "stage": "continued_pretraining",
+      "solves": ["new_language_or_vocabulary_at_scale"],
+      "cost": "highest",
+      "requires": "explicit architecture review and human approval"
+    }
+  ],
+  "decision_rules": {
+    "prefer_rag_when": [
+      "knowledge_changes_frequently",
+      "answers_need_citations",
+      "facts_are_tenant_or_permission_specific"
+    ],
+    "consider_fine_tuning_when": [
+      "prompt_and_rag_baseline_measured_and_below_target",
+      "behavior_or_format_is_the_gap_not_knowledge",
+      "high_volume_task_needs_lower_latency_or_cost",
+      "a_smaller_model_must_imitate_a_larger_one",
+      "retrieval_quality_is_limited_by_generic_embeddings"
+    ],
+    "block_fine_tuning_when": [
+      "no_eval_set",
+      "no_measured_baseline",
+      "dataset_below_minimum",
+      "unresolved_pii_or_secrets",
+      "restricted_data_would_leave_approved_environment",
+      "no_rollback_to_base_model"
+    ]
+  },
+  "techniques": {
+    "sft": "supervised fine-tuning on curated input/output pairs",
+    "lora": "parameter-efficient adapters; default for open-weight models",
+    "qlora": "LoRA on a quantized base model when GPU memory is the constraint",
+    "preference_tuning": "DPO-style training on chosen/rejected pairs when ranking quality or tone is the gap",
+    "distillation": "train a smaller model on reviewed outputs of a larger model",
+    "embedding_fine_tuning": "contrastive pairs (query, relevant chunk) to improve retrieval recall",
+    "reranker_fine_tuning": "cross-encoder trained on labeled query/chunk relevance"
+  },
+  "provider_rules": {
+    "managed_fine_tuning": "Provider-dependent. Confirm supported base models, data retention and pricing with the provider at time of use; do not assume availability.",
+    "open_weight_fine_tuning": "Allowed on approved local or private infrastructure with PEFT (LoRA/QLoRA).",
+    "sensitive_data": "Restricted or sensitive datasets never leave the approved environment; cloud fine-tuning requires data classification and human approval.",
+    "automatic_weight_updates": false
+  },
+  "dataset": {
+    "format": "jsonl chat messages: {\"messages\": [{\"role\": \"system|user|assistant\", \"content\": \"...\"}], \"human_score\": 0.0-1.0}",
+    "source_candidates": ["data/learning/training_examples.jsonl", "approved eval failures converted to examples", "human-reviewed production transcripts"],
+    "min_examples_pilot": 50,
+    "min_examples_production": 500,
+    "min_human_score": 0.8,
+    "validation_fraction": 0.15,
+    "split_strategy": "deterministic hash of normalized prompt, so the same example never moves between splits",
+    "max_estimated_tokens_per_example": 4096,
+    "required_checks": [
+      "schema_valid",
+      "exact_and_normalized_dedup",
+      "train_validation_leakage",
+      "pii_and_secret_scan",
+      "human_score_threshold",
+      "label_balance_or_task_coverage",
+      "license_and_consent_recorded"
+    ],
+    "data_card_required": true
+  },
+  "release_gates": {
+    "baseline": "prompt + RAG solution measured on the same eval set",
+    "min_relative_improvement_over_baseline": 0.05,
+    "no_regression_on": ["safety_evals", "prompt_injection_cases", "retrieval_faithfulness"],
+    "cost_and_latency_within_budget": true,
+    "model_card_updated": true,
+    "human_approval_required": true,
+    "rollout": "shadow or canary before full traffic",
+    "rollback": "keep base model routing available and switch back on regression"
+  },
+  "registry": {
+    "record_fields": ["base_model", "technique", "dataset_hash", "dataset_card", "hyperparameters", "eval_results", "approver", "created_at", "rollback_target"],
+    "artifacts_path": "artifacts/models"
+  }
+}

@@ -549,6 +549,8 @@ function Create-AssistantInheritanceArtifacts {
 - Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
 - Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou nivel de risco, pergunte ao usuario antes de implementar. Nao invente essas informacoes.
+- Todo agente segue `config/harness_engineering_policy.json` (mapa de contexto, limites do loop, verificacao, observabilidade); audite com `python scripts/audit_harness.py`.
+- Com RAG, siga `config/rag_scalability_policy.json` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; fine-tuning so com `config/fine_tuning_policy.json` (baseline medido, dataset curado e aprovacao humana).
 "@
     Write-TextFile -Path (Join-Path $Destino "AGENTS.md") -Content $CodexInstructions
 
@@ -577,6 +579,8 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
 - Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
 - Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
 - Se faltar contexto essencial, pergunte ao usuario no chat antes de implementar.
+- Todo agente segue `config/harness_engineering_policy.json`; audite com `python scripts/audit_harness.py`.
+- Com RAG, siga `config/rag_scalability_policy.json` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); fine-tuning so com `config/fine_tuning_policy.json` e aprovacao humana.
 "@
     Write-TextFile -Path (Join-Path $Destino "CLAUDE.md") -Content $ClaudeInstructions
 
@@ -1696,6 +1700,67 @@ def test_data_directories_are_ready_for_pipeline():
 "@
     Write-TextFile (Join-Path $Destino "tests\test_data_contract.py") $DataContractTest
 
+    $HarnessContractTest = @'
+from pathlib import Path
+import json
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+
+def test_harness_is_ready_for_project_universe():
+    from scripts.synapse_lib.harness_service import HarnessAuditor
+
+    universe = json.loads((ROOT / "config/project_universe.json").read_text(encoding="utf-8-sig"))["universe"]
+    report = HarnessAuditor(root=ROOT).audit()
+
+    assert report["universe"] == universe
+    assert report["harness_ready"], [item for item in report["components"] if item["status"] != "ready"]
+
+
+def test_repeated_trials_separate_capability_from_reliability():
+    from scripts.synapse_lib.harness_service import pass_at_k, pass_hat_k
+
+    assert pass_at_k(3, 1, 3) == 1.0
+    assert pass_hat_k(3, 1, 3) == 0.0
+    assert pass_hat_k(3, 3, 3) == 1.0
+'@
+    Write-TextFile (Join-Path $Destino "tests\test_harness_contract.py") $HarnessContractTest
+
+    $BusinessTransformationTest = @'
+from pathlib import Path
+import json
+import re
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+
+def test_business_transformation_contract_workflow_and_profiles_agree():
+    contract = json.loads((ROOT / "config/business_transformation.json").read_text(encoding="utf-8-sig"))
+    workflow = json.loads((ROOT / "config/workflows/synapse/business-transformation.json").read_text(encoding="utf-8-sig"))
+    profiles = {profile["id"]: profile for profile in contract["functional_agents"]}
+
+    assert [step["name"] for step in workflow["steps"]] == [stage["id"] for stage in contract["workflow"]["stages"]]
+    for step, stage in zip(workflow["steps"], contract["workflow"]["stages"]):
+        assert step["agent"] == profiles[stage["profile"]]["agent_id"]
+    yaml_ids = re.findall(r"(?m)^  - id: ([a-z-]+)$", (ROOT / "agents/definitions/business_transformation_agents.yaml").read_text(encoding="utf-8-sig"))
+    assert yaml_ids == list(profiles)
+
+
+def test_business_transformation_eval_cases_enforce_risk_and_approval():
+    from scripts.synapse_lib.business_transformation import run_cases
+
+    result = run_cases(ROOT / "evals/business_transformation_cases.jsonl", root=ROOT)
+
+    assert result["passed"], [case for case in result["cases"] if not case["passed"]]
+'@
+    Write-TextFile (Join-Path $Destino "tests\test_business_transformation_contract.py") $BusinessTransformationTest
+
     if ($ProjectUniverse.ml_enabled) {
         $MlContractTest = @"
 from pathlib import Path
@@ -1774,6 +1839,49 @@ def test_rag_eval_cases_are_grounded_in_their_cited_source():
     assert result["eval_type"] == "rag"
     assert result["cases_total"] > 0
     assert result["passed"], "RAG eval cases must be grounded in expected_source (faithfulness gate)"
+
+def test_scalable_rag_and_fine_tuning_governance_is_inherited():
+    for relative_path in (
+        "config/rag_scalability_policy.json",
+        "docs/specifications/scalable_rag_vector_db.md",
+        "config/fine_tuning_policy.json",
+        "docs/specifications/fine_tuning.md",
+        "templates/rag/rag_pipeline.py",
+        "templates/rag/vector_db_adapter.py",
+        "evals/retrieval_cases.jsonl",
+        "evals/tool_workflow_cases.jsonl",
+    ):
+        assert (ROOT / relative_path).exists(), relative_path
+    policy = json.loads((ROOT / "config/fine_tuning_policy.json").read_text(encoding="utf-8-sig"))
+    assert policy["provider_rules"]["automatic_weight_updates"] is False
+
+
+def test_hybrid_retrieval_meets_quality_gates():
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from scripts.synapse_lib.eval_service import EvalService
+
+    result = EvalService(root=ROOT).run_retrieval_eval()
+
+    assert result["eval_type"] == "retrieval"
+    assert result["passed"], result["metrics"]
+
+
+def test_solution_runtime_agents_follow_the_blueprint_contract():
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from scripts.synapse_lib.solution_agents import validate_solution_agents
+
+    document = json.loads((ROOT / "config/solution_agents.json").read_text(encoding="utf-8-sig"))
+
+    assert (ROOT / "config/workflows/synapse/agent-build.json").exists()
+    assert document["agents"]
+    assert validate_solution_agents(document, ROOT) == []
+    for agent in document["agents"]:
+        if agent["authority_level"] == "external_action":
+            assert agent["human_approval_required"] is True
 "@
         Write-TextFile (Join-Path $Destino "tests\test_ai_contract.py") $AiContractTest
     }
@@ -1820,6 +1928,8 @@ def test_chatbot_eval_cases_cover_safety_and_context():
             "tests/test_project_contract.py",
             "tests/test_evals_contract.py",
             "tests/test_data_contract.py",
+            "tests/test_harness_contract.py",
+            "tests/test_business_transformation_contract.py",
             $(if ($ProjectUniverse.ml_enabled) { "tests/test_ml_contract.py" }),
             $(if ($ProjectUniverse.ai_enabled) { "tests/test_ai_contract.py" }),
             $(if ($ProjectUniverse.universe -eq "chatbolt") { "tests/test_chatbot_contract.py" })
@@ -1859,6 +1969,17 @@ function Create-BusinessSolutionAnalysis {
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERRO: falha ao gerar analise de solucao de negocio." -ForegroundColor Red
         throw "Falha ao gerar analise de solucao de negocio (exit $LASTEXITCODE)."
+    }
+
+    if ($ProjectUniverse.ai_enabled) {
+        # Runtime agents of the solution (not the 60 builder agents): draft
+        # blueprints from the analysis, validated against the blueprint contract.
+        $AgentsScaffold = Join-Path $Template "scripts\scaffold_solution_agents.py"
+        & python $AgentsScaffold "--project-root=$Destino" "--force" | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "ERRO: blueprints dos agentes da solucao invalidos." -ForegroundColor Red
+            throw "Falha ao gerar config/solution_agents.json (exit $LASTEXITCODE)."
+        }
     }
 
     $RuntimePath = Join-Path $Destino "config\runtime_manifest.json"
@@ -2327,6 +2448,19 @@ function Finalize-SynapseSolutionProject {
             "prompts\rag_answering.md",
             "evals\prompt_cases.jsonl",
             "evals\rag_cases.jsonl",
+            "evals\retrieval_cases.jsonl",
+            "evals\tool_workflow_cases.jsonl",
+            "config\solution_agents.json",
+            "config\workflows\synapse\agent-build.json",
+            "scripts\scaffold_solution_agents.py",
+            "vector_db",
+            "templates\rag",
+            "templates\fine_tuning",
+            "config\rag_scalability_policy.json",
+            "config\fine_tuning_policy.json",
+            "docs\specifications\scalable_rag_vector_db.md",
+            "docs\specifications\fine_tuning.md",
+            "scripts\prepare_fine_tuning_dataset.py",
             "scripts\run_ai_evals.ps1",
             "scripts\run_rag_evals.ps1"
         )) {
@@ -2366,6 +2500,7 @@ function Finalize-SynapseSolutionProject {
         $Runtime.validation.required_workflows = @(
             "solution-lifecycle",
             "business-transformation",
+            $(if ($ProjectUniverse.ai_enabled) { "agent-build" }),
             $(if ($ProjectUniverse.ai_enabled) { "rag-build" }),
             $(if ($ProjectUniverse.ml_enabled) { "ml-release" })
         ) | Where-Object { $_ }
@@ -2452,6 +2587,12 @@ function Run-ProjectValidation {
         "tests\test_project_contract.py",
         "tests\test_evals_contract.py",
         "tests\test_data_contract.py",
+        "tests\test_harness_contract.py",
+        "tests\test_business_transformation_contract.py",
+        "scripts\synapse_lib\business_transformation.py",
+        "evals\business_transformation_cases.jsonl",
+        "config\harness_engineering_policy.json",
+        "docs\specifications\harness_engineering.md",
         "scripts\treat_dataset.py"
         "prompts\master_data_treatment.md"
         "agents\definitions\enterprise_agents.yaml"
@@ -2473,6 +2614,16 @@ function Run-ProjectValidation {
         $RequiredPaths += @(
             "config\ml_foundations_policy.json",
             "docs\specifications\ml_foundations.md"
+        )
+    }
+    if ($ProjectUniverse.ai_enabled) {
+        $RequiredPaths += @(
+            "config\rag_scalability_policy.json",
+            "config\fine_tuning_policy.json",
+            "evals\retrieval_cases.jsonl",
+            "templates\rag\rag_pipeline.py",
+            "config\solution_agents.json",
+            "config\workflows\synapse\agent-build.json"
         )
     }
     foreach ($RelativePath in $RequiredPaths) {
@@ -2529,6 +2680,18 @@ function Configure-SolutionVsCodeTasks {
       ],
       "group": "test",
       "problemMatcher": []
+    },
+    {
+      "label": "Evals: Rodar retrieval hibrido (recall@k, MRR, nDCG)",
+      "detail": "Indexa o corpus local com busca hibrida BM25 + vetorial e aplica os gates de retrieval de evals/quality_gates.yaml.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_evals.py",
+        "retrieval"
+      ],
+      "group": "test",
+      "problemMatcher": []
     }
 "@
     }
@@ -2545,6 +2708,17 @@ function Configure-SolutionVsCodeTasks {
         "-m",
         "pytest",
         "tests"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Synapse: Auditar harness engineering",
+      "detail": "Verifica mapa de contexto, fronteira de ferramentas, limites do loop, verificacao, observabilidade e feedback do universo.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/audit_harness.py"
       ],
       "group": "test",
       "problemMatcher": []

@@ -172,7 +172,7 @@
       "capabilities": ["agents", "role_based_workflows", "tools"],
       "best_for": ["role_based_crews", "business_process_automation"],
       "select_when": ["clear_roles_exist", "business_process_has_steps", "crew"],
-      "templates": ["templates/agents/crewai_project.yaml"]
+      "scaffold_targets": ["templates/agents/crewai_project.yaml"]
     },
     {
       "id": "swarms",
@@ -181,7 +181,7 @@
       "capabilities": ["agents", "multi_agent", "parallelism"],
       "best_for": ["large_agent_teams", "parallel_exploration"],
       "select_when": ["many_specialists_are_needed", "parallel", "swarm"],
-      "templates": ["templates/agents/swarms_council.yaml"]
+      "scaffold_targets": ["templates/agents/swarms_council.yaml"]
     },
     {
       "id": "langchain",
@@ -190,7 +190,7 @@
       "capabilities": ["llm", "chains", "tools", "rag"],
       "best_for": ["provider_neutral_llm_apps", "tool_chains", "retrieval_apps"],
       "select_when": ["chains", "tools", "provider_neutral", "langchain"],
-      "templates": ["templates/llm/langchain_service.py"]
+      "scaffold_targets": ["templates/llm/langchain_service.py"]
     },
     {
       "id": "langgraph",
@@ -199,7 +199,7 @@
       "capabilities": ["agents", "workflow_graphs", "state", "human_in_the_loop"],
       "best_for": ["stateful_agents", "graph_workflows", "approval_flows"],
       "select_when": ["workflow_has_state", "handoff", "approval", "graph"],
-      "templates": ["templates/agents/langgraph_state_machine.py"]
+      "scaffold_targets": ["templates/agents/langgraph_state_machine.py"]
     },
     {
       "id": "langflow",
@@ -208,7 +208,7 @@
       "capabilities": ["visual_flows", "llm", "rag", "prototyping"],
       "best_for": ["visual_prototyping", "operator_editable_flows"],
       "select_when": ["visual", "builder", "prototype", "langflow"],
-      "templates": ["templates/no_code/langflow_export.json"]
+      "scaffold_targets": ["templates/no_code/langflow_export.json"]
     },
     {
       "id": "flowise",
@@ -217,7 +217,7 @@
       "capabilities": ["visual_flows", "llm", "rag", "tools"],
       "best_for": ["rapid_prototyping", "operator_editable_pipelines"],
       "select_when": ["visual", "flowise", "chain builder", "operator"],
-      "templates": ["templates/no_code/flowise_chatflow.json"]
+      "scaffold_targets": ["templates/no_code/flowise_chatflow.json"]
     },
     {
       "id": "dify",
@@ -226,7 +226,7 @@
       "capabilities": ["llm_apps", "chatbots", "workflows", "rag", "observability"],
       "best_for": ["no_code_llm_apps", "ops_ui", "chatbot_workflows"],
       "select_when": ["no-code", "chatbot", "ops ui", "dify"],
-      "templates": ["templates/no_code/dify_app.yaml"]
+      "scaffold_targets": ["templates/no_code/dify_app.yaml"]
     },
     {
       "id": "n8n",
@@ -235,7 +235,7 @@
       "capabilities": ["automation", "integrations", "webhooks", "pipelines"],
       "best_for": ["business_automation", "integration_workflows", "scheduled_jobs"],
       "select_when": ["automation", "webhook", "integration", "schedule", "n8n"],
-      "templates": ["templates/automation/n8n_workflow.json"]
+      "scaffold_targets": ["templates/automation/n8n_workflow.json"]
     },
     {
       "id": "firecrawl",
@@ -244,7 +244,7 @@
       "capabilities": ["crawl", "scrape", "web_ingestion", "rag"],
       "best_for": ["web_to_rag", "market_research", "site_ingestion"],
       "select_when": ["crawl", "scrape", "web", "site", "firecrawl"],
-      "templates": ["templates/ingestion/firecrawl_job.yaml"]
+      "scaffold_targets": ["templates/ingestion/firecrawl_job.yaml"]
     },
     {
       "id": "deep-research",
@@ -253,7 +253,7 @@
       "capabilities": ["research", "source_triage", "synthesis", "citations"],
       "best_for": ["competitive_analysis", "evidence_synthesis", "market_discovery"],
       "select_when": ["research", "benchmark", "market", "sources", "citations"],
-      "templates": ["templates/research/deep_research_brief.md"]
+      "scaffold_targets": ["templates/research/deep_research_brief.md"]
     },
     {
       "id": "awesome-lists",
@@ -262,7 +262,7 @@
       "capabilities": ["discovery", "curation", "reference_catalog"],
       "best_for": ["technology_landscape", "candidate_shortlists", "open_source_mapping"],
       "select_when": ["awesome", "landscape", "technology catalog", "open source"],
-      "templates": ["templates/research/awesome_list_scan.md"]
+      "scaffold_targets": ["templates/research/awesome_list_scan.md"]
     },
     {
       "id": "vector-dbs",
@@ -289,7 +289,7 @@
       "capabilities": ["knowledge_graph", "entity_resolution", "graph_retrieval", "reasoning"],
       "best_for": ["entity_heavy_domains", "relationship_reasoning", "auditability"],
       "select_when": ["knowledge graph", "kag", "relationships", "entities", "ontology"],
-      "templates": ["templates/knowledge_graph/graph_schema.yaml"]
+      "scaffold_targets": ["templates/knowledge_graph/graph_schema.yaml"]
     },
     {
       "id": "fastapi",
@@ -298,7 +298,7 @@
       "capabilities": ["api", "backend", "typed_contracts", "serving"],
       "best_for": ["production_api", "model_serving", "agent_gateway"],
       "select_when": ["api", "backend", "service", "serving", "fastapi"],
-      "templates": ["templates/backend/fastapi_service.py"]
+      "scaffold_targets": ["templates/backend/fastapi_service.py"]
     },
     {
       "id": "mcp-servers",
@@ -307,7 +307,25 @@
       "capabilities": ["mcp", "tools", "resources", "prompts", "integration"],
       "best_for": ["tool_boundaries", "codex_claude_integration", "standard_context"],
       "select_when": ["mcp", "tools", "integration", "context", "server"],
-      "templates": ["templates/mcp/server.py"]
+      "scaffold_targets": ["templates/mcp/server.py"]
+    },
+    {
+      "id": "fine-tuning-peft",
+      "name": "Fine-tuning / PEFT",
+      "category": "model_adaptation",
+      "capabilities": ["fine_tuning", "peft", "distillation", "preference_tuning"],
+      "best_for": ["consistent_output_format", "narrow_task_accuracy", "smaller_cheaper_models", "domain_embeddings"],
+      "select_when": ["fine-tuning", "fine tuning", "finetuning", "ajuste fino", "lora", "qlora", "sft", "dpo", "distillation", "destilacao"],
+      "templates": ["templates/fine_tuning/model_adaptation_card.md"]
+    },
+    {
+      "id": "agent-harness",
+      "name": "Agent / Eval Harness",
+      "category": "harness_engineering",
+      "capabilities": ["agent_harness", "eval_harness", "tool_loop_control"],
+      "best_for": ["reliable_agents", "repeatable_evals", "tool_permission_boundaries"],
+      "select_when": ["harness", "eval harness", "agent loop", "pass^k", "reliability"],
+      "templates": ["templates/harness/agent_harness_spec.md"]
     }
   ],
   "selection_rules": [

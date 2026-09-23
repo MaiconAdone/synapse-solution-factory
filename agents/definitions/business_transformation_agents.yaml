@@ -1,36 +1,45 @@
-version: 1
+version: 2
 workflow: business-transformation
 execution: swarm-governed
+source_of_truth: config/business_transformation.json
 profiles:
   - id: orchestrator
     class: OrchestratorAgent
     agent_id: orchestration-manager
     tools: []
+    stages: [intake, execution_planning, final_report]
   - id: business-transformation
     class: BusinessTransformationAgent
     agent_id: product-strategy
     tools: [kpi_tool]
+    stages: [diagnosis, opportunity_identification, prioritization]
   - id: process-mapping
     class: ProcessMappingAgent
     agent_id: business-value-analyst
     tools: [process_tool]
+    stages: [process_mapping]
   - id: data-analysis
     class: DataAnalysisAgent
     agent_id: data-science
     tools: [data_tool]
+    stages: [data_readiness]
   - id: automation-architect
     class: AutomationArchitectAgent
     agent_id: integration-automation
     tools: [automation_tool]
+    stages: [automation_architecture, simulation]
   - id: kpi-monitor
     class: KPIMonitorAgent
     agent_id: metrics-instrumentation
     tools: [kpi_tool]
+    stages: [kpi_design, impact_evaluation]
   - id: risk-governance
     class: RiskGovernanceAgent
     agent_id: security-compliance
     tools: []
+    stages: [risk_governance]
   - id: human-approval
     class: HumanApprovalAgent
     agent_id: policy-guardrails-engineer
     tools: []
+    stages: [human_approval]

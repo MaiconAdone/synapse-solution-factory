@@ -15,3 +15,18 @@ llm_ops:
   cost_budget_required: true
   rollback_required: true
 
+retrieval:
+  k: 5
+  recall_at_k_min: 0.80
+  mrr_min: 0.50
+  ndcg_at_k_min: 0.50
+fine_tuning:
+  min_relative_improvement_over_baseline: 0.05
+  min_human_score: 0.80
+  human_approval_required: true
+  automatic_weight_updates: false
+agent_harness:
+  trials_per_agent_case: 3
+  pass_hat_k_min: 0.80
+  max_steps: 25
+  max_tool_calls: 40

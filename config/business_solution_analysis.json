@@ -3,6 +3,8 @@
   "status": "analyzed",
   "requested_universe": "hybrid",
   "recommended_universe": "hybrid",
+  "effective_universe": "hybrid",
+  "universe_confirmation": "",
   "dialog_context": {
     "project_goal": "Fabrica de estruturas de engenharia para criar projetos ML, IA, Chatbolt e Hibridos por dialogo",
     "business_problem": "Padronizar a criacao de projetos ML e IA (dados, treino, RAG, agentes, evals, governanca e testes) via scripts locais acionados por VS Code Chat, Codex e Claude Code",
@@ -23,19 +25,16 @@
     "metrics": []
   },
   "ai_archetype": {
-    "id": "chatbot",
-    "label": "Conversational chatbot",
-    "score": 1,
+    "id": "unknown",
+    "label": "Unknown",
+    "score": 3,
     "matched_keywords": [
-      "chat"
+      "chat",
+      "agentes",
+      "rag"
     ],
     "techniques": [],
-    "metrics": [
-      "containment_rate",
-      "handoff_quality",
-      "csat",
-      "safety_refusal_quality"
-    ]
+    "metrics": []
   },
   "solution_stack": [
     "data_treatment",
@@ -43,7 +42,6 @@
     "evals",
     "governance",
     "mlops",
-    "chatbot",
     "rag",
     "agents",
     "guardrails",
@@ -55,64 +53,16 @@
     "active": true,
     "universe": "hybrid",
     "recommended_technology_ids": [
-      "crewai",
-      "swarms",
       "langchain",
-      "langgraph",
       "langflow",
       "flowise",
       "dify",
       "firecrawl",
       "vector-dbs",
       "rag-frameworks",
-      "mcp-servers",
-      "fastapi"
+      "mcp-servers"
     ],
     "recommended_technologies": [
-      {
-        "id": "crewai",
-        "name": "CrewAI",
-        "category": "agentic_coding_and_business_agents",
-        "capabilities": [
-          "agents",
-          "role_based_workflows",
-          "tools"
-        ],
-        "best_for": [
-          "role_based_crews",
-          "business_process_automation"
-        ],
-        "select_when": [
-          "clear_roles_exist",
-          "business_process_has_steps",
-          "crew"
-        ],
-        "templates": [
-          "templates/agents/crewai_project.yaml"
-        ]
-      },
-      {
-        "id": "swarms",
-        "name": "Swarms",
-        "category": "agentic_coding_and_business_agents",
-        "capabilities": [
-          "agents",
-          "multi_agent",
-          "parallelism"
-        ],
-        "best_for": [
-          "large_agent_teams",
-          "parallel_exploration"
-        ],
-        "select_when": [
-          "many_specialists_are_needed",
-          "parallel",
-          "swarm"
-        ],
-        "templates": [
-          "templates/agents/swarms_council.yaml"
-        ]
-      },
       {
         "id": "langchain",
         "name": "LangChain",
@@ -134,33 +84,8 @@
           "provider_neutral",
           "langchain"
         ],
-        "templates": [
+        "scaffold_targets": [
           "templates/llm/langchain_service.py"
-        ]
-      },
-      {
-        "id": "langgraph",
-        "name": "LangGraph",
-        "category": "agent_orchestration",
-        "capabilities": [
-          "agents",
-          "workflow_graphs",
-          "state",
-          "human_in_the_loop"
-        ],
-        "best_for": [
-          "stateful_agents",
-          "graph_workflows",
-          "approval_flows"
-        ],
-        "select_when": [
-          "workflow_has_state",
-          "handoff",
-          "approval",
-          "graph"
-        ],
-        "templates": [
-          "templates/agents/langgraph_state_machine.py"
         ]
       },
       {
@@ -183,7 +108,7 @@
           "prototype",
           "langflow"
         ],
-        "templates": [
+        "scaffold_targets": [
           "templates/no_code/langflow_export.json"
         ]
       },
@@ -207,7 +132,7 @@
           "chain builder",
           "operator"
         ],
-        "templates": [
+        "scaffold_targets": [
           "templates/no_code/flowise_chatflow.json"
         ]
       },
@@ -233,7 +158,7 @@
           "ops ui",
           "dify"
         ],
-        "templates": [
+        "scaffold_targets": [
           "templates/no_code/dify_app.yaml"
         ]
       },
@@ -259,7 +184,7 @@
           "site",
           "firecrawl"
         ],
-        "templates": [
+        "scaffold_targets": [
           "templates/ingestion/firecrawl_job.yaml"
         ]
       },
@@ -320,32 +245,6 @@
         ]
       },
       {
-        "id": "fastapi",
-        "name": "FastAPI",
-        "category": "api_backend",
-        "capabilities": [
-          "api",
-          "backend",
-          "typed_contracts",
-          "serving"
-        ],
-        "best_for": [
-          "production_api",
-          "model_serving",
-          "agent_gateway"
-        ],
-        "select_when": [
-          "api",
-          "backend",
-          "service",
-          "serving",
-          "fastapi"
-        ],
-        "templates": [
-          "templates/backend/fastapi_service.py"
-        ]
-      },
-      {
         "id": "mcp-servers",
         "name": "MCP servers",
         "category": "tool_context_protocol",
@@ -368,35 +267,25 @@
           "context",
           "server"
         ],
-        "templates": [
+        "scaffold_targets": [
           "templates/mcp/server.py"
         ]
       }
     ],
     "categories": [
-      "agentic_coding_and_business_agents",
       "llm_application_framework",
-      "agent_orchestration",
       "visual_llm_builder",
       "llm_app_platform",
       "web_ingestion",
       "retrieval_storage",
       "rag_architecture",
-      "api_backend",
       "tool_context_protocol"
     ],
     "capabilities": [
-      "agents",
-      "role_based_workflows",
-      "tools",
-      "multi_agent",
-      "parallelism",
       "llm",
       "chains",
+      "tools",
       "rag",
-      "workflow_graphs",
-      "state",
-      "human_in_the_loop",
       "visual_flows",
       "prototyping",
       "llm_apps",
@@ -413,27 +302,21 @@
       "reranking",
       "citations",
       "evals",
-      "api",
-      "backend",
-      "typed_contracts",
-      "serving",
       "mcp",
       "resources",
       "prompts",
       "integration"
     ],
     "template_paths": [
-      "templates/agents/crewai_project.yaml",
-      "templates/agents/swarms_council.yaml",
+      "templates/rag/vector_db_adapter.py",
+      "templates/rag/rag_pipeline.py"
+    ],
+    "scaffold_targets": [
       "templates/llm/langchain_service.py",
-      "templates/agents/langgraph_state_machine.py",
       "templates/no_code/langflow_export.json",
       "templates/no_code/flowise_chatflow.json",
       "templates/no_code/dify_app.yaml",
       "templates/ingestion/firecrawl_job.yaml",
-      "templates/rag/vector_db_adapter.py",
-      "templates/rag/rag_pipeline.py",
-      "templates/backend/fastapi_service.py",
       "templates/mcp/server.py"
     ],
     "selection_reason": "Selected by business-problem signals, universe requirements, and local-first Synapse defaults."
@@ -554,18 +437,14 @@
       "mcp-sdks"
     ],
     "technology_ids": [
-      "crewai",
-      "swarms",
       "langchain",
-      "langgraph",
       "langflow",
       "flowise",
       "dify",
       "firecrawl",
       "vector-dbs",
       "rag-frameworks",
-      "mcp-servers",
-      "fastapi"
+      "mcp-servers"
     ],
     "components": [
       "api_gateway",
@@ -576,9 +455,6 @@
       "ingestion_pipeline",
       "retrieval_service",
       "citation_evals",
-      "agent_orchestrator",
-      "tool_boundary",
-      "human_approval_gate",
       "experiment_tracking",
       "model_registry",
       "drift_monitoring"
@@ -610,21 +486,13 @@
       "id": "rag",
       "stages": [
         "ingest",
+        "chunk",
         "embed",
-        "retrieve",
+        "index_version",
+        "hybrid_retrieve",
         "rerank",
         "answer",
         "evaluate"
-      ]
-    },
-    {
-      "id": "agentic_execution",
-      "stages": [
-        "plan",
-        "select_tools",
-        "execute",
-        "review",
-        "record_memory"
       ]
     },
     {
@@ -639,19 +507,152 @@
     }
   ],
   "solution_templates": [
-    "templates/agents/crewai_project.yaml",
-    "templates/agents/swarms_council.yaml",
+    "templates/rag/vector_db_adapter.py",
+    "templates/rag/rag_pipeline.py"
+  ],
+  "solution_scaffold_targets": [
     "templates/llm/langchain_service.py",
-    "templates/agents/langgraph_state_machine.py",
     "templates/no_code/langflow_export.json",
     "templates/no_code/flowise_chatflow.json",
     "templates/no_code/dify_app.yaml",
     "templates/ingestion/firecrawl_job.yaml",
-    "templates/rag/vector_db_adapter.py",
-    "templates/rag/rag_pipeline.py",
-    "templates/backend/fastapi_service.py",
     "templates/mcp/server.py"
   ],
+  "rag_scalability": {
+    "active": true,
+    "policy_path": "config/rag_scalability_policy.json",
+    "spec_path": "docs/specifications/scalable_rag_vector_db.md",
+    "plan": {
+      "schema": "synapse-rag-scale-plan.v1",
+      "status": "needs_user_decisions",
+      "pending_user_decisions": [
+        "expected_corpus_chunks_in_12_months",
+        "peak_queries_per_second",
+        "p95_retrieval_latency_budget_ms",
+        "multi_tenant_isolation_required",
+        "data_sensitivity",
+        "hosting_constraint_self_hosted_or_managed",
+        "existing_database_platform"
+      ],
+      "tier": "local",
+      "tier_provisional": true,
+      "topology": "single_process",
+      "shards": 1,
+      "replicas": 1,
+      "vector_store_candidates": [
+        "synapse-local",
+        "faiss",
+        "chromadb"
+      ],
+      "index": {
+        "type": "flat",
+        "recall": "exact"
+      },
+      "memory_estimate": {
+        "vector_bytes": 0,
+        "graph_bytes": 0,
+        "total_gib": 0.0,
+        "assumption": "float32 vectors (int8 when quantized), excludes payload and replicas"
+      },
+      "retrieval": {
+        "default_mode": "hybrid",
+        "dense_candidates": 50,
+        "lexical_candidates": 50,
+        "fusion": "reciprocal_rank_fusion",
+        "rrf_k": 60,
+        "final_top_k": 6,
+        "rerank_only_when_confidence_below": 0.72,
+        "filter_before_ranking": true,
+        "graph_rag_only_when_relationship_queries": true
+      },
+      "chunking": {
+        "strategy": "structure_aware_with_overlap",
+        "chunk_size_tokens": 800,
+        "chunk_overlap_tokens": 120,
+        "parent_child_enabled": true
+      },
+      "isolation": "shared collection + tenant_id filter",
+      "index_lifecycle": "blue_green: build new version, run retrieval evals, switch alias, keep previous version for rollback",
+      "reasons": [
+        "tier local by expected chunk volume"
+      ]
+    },
+    "rule": "Ask the user every pending decision before choosing the production vector store."
+  },
+  "model_adaptation": {
+    "active": true,
+    "recommended_stage": "prompt_engineering",
+    "fine_tuning_candidate": true,
+    "fine_tuning_blockers": [
+      "no_measured_baseline",
+      "dataset_below_minimum"
+    ],
+    "signals": {
+      "behavior": [
+        "estrutura"
+      ]
+    },
+    "reason": "Start with prompt contracts and few-shot examples, then measure.",
+    "ladder": [
+      "prompt_engineering",
+      "rag",
+      "fine_tuning",
+      "continued_pretraining"
+    ],
+    "release_gates": {
+      "baseline": "prompt + RAG solution measured on the same eval set",
+      "min_relative_improvement_over_baseline": 0.05,
+      "no_regression_on": [
+        "safety_evals",
+        "prompt_injection_cases",
+        "retrieval_faithfulness"
+      ],
+      "cost_and_latency_within_budget": true,
+      "model_card_updated": true,
+      "human_approval_required": true,
+      "rollout": "shadow or canary before full traffic",
+      "rollback": "keep base model routing available and switch back on regression"
+    },
+    "policy_path": "config/fine_tuning_policy.json",
+    "spec_path": "docs/specifications/fine_tuning.md"
+  },
+  "harness_engineering": {
+    "active": true,
+    "policy_path": "config/harness_engineering_policy.json",
+    "spec_path": "docs/specifications/harness_engineering.md",
+    "components": [
+      "context_map",
+      "tool_boundary",
+      "control_loop",
+      "verification",
+      "agent_evals",
+      "agent_blueprints",
+      "observability",
+      "feedback_loop",
+      "safe_execution"
+    ],
+    "trials_per_agent_case": 3,
+    "reliability_gate_pass_hat_k_min": 0.8,
+    "audit_command": "python scripts/audit_harness.py"
+  },
+  "solution_agents": {
+    "active": true,
+    "architecture": "orchestrator_with_specialists",
+    "reason": "RAG plus tool execution: orchestrator delegates to a knowledge retriever and an approval-gated action executor.",
+    "blueprints_path": "config/solution_agents.json",
+    "contract": "config/agent_blueprint_contract.json",
+    "workflow": "config/workflows/synapse/agent-build.json",
+    "scaffold_command": "python scripts/scaffold_solution_agents.py --project-root ."
+  },
+  "business_transformation": {
+    "active": false,
+    "signals": [],
+    "contract": "config/business_transformation.json",
+    "workflow": "config/workflows/synapse/business-transformation.json",
+    "brief_template": "templates/business/transformation_brief.json",
+    "run_command": "python scripts/run_business_transformation.py --brief <brief.json>",
+    "rule": "Collect owner, process map, KPI baselines/targets, opportunity scores and risk factors from the user; execution stays simulated until MCP tools are authorized."
+  },
   "architecture_decision": "Create a hybrid project combining MLOps with RAG/agents so predictive intelligence and task execution share data contracts, tests, evals, and governance.",
   "data_strategy": {
     "data_contract_required": true,
@@ -663,6 +664,7 @@
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
+    "tests/test_harness_contract.py",
     "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],
@@ -671,7 +673,9 @@
     "evals/quality_gates.yaml",
     "evals/ml_cases.jsonl using ",
     "evals/prompt_cases.jsonl",
-    "evals/rag_cases.jsonl"
+    "evals/rag_cases.jsonl",
+    "evals/retrieval_cases.jsonl using recall_at_k, mrr, ndcg_at_k",
+    "evals/tool_workflow_cases.jsonl using pass^k over repeated trials"
   ],
   "swarm_strategy": {
     "default": "start_with_one_orchestrator",
@@ -679,9 +683,9 @@
     "max_agents": 60,
     "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
     "recommended_fleets": [
-      "project_factory_fleet",
       "ml_fleet",
       "rag_fleet",
+      "mcp_fleet",
       "cost_optimization_fleet"
     ]
   },
@@ -689,7 +693,10 @@
     "AI Engineering: define quality, cost, latency, safety, and evaluation gates before scaling models or agents.",
     "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
     "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
-    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions."
+    "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
+    "Harness engineering (Production LLMs, Building Applications with AI Agents, Cybernetics): budgets, stop conditions, repeated-trial evals and feedback loops around every agent.",
+    "Scalable RAG (LLM Engineer's Handbook, AI Engineering, Introduction to Algorithms): sized vector indexes, hybrid retrieval with rank fusion, versioned reindexing and retrieval gates.",
+    "Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model From Scratch): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data."
   ],
   "required_artifacts": [
     "docs/briefings/business_solution_analysis.md",
@@ -697,12 +704,19 @@
     "config/ai_framework_selection.json",
     "config/ml_foundations_policy.json",
     "docs/specifications/ml_foundations.md",
-    "prompts/chatbot_assistant.md",
-    "evals/chatbot_cases.jsonl",
-    "docs/checklists/chatbot_quality_checklist.md",
+    "config/solution_agents.json",
+    "config/rag_scalability_policy.json",
+    "docs/specifications/scalable_rag_vector_db.md",
+    "evals/retrieval_cases.jsonl",
+    "config/fine_tuning_policy.json",
+    "docs/specifications/fine_tuning.md",
+    "evals/tool_workflow_cases.jsonl",
+    "config/harness_engineering_policy.json",
+    "docs/specifications/harness_engineering.md",
     "tests/test_project_contract.py",
     "tests/test_evals_contract.py",
     "tests/test_data_contract.py",
+    "tests/test_harness_contract.py",
     "tests/test_ml_contract.py",
     "tests/test_ai_contract.py"
   ],

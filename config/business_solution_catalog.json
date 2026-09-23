@@ -86,7 +86,7 @@
     {
       "id": "agent",
       "label": "AI agent workflow",
-      "keywords": ["agente", "executar", "abrir chamado", "enviar email", "atualizar crm", "consultar sistema", "gerar proposta", "remarcar", "automatizar", "workflow", "multiplos passos"],
+      "keywords": ["agente", "agentes", "agentic", "executar", "abrir chamado", "abre chamado", "abrir ocorrencia", "abre ocorrencia", "enviar email", "atualizar crm", "consultar sistema", "consulta sistema", "verifica sistema", "verificar sistema", "gerar proposta", "remarcar", "automatizar", "workflow", "multiplos passos", "tool calling", "ferramentas"],
       "best_for": ["multi-step task execution", "system integration", "operational automation", "backoffice workflows"],
       "required_artifacts": ["config/agent_blueprint_contract.json", "config/agent_fleets.json", "evals/project_cases.jsonl"],
       "metrics": ["task_success_rate", "tool_error_rate", "approval_rate", "cost_per_task"]

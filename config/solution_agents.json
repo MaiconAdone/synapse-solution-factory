@@ -1,0 +1,188 @@
+{
+  "schema": "synapse-solution-agents.v1",
+  "universe": "hybrid",
+  "architecture": "orchestrator_with_specialists",
+  "contract": "config/agent_blueprint_contract.json",
+  "workflow": "config/workflows/synapse/agent-build.json",
+  "status": "draft_requires_user_confirmation",
+  "agents": [
+    {
+      "agent_id": "solution-orchestrator",
+      "objective": "Fabrica de estruturas de engenharia para criar projetos ML, IA, Chatbolt e Hibridos por dialogo",
+      "model_strategy": {
+        "tier": "balanced",
+        "access": "via_llm_gateway_only"
+      },
+      "allowed_model_profiles": [
+        "balanced",
+        "economy"
+      ],
+      "tools": [
+        "delegate_to_specialist",
+        "ask_user",
+        "request_human_approval"
+      ],
+      "memory": {
+        "scope": "project",
+        "session_memory": true,
+        "long_term": "retrieval_only"
+      },
+      "context": {
+        "sources": [
+          "config/business_solution_analysis.json"
+        ],
+        "filter": "config/context_policy.json"
+      },
+      "boundaries": {
+        "forbidden": [
+          "secrets_in_prompts",
+          "unapproved_external_actions",
+          "cross_tenant_data"
+        ],
+        "loop_limits": "config/harness_engineering_policy.json#control_loop"
+      },
+      "success_criteria": "Projetos gerados passam diagnose_project e testes proprios em todos os universos",
+      "fleet": "mcp_fleet",
+      "evals": [
+        "evals/tool_workflow_cases.jsonl",
+        "evals/prompt_cases.jsonl"
+      ],
+      "observability": [
+        "model",
+        "prompt_version",
+        "tool_calls",
+        "tokens",
+        "latency_ms",
+        "outcome"
+      ],
+      "cost_budget": {
+        "token_budget_per_task": 3000
+      },
+      "risk_level": "baixo",
+      "authority_level": "drafting",
+      "escalation_rule": "low confidence, blocked tool, or high risk -> ask user or escalate to orchestrator; external actions need human approval",
+      "quality_gate": {
+        "pass_hat_k_min": 0.8,
+        "trials": 3
+      }
+    },
+    {
+      "agent_id": "knowledge-retriever",
+      "objective": "Answer only from retrieved, permission-filtered sources and return citations.",
+      "model_strategy": {
+        "tier": "economy",
+        "access": "via_llm_gateway_only"
+      },
+      "allowed_model_profiles": [
+        "economy"
+      ],
+      "tools": [
+        "hybrid_retrieve"
+      ],
+      "memory": {
+        "scope": "project",
+        "session_memory": true,
+        "long_term": "retrieval_only"
+      },
+      "context": {
+        "sources": [
+          "config/business_solution_analysis.json"
+        ],
+        "filter": "config/context_policy.json"
+      },
+      "boundaries": {
+        "forbidden": [
+          "secrets_in_prompts",
+          "unapproved_external_actions",
+          "cross_tenant_data"
+        ],
+        "loop_limits": "config/harness_engineering_policy.json#control_loop"
+      },
+      "success_criteria": "retrieval and faithfulness gates in evals/quality_gates.yaml",
+      "fleet": "rag_fleet",
+      "evals": [
+        "evals/retrieval_cases.jsonl",
+        "evals/rag_cases.jsonl"
+      ],
+      "observability": [
+        "model",
+        "prompt_version",
+        "tool_calls",
+        "tokens",
+        "latency_ms",
+        "outcome"
+      ],
+      "cost_budget": {
+        "token_budget_per_task": 3000
+      },
+      "risk_level": "baixo",
+      "authority_level": "advisory",
+      "escalation_rule": "low confidence, blocked tool, or high risk -> ask user or escalate to orchestrator; external actions need human approval",
+      "quality_gate": {
+        "pass_hat_k_min": 0.8,
+        "trials": 3
+      }
+    },
+    {
+      "agent_id": "action-executor",
+      "objective": "Execute approved business actions through the tool gateway with idempotency keys.",
+      "model_strategy": {
+        "tier": "balanced",
+        "access": "via_llm_gateway_only"
+      },
+      "allowed_model_profiles": [
+        "balanced",
+        "economy"
+      ],
+      "tools": [],
+      "memory": {
+        "scope": "project",
+        "session_memory": true,
+        "long_term": "retrieval_only"
+      },
+      "context": {
+        "sources": [
+          "config/business_solution_analysis.json"
+        ],
+        "filter": "config/context_policy.json"
+      },
+      "boundaries": {
+        "forbidden": [
+          "secrets_in_prompts",
+          "unapproved_external_actions",
+          "cross_tenant_data"
+        ],
+        "loop_limits": "config/harness_engineering_policy.json#control_loop"
+      },
+      "success_criteria": "pending_user_confirmation",
+      "fleet": "mcp_fleet",
+      "evals": [
+        "evals/tool_workflow_cases.jsonl"
+      ],
+      "observability": [
+        "model",
+        "prompt_version",
+        "tool_calls",
+        "tokens",
+        "latency_ms",
+        "outcome"
+      ],
+      "cost_budget": {
+        "token_budget_per_task": 3000
+      },
+      "risk_level": "baixo",
+      "authority_level": "external_action",
+      "escalation_rule": "low confidence, blocked tool, or high risk -> ask user or escalate to orchestrator; external actions need human approval",
+      "quality_gate": {
+        "pass_hat_k_min": 0.8,
+        "trials": 3
+      },
+      "human_approval_required": true,
+      "pending_user_decisions": [
+        "tool_inventory",
+        "tool_permissions",
+        "approval_matrix"
+      ]
+    }
+  ]
+}

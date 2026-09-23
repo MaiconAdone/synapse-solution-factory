@@ -27,6 +27,7 @@ class AiFrameworkSelector:
                 "architecture_blueprint": self._architecture_blueprint([], technology_layer, normalized_universe),
                 "pipeline_blueprints": self._pipeline_blueprints(technology_layer),
                 "solution_templates": technology_layer["template_paths"],
+                "solution_scaffold_targets": technology_layer["scaffold_targets"],
                 "evaluation_plan": self._evaluation_plan(technology_layer, normalized_universe),
                 "production_risks": self._production_risks(technology_layer, normalized_universe),
             }
@@ -70,6 +71,7 @@ class AiFrameworkSelector:
             "architecture_blueprint": self._architecture_blueprint(framework_ids, technology_layer, normalized_universe),
             "pipeline_blueprints": self._pipeline_blueprints(technology_layer),
             "solution_templates": technology_layer["template_paths"],
+            "solution_scaffold_targets": technology_layer["scaffold_targets"],
             "evaluation_plan": self._evaluation_plan(technology_layer, normalized_universe),
             "production_risks": self._production_risks(technology_layer, normalized_universe),
         }
@@ -129,6 +131,13 @@ class AiFrameworkSelector:
                 for technology in selected
                 for template in technology.get("templates", [])
             ),
+            # Files a generated project should create when adopting a technology
+            # that has no ready-made template in Synapse's templates/ folder.
+            "scaffold_targets": self._dedupe(
+                target
+                for technology in selected
+                for target in technology.get("scaffold_targets", [])
+            ),
             "selection_reason": "Selected by business-problem signals, universe requirements, and local-first Synapse defaults.",
         }
 
@@ -170,6 +179,10 @@ class AiFrameworkSelector:
             components.append("automation_workflows")
         if "knowledge_graph" in capabilities:
             components.extend(["graph_schema", "entity_resolution", "graph_retrieval"])
+        if "fine_tuning" in capabilities:
+            components.extend(["adaptation_dataset_pipeline", "model_registry", "base_model_rollback"])
+        if "agent_harness" in capabilities:
+            components.extend(["tool_gateway", "loop_budget_controller", "eval_harness"])
         if universe in {"ml", "hybrid"}:
             components.extend(["experiment_tracking", "model_registry", "drift_monitoring"])
         return {
@@ -197,9 +210,21 @@ class AiFrameworkSelector:
         if {"web_ingestion", "crawl", "scrape"} & capabilities:
             pipelines.append({"id": "web_ingestion", "stages": ["crawl", "clean", "chunk", "index", "quality_check"]})
         if "rag" in capabilities:
-            pipelines.append({"id": "rag", "stages": ["ingest", "embed", "retrieve", "rerank", "answer", "evaluate"]})
+            pipelines.append(
+                {
+                    "id": "rag",
+                    "stages": ["ingest", "chunk", "embed", "index_version", "hybrid_retrieve", "rerank", "answer", "evaluate"],
+                }
+            )
         if "agents" in capabilities:
             pipelines.append({"id": "agentic_execution", "stages": ["plan", "select_tools", "execute", "review", "record_memory"]})
+        if "fine_tuning" in capabilities:
+            pipelines.append(
+                {
+                    "id": "model_adaptation",
+                    "stages": ["baseline_eval", "dataset_curation", "train_adapter", "offline_eval", "human_approval", "canary", "register"],
+                }
+            )
         if "automation" in capabilities:
             pipelines.append({"id": "automation", "stages": ["trigger", "transform", "call_service", "notify", "audit"]})
         if "experiments" in capabilities or technology_layer.get("universe") in {"ml", "hybrid"}:
@@ -210,7 +235,11 @@ class AiFrameworkSelector:
         capabilities = set(technology_layer["capabilities"])
         evals = ["contract_tests", "latency_and_cost_budget", "security_and_tool_boundary_checks"]
         if "rag" in capabilities:
-            evals.extend(["groundedness", "citation_precision", "retrieval_recall"])
+            evals.extend(["groundedness", "citation_precision", "retrieval_recall", "retrieval_mrr_ndcg"])
+        if "fine_tuning" in capabilities:
+            evals.extend(["baseline_vs_adapted_delta", "safety_regression"])
+        if "agent_harness" in capabilities:
+            evals.append("pass_hat_k_reliability")
         if "agents" in capabilities:
             evals.extend(["task_success_rate", "tool_call_trace_review", "human_approval_thresholds"])
         if universe in {"ml", "hybrid"}:
@@ -224,6 +253,8 @@ class AiFrameworkSelector:
             risks.append("source_quality_and_crawl_compliance")
         if "knowledge_graph" in capabilities:
             risks.append("entity_resolution_errors")
+        if "fine_tuning" in capabilities:
+            risks.append("training_data_privacy_and_overfitting")
         if "visual_flows" in capabilities:
             risks.append("operator_changes_without_code_review")
         if universe in {"ia", "chatbolt", "hybrid"}:

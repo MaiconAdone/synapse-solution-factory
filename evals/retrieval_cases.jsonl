@@ -1,0 +1,8 @@
+{"id":"ret-001","query":"How should indexes be named and switched with an alias during blue/green reindexing?","relevant_sources":["docs/specifications/scalable_rag_vector_db.md"],"tags":["index_lifecycle"]}
+{"id":"ret-002","query":"Which HNSW ef_search tuning rule and memory estimate apply to large vector corpora?","relevant_sources":["docs/specifications/scalable_rag_vector_db.md"],"tags":["vector_db","index"]}
+{"id":"ret-003","query":"When should we use LoRA or QLoRA adapters instead of RAG for model adaptation?","relevant_sources":["docs/specifications/fine_tuning.md"],"tags":["fine_tuning"]}
+{"id":"ret-004","query":"What is the minimum human score and validation split for a fine-tuning dataset?","relevant_sources":["docs/specifications/fine_tuning.md"],"tags":["fine_tuning","dataset"]}
+{"id":"ret-005","query":"What do pass@k and pass^k measure in the eval harness for agent trials?","relevant_sources":["docs/specifications/harness_engineering.md"],"tags":["harness"]}
+{"id":"ret-006","query":"Control loop limits: max steps, tool calls, retries and loop detection for agents","relevant_sources":["docs/specifications/harness_engineering.md"],"tags":["harness"]}
+{"id":"ret-007","query":"Which recall at k, mean reciprocal rank and faithfulness metrics are required for retrieval release evidence?","relevant_sources":["rag_pipelines/retrieval_eval.md"],"tags":["retrieval_eval"]}
+{"id":"ret-008","query":"Log model, prompt version, tool calls, latency and token usage; keep provider-specific code behind adapters","relevant_sources":["playbooks/llm_engineering.md"],"tags":["llm_ops"]}

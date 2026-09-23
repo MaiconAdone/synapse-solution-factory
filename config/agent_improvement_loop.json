@@ -34,7 +34,8 @@
     "approved_agent_blueprints": "memory/approved_agent_blueprints.jsonl",
     "approved_architecture_patterns": "memory/approved_architecture_patterns.jsonl",
     "teacher_review_cases": "evals/teacher_review_cases.jsonl",
-    "learning_events": "memory/synapse_learning_memory.jsonl"
+    "learning_events": "memory/synapse_learning_memory.jsonl",
+    "creation": "Targets other than learning_events are runtime files created on first approved write; their absence before the first promotion is expected."
   },
   "runtime": {
     "enabled": true,

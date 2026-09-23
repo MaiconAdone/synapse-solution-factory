@@ -1,16 +1,46 @@
 # synapse-solution-factory
 
-Enterprise AI/ML solution factory with a cloud-native 60-agent swarm as the
-multi-agent core and three official dialog channels: VS Code Chat, Claude
-Code, and Codex.
-Synapse is the control plane and the only project factory. Experiment tracking
-uses the local model registry in `artifacts/models/`.
+Fabrica enterprise de solucoes de IA/ML. O Synapse e o plano de controle e a
+unica fabrica de projetos: a partir de um briefing feito no chat, ele analisa o
+problema de negocio, escolhe a arquitetura e gera um projeto de solucao
+governado para um de quatro universos: **ML**, **IA**, **Chatbolt** ou
+**ML + IA (Hibrido)**.
 
-## Como Comecar
+- Canais oficiais de dialogo: **VS Code Chat**, **Claude Code** e **Codex**,
+  todos ligados a mesma Solution Factory, memoria compartilhada e governanca.
+- Nucleo multiagente: swarm de ate 60 agentes (15 core + 45 especialistas),
+  ativado de forma economica (1 agente por padrao).
+- Sem backend, frontend ou chaves de API: roda como scripts locais; Claude Code
+  e Codex usam a propria autenticacao.
+
+## Indice
+
+1. [Como comecar](#1-como-comecar)
+2. [Criar um projeto](#2-criar-um-projeto)
+3. [Arquitetura](#3-arquitetura)
+4. [Universos e conteudo gerado](#4-universos-e-conteudo-gerado)
+5. [Engenharia de IA](#5-engenharia-de-ia)
+   - [RAG escalavel e vector database](#51-rag-escalavel-e-vector-database)
+   - [Fine-tuning e adaptacao de modelos](#52-fine-tuning-e-adaptacao-de-modelos)
+   - [Harness engineering](#53-harness-engineering)
+   - [Selecao de tecnologias e templates](#54-selecao-de-tecnologias-e-templates)
+   - [Agentes da solucao (runtime)](#55-agentes-da-solucao-runtime)
+6. [Swarm, fleets e governanca agentica](#6-swarm-fleets-e-governanca-agentica)
+7. [IA agentica para transformacao empresarial](#7-ia-agentica-para-transformacao-empresarial)
+8. [Tratamento estatistico de dados](#8-tratamento-estatistico-de-dados)
+9. [Camada local de modelos ML](#9-camada-local-de-modelos-ml)
+10. [Evals e quality gates](#10-evals-e-quality-gates)
+11. [Testes e validacao](#11-testes-e-validacao)
+12. [Base de livros](#12-base-de-livros)
+13. [Estrutura do repositorio](#13-estrutura-do-repositorio)
+14. [Referencia rapida de comandos](#14-referencia-rapida-de-comandos)
+
+---
+
+## 1. Como comecar
 
 Requisitos: Windows com PowerShell, Python 3.12+, Git e VS Code com a extensao
-Claude Code (`anthropic.claude-code`). Nao ha servidor nem chaves de API: Claude
-Code e Codex usam a propria autenticacao.
+Claude Code (`anthropic.claude-code`).
 
 ```powershell
 git clone https://github.com/MaiconAdone/synapse-solution-factory
@@ -29,216 +59,418 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterpris
 
 Variaveis de ambiente sao opcionais: para personalizar, `Copy-Item .env.example .env`.
 Se o painel do Claude Code mostrar `spawn EINVAL`, confira em
-`Preferences: Open User Settings (JSON)` se `claudeCode.claudeProcessWrapper` aponta
-para um arquivo inexistente e remova-o.
+`Preferences: Open User Settings (JSON)` se `claudeCode.claudeProcessWrapper`
+aponta para um arquivo inexistente e remova-o.
 
-## Criar Um Projeto (ML, IA, Chatbolt ou Hibrido)
+## 2. Criar um projeto
 
-Universos: `ML`, `IA`, `Chatbolt` e `ML + IA (Hibrido)`. Ha dois caminhos:
-
-**1. Task do VS Code** — `Ctrl+Shift+P` -> `Tasks: Run Task` -> `AI Factory: Criar
-projeto com Codex + swarm economico + tratamento dados`. A task pergunta nome,
-universo, objetivo e problema de negocio. Ela nao coleta metrica de sucesso,
-fontes de dados nem nivel de risco; preencha depois em
-`config/business_solution_analysis.json` do projeto criado.
-
-**2. Claude Code (recomendado)** — peca no chat, por exemplo:
-`crie uma solucao de IA/RAG para atendimento ao cliente`. O assistente pergunta o
-briefing completo (objetivo, problema, universo, metrica, dados, risco), consulta o
-analisador e cria o projeto.
-
-Pelo terminal (equivalente):
-
-```powershell
-.\scripts\create_ai_project.ps1 -NomeProjeto meu_projeto -TipoProjeto "ML" `
-  -ProjectGoal "..." -BusinessProblem "..." -SuccessMetric "..." `
-  -AvailableSources "..." -RiskLevel "baixo"
-```
-
-O projeto e criado em `%USERPROFILE%\Documents\Projetos` (mude com `-DestinoBase`).
-Para conferir: `.\scripts\diagnose_project.ps1 -ProjectName meu_projeto`.
-
-## Stack Oficial No VS Code
-
-- Canais oficiais de dialogo: VS Code Chat, Claude Code e Codex,
-  todos ligados a mesma Solution Factory, memoria compartilhada e governanca.
-- Separacao de provedores: Claude Code usa Anthropic diretamente; Codex usa
-  OpenAI. Nenhum canal delega geracao ao provedor do outro.
-- Memoria compartilhada entre canais pelo MCP `synapse-peers`.
-- Swarm hierarchical-mesh, 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
-- Project Factory em `scripts/create_ai_project.ps1`.
-- Memoria hibrida working/episodic/semantic.
-- RAG e Vector DB em `vector_db/`.
-
-## Arquitetura Dos Projetos
-
-Somente o Synapse e a fabrica de projetos. O Synapse nao tem backend nem
-frontend proprios; ele roda como scripts locais acionados pelo VS Code Chat,
-Claude Code e Codex. Um projeto criado pelo Synapse e um workspace de solucao
-administrado pelo Synapse, e nao uma copia da plataforma.
-
-Projetos gerados:
-
-- nao possuem `backend/` nem `frontend/`
-- nao possuem Supabase ou infraestrutura web do Synapse
-- nao possuem `scripts/create_ai_project.ps1`
-- nao podem criar outros projetos
-- possuem seu proprio runtime de swarm, configuracao MCP, memoria e agentes
-- recebem dados, experimentos, prompts, evals, governanca, documentacao e
-  scripts analiticos conforme o universo escolhido
-- registram esse contrato em `config/synapse_solution_contract.json`
-
-Cada projeto executa seu proprio swarm de agentes, com 15 agentes core e
-45 especialistas sob demanda. O Synapse cria e administra o projeto, mas a
-execucao multiagente ocorre no contexto e na memoria do proprio projeto.
-
-Cada projeto tambem herda a camada de transformacao empresarial agentica:
-perfis governados, workflow, prompt, politica de risco, orientacao de KPIs e
-contratos de execucao simulation-first. Essa inteligencia nao adiciona backend
-ou frontend aos projetos de solucao.
-
-## IA Agentica Para Transformacao Empresarial
-
-O Synapse transforma objetivos empresariais em workflows auditaveis:
-
-```text
-objetivo -> diagnostico -> processo -> oportunidades -> priorizacao
--> plano -> risco/aprovacao -> simulacao -> impacto
-```
-
-O runtime usa oito perfis funcionais sobre os 60 agentes do swarm existentes:
-orquestracao, transformacao empresarial, processo, dados, automacao, KPIs,
-governanca de risco e aprovacao humana.
-
-- `LOW`: execucao automatica com auditoria.
-- `MEDIUM`: execucao com validacao e auditoria.
-- `HIGH`: exige aprovacao humana.
-- `CRITICAL`: exige aprovacao explicita e bloqueia acoes externas automaticas.
-
-Consulte `docs/AGENTIC_AI_TRANSFORMATION.md`.
-
-## Criar Projetos Pelo Dialogo
-
-Projetos sao criados pela conversa, sem tasks nem scripts manuais. Os canais
-de criacao sao os chats do VS Code (VS Code Chat, Claude Code e Codex), que
-tambem abrem, analisam, melhoram e editam projetos pela conversa.
+### Briefing minimo
 
 Antes de criar ou implementar, o assistente pergunta no proprio chat qualquer
-campo faltante do briefing minimo: objetivo, problema de negocio, universo,
-metrica/criterio de aceite, dados/fontes disponiveis e risco.
+campo faltante, sem inventar:
 
-Exemplo:
+| Campo | Parametro do script |
+|-------|---------------------|
+| Objetivo | `-ProjectGoal` |
+| Problema de negocio | `-BusinessProblem` |
+| Universo | `-TipoProjeto` (`ML`, `IA`, `Chatbolt`, `ML + IA (Hibrido)`) |
+| Metrica de sucesso / criterio de aceite | `-SuccessMetric` |
+| Dados ou fontes disponiveis | `-AvailableSources` |
+| Nivel de risco | `-RiskLevel` |
+
+Em projetos com RAG, o assistente tambem pergunta as **decisoes de escala**
+(volume do corpus, QPS, latencia, multi-tenant, sensibilidade dos dados e
+hospedagem) antes de escolher o vector database. Veja a [secao 5.1](#51-rag-escalavel-e-vector-database).
+
+### Caminhos
+
+**1. Claude Code, Codex ou VS Code Chat (recomendado)**: peca no chat, por exemplo:
 
 ```text
 crie uma solucao de IA/RAG para atendimento ao cliente
 ```
 
-Com o briefing completo, o Synapse consulta o BusinessSolutionAnalyzer, gera
-`config/business_solution_analysis.json` e segue arquitetura, testes, evals,
-governanca e custo local-first. O projeto e criado localmente em
-`C:\Users\<seu_usuario>\Documents\Projetos`, com `data/`, experimentos, memoria,
-evals, guardrails, contratos e documentacao aplicaveis ao tipo ML, IA ou
-hibrido.
+O assistente coleta o briefing, consulta o `BusinessSolutionAnalyzer`, gera a
+analise (ADR) e cria o projeto.
 
-Todos os canais compartilham memoria local pelo MCP `synapse-peers`, que cobre
-mensagens curtas entre sessoes ativas.
+**2. Task do VS Code**: `Ctrl+Shift+P` -> `Tasks: Run Task` -> `AI Factory: Criar
+projeto com Codex + swarm economico + tratamento dados`. A task pergunta nome,
+universo, objetivo e problema de negocio. Ela nao coleta metrica de sucesso,
+fontes de dados nem nivel de risco; preencha depois em
+`config/business_solution_analysis.json` do projeto criado.
 
-### Conteudo Por Universo
+**3. Terminal (motor interno usado pelos chats)**:
 
-- **ML:** tratamento de dados, estatistica, contratos de dados, notebooks,
-  model card, metricas, monitoramento e drift.
-- **IA:** prompts, agentes como contratos, RAG, retrieval evals, guardrails,
-  memoria, observabilidade e governanca.
-- **ML + IA:** combina os artefatos dos universos ML e IA.
-- **Todos:** engenharia de IA, governanca, seguranca, qualidade, tratamento de
-  dados e criterios de aceite.
+```powershell
+.\scripts\create_ai_project.ps1 -NomeProjeto meu_projeto -TipoProjeto "IA" `
+  -ProjectGoal "..." -BusinessProblem "..." -SuccessMetric "..." `
+  -AvailableSources "..." -RiskLevel "baixo"
+```
 
-## Tratamento Estatistico De Dados
+O script recusa briefing incompleto (use `-AllowIncompleteBriefing` apenas para
+prototipos deliberados) e faz rollback do diretorio se qualquer fase falhar.
+O projeto e criado em `%USERPROFILE%\Documents\Projetos` (mude com `-DestinoBase`).
 
-Coloque arquivos brutos em `data/raw/` e converse com Codex no VS Code:
+Conferir o projeto criado:
+
+```powershell
+.\scripts\diagnose_project.ps1 -ProjectName meu_projeto
+```
+
+### Fluxo de criacao
+
+```text
+briefing no chat -> analisador de solucao (ADR) -> gate SDD -> selecao de tecnologias
+-> fabrica gera o projeto -> testes do proprio projeto -> diagnose_project
+```
+
+## 3. Arquitetura
+
+Somente o Synapse e a fabrica de projetos. Um projeto gerado e um workspace de
+solucao administrado pelo Synapse, nao uma copia da plataforma.
+
+Projetos gerados:
+
+- nao possuem `backend/`, `frontend/`, Supabase nem infraestrutura web;
+- nao possuem `scripts/create_ai_project.ps1` e nao podem criar outros projetos;
+- possuem seu proprio runtime de swarm, `.mcp.json`, memoria, workflows e
+  catalogo de agentes (`agents/definitions/enterprise_agents.yaml`),
+  mais os agentes da propria solucao em `config/solution_agents.json` nos
+  universos com IA;
+- recebem dados, experimentos, prompts, evals, governanca, documentacao e
+  scripts analiticos **conforme o universo** (artefatos que nao se aplicam sao
+  removidos);
+- registram o contrato em `config/synapse_solution_contract.json` e o universo
+  em `config/project_universe.json`;
+- criam `.env.example`, `.env` (ignorado pelo git) e `.venv` com
+  `requirements.txt` instalado (pule com `-SkipActivation`).
+
+Principais contratos do Synapse:
+
+| Arquivo | Papel |
+|---------|-------|
+| `config/llm_solution_factory_policy.json` | Fluxo obrigatorio de todos os assistentes |
+| `config/business_solution_catalog.json` | Arquetipos de negocio ML/IA |
+| `scripts/synapse_lib/business_solution_analyzer.py` | Analisador de solucao (ADR) |
+| `config/ai_framework_selection.json` | Catalogo de frameworks e tecnologias |
+| `config/runtime_manifest.json` | Runtime, swarm, memoria, RAG, fine-tuning, harness |
+| `config/cost_optimization_policy.json` | Perfis de ativacao e custo |
+| `config/ai_ml_enterprise_spec.json` | Especificacao enterprise IA/ML |
+
+Memoria: hibrida (working, episodic, semantic), compartilhada entre canais pelo
+MCP `synapse-peers` (`scripts/synapse_peers_mcp.py`) e pelo handoff curto em
+`memory/codex-vscode-context.md`. Separacao de provedores: Claude Code usa
+Anthropic e Codex usa OpenAI; nenhum canal delega geracao ao outro.
+
+## 4. Universos e conteudo gerado
+
+| Recurso | ML | IA | Chatbolt | Hibrido |
+|---------|:--:|:--:|:--------:|:-------:|
+| Tratamento de dados, contratos, testes, evals, governanca | sim | sim | sim | sim |
+| Harness engineering (auditoria + `test_harness_contract.py`) | sim | sim | sim | sim |
+| ML foundations, model card, monitoramento e drift | sim | - | - | sim |
+| Prompts, agentes, guardrails, LLM ops | - | sim | sim | sim |
+| Agentes da solucao (`config/solution_agents.json`, workflow `agent-build`) | - | sim | sim | sim |
+| RAG escalavel, `vector_db/`, `templates/rag/`, retrieval evals | - | sim | sim | sim |
+| Governanca de fine-tuning | - | sim | sim | sim |
+| Chatbot: handoff, memoria de sessao, evals de conversa | - | - | sim | - |
+
+- **ML:** dados, estatistica, features, baseline, experimentos, model card,
+  metricas, monitoramento e drift (`config/ml_foundations_policy.json`).
+- **IA:** LLMs, agentes como contratos, RAG, MCP, tool calling, memoria,
+  guardrails e observabilidade.
+- **Chatbolt:** assistentes conversacionais com RAG quando ha conhecimento
+  confiavel, handoff, memoria de sessao e guardrails.
+- **Hibrido:** modelos preditivos mais LLM/RAG/agentes, compartilhando
+  contratos, testes, evals e governanca.
+
+## 5. Engenharia de IA
+
+Cada capacidade segue o mesmo padrao: **politica JSON como fonte de verdade ->
+especificacao -> codigo testavel -> integracao no analisador -> heranca pelos
+projetos gerados**.
+
+### 5.1 RAG escalavel e vector database
+
+- Politica: `config/rag_scalability_policy.json`
+- Especificacao: `docs/specifications/scalable_rag_vector_db.md`
+
+**Decisoes perguntadas ao usuario** (o analisador as devolve em
+`rag_scalability.plan.pending_user_decisions`, nunca as adivinha): volume do
+corpus em 12 meses, QPS de pico, latencia p95, isolamento multi-tenant,
+sensibilidade dos dados, hospedagem e banco ja existente.
+
+**Tiers de escala:**
+
+| Tier | Chunks | Indice padrao | Candidatos |
+|------|--------|---------------|------------|
+| local | ate 100 mil | flat (exato) | synapse-local, FAISS, Chroma |
+| team | ate 5 mi | HNSW | pgvector, Qdrant, Chroma |
+| enterprise | ate 100 mi | HNSW + quantizacao int8 | Qdrant, Weaviate, Milvus, Pinecone |
+| massive | acima de 100 mi | IVF-PQ ou DiskANN | Milvus, Pinecone |
+
+Regras de selecao: reaproveitar Postgres via pgvector; reaproveitar
+OpenSearch/Elasticsearch para busca hibrida nativa; excluir servico gerenciado
+em nuvem para dados confidenciais/restritos ou hospedagem propria; preferir
+stores com namespaces/tenants quando houver isolamento.
+
+**Pipeline de recuperacao:** filtro de metadados e ACL **antes** do ranking ->
+busca densa + BM25 -> fusao por reciprocal rank (k=60) -> rerank apenas com
+confianca abaixo de 0.72 -> top 6 chunks com fontes para citacao.
+
+**Ciclo de vida do indice:** nome `{colecao}__{modelo_embedding}__v{versao}`
+servido por alias; nunca misturar modelos de embedding num indice; reindexacao
+blue/green; ingestao incremental por `content_hash` com remocao de chunks
+obsoletos.
+
+**Implementacao de referencia** (so numpy, para bootstrap e evals offline):
+
+| Modulo | Conteudo |
+|--------|----------|
+| `scripts/synapse_lib/vector_store.py` | Protocolo `VectorStore`, `HashingEmbedder` deterministico, `InMemoryVectorStore` com filtros e ACL |
+| `scripts/synapse_lib/rag_retrieval.py` | Chunking com ids estaveis, BM25, RRF, `HybridRetriever`, recall@k/MRR/nDCG |
+| `scripts/synapse_lib/rag_scalability.py` | `RagScalabilityPlanner`: tier, vector DB, indice e estimativa de memoria |
+| `templates/rag/rag_pipeline.py` | Pipeline local executavel com citacoes |
+| `templates/rag/vector_db_adapter.py` | Adaptadores pgvector e Qdrant para o mesmo protocolo |
+
+```powershell
+python .\templates\rag\rag_pipeline.py --query "como versionar indices?"
+python .\scripts\run_evals.py retrieval
+```
+
+> O `HashingEmbedder` e lexical, nao semantico. Em producao, troque por um
+> modelo de embedding real atras da mesma interface e rode os mesmos gates.
+
+### 5.2 Fine-tuning e adaptacao de modelos
+
+- Politica: `config/fine_tuning_policy.json`
+- Especificacao: `docs/specifications/fine_tuning.md`
+- Card de decisao: `templates/fine_tuning/model_adaptation_card.md`
+
+**Escada de adaptacao:** prompt engineering -> RAG -> fine-tuning ->
+continued pretraining. Lacuna de conhecimento vai para RAG; lacuna de
+comportamento/formato/custo vai para fine-tuning. Tecnicas: SFT, LoRA/QLoRA,
+preference tuning (DPO), distilacao, fine-tuning de embeddings e de rerankers.
+
+**Bloqueios:** sem eval set, sem baseline medido de prompt + RAG, dataset abaixo
+do minimo (50 piloto / 500 producao), dados pessoais ou segredos nao resolvidos,
+dados restritos saindo do ambiente aprovado ou sem rollback para o modelo base.
+
+**Gates de release:** ganho relativo minimo de 5% sobre o baseline, sem
+regressao de seguranca/injecao/fidelidade, custo e latencia no orcamento,
+aprovacao humana, rollout shadow/canary e rollback. `automatic_weight_updates`
+permanece `false`.
+
+Preparar um dataset (valida, deduplica, remove PII, separa treino/validacao sem
+vazamento; **nao treina** nem chama provedor):
+
+```powershell
+python .\scripts\prepare_fine_tuning_dataset.py --input data\learning\training_examples.jsonl --tier pilot
+```
+
+Saidas em `artifacts/fine_tuning/`: `train.jsonl`, `validation.jsonl` e
+`readiness_report.json`. O `AdaptationAdvisor`
+(`scripts/synapse_lib/fine_tuning_service.py`) recomenda o degrau da escada no
+analisador.
+
+### 5.3 Harness engineering
+
+- Politica: `config/harness_engineering_policy.json`
+- Especificacao: `docs/specifications/harness_engineering.md`
+- Card por agente: `templates/harness/agent_harness_spec.md`
+
+O harness e tudo o que envolve o modelo para que o agente seja confiavel. Tres
+camadas: harness dos agentes de codigo (Claude Code/Codex), harness de runtime
+dos agentes da solucao e harness de avaliacao.
+
+| Componente | Evidencia | Universos |
+|------------|-----------|-----------|
+| context_map | `AGENTS.md`, `CLAUDE.md`, `config/context_policy.json` | todos |
+| tool_boundary | `config/agent_trust_framework.json`, `guardrails/policy.yaml` | todos |
+| control_loop | `config/cost_optimization_policy.json`, `config/agent_blueprint_contract.json` | todos |
+| verification | `tests/`, `evals/quality_gates.yaml` | todos |
+| agent_evals | `evals/tool_workflow_cases.jsonl` | IA, Chatbolt, Hibrido |
+| agent_blueprints | `config/solution_agents.json`, `config/workflows/synapse/agent-build.json` | IA, Chatbolt, Hibrido |
+| observability | `llm_ops/observability.yaml` | IA, Chatbolt, Hibrido |
+| feedback_loop | `config/agent_improvement_loop.json` | todos |
+| safe_execution | `config/business_transformation.json` | todos |
+
+Limites padrao do loop: 25 passos, 40 chamadas de ferramenta, 2 retries por
+ferramenta, deteccao de loop apos 3 repeticoes e 600 s de timeout. Casos de
+agente rodam 3 tentativas: **pass@k** mede capacidade e **pass^k** mede
+confiabilidade (gate de release: pass^k >= 0.8).
+
+```powershell
+python .\scripts\audit_harness.py            # universo lido de config/project_universe.json
+python .\scripts\audit_harness.py --universe ia
+```
+
+### 5.4 Selecao de tecnologias e templates
+
+`config/ai_framework_selection.json` tem os 14 frameworks (LangGraph,
+LlamaIndex, Haystack, OpenAI Agents SDK, Pydantic AI, CrewAI, AutoGen,
+Microsoft Agent Framework/Semantic Kernel, Dify, Flowise, RAGFlow, R2R, MCP SDKs,
+Swarms) e o `technology_catalog` (inclui Vector DBs, RAG frameworks,
+Fine-tuning/PEFT e Agent/Eval Harness). O seletor
+(`scripts/synapse_lib/ai_framework_selector.py`) escolhe por cenario, nunca
+instala tudo.
+
+- `solution_templates`: arquivos que existem em `templates/` para copiar/adaptar.
+- `solution_scaffold_targets`: arquivos que o projeto gerado deve criar quando
+  nao ha template pronto no Synapse.
+
+Veja `docs/specifications/technology_layer.md` e `templates/README.md`.
+
+### 5.5 Agentes da solucao (runtime)
+
+Ha dois tipos de agentes, e eles nao se confundem:
+
+| Tipo | Onde | Papel |
+|------|------|-------|
+| Agentes construtores (swarm) | `agents/definitions/enterprise_agents.yaml` (60) | Projetam, implementam e testam a solucao |
+| Agentes da solucao (runtime) | `config/solution_agents.json` | Rodam dentro do produto IA/Chatbolt/Hibrido (ex.: assistente que consulta pedidos e abre ocorrencias) |
+
+Nos universos IA, Chatbolt e Hibrido, a fabrica gera `config/solution_agents.json`
+a partir do ADR, validado contra `config/agent_blueprint_contract.json`:
+
+- **single agent first**: um `solution-orchestrator` quando basta um dominio;
+- **orquestrador + especialistas** quando ha RAG e execucao de acoes:
+  `solution-orchestrator` (drafting), `knowledge-retriever` (advisory, so
+  responde com fontes citadas) e `action-executor` (external_action, **exige
+  aprovacao humana**);
+- cada blueprint define objetivo, tier de modelo (economy/balanced/strong via
+  OpenAI/Anthropic), ferramentas, memoria, limites, fleet, evals, orcamento de
+  tokens, autoridade, regra de escalonamento e gate pass^k;
+- as ferramentas do executor **nao sao inventadas**: ficam em
+  `pending_user_decisions` (inventario, permissoes e matriz de aprovacao) ate o
+  usuario confirmar no chat.
+
+O ciclo de construcao segue o workflow `config/workflows/synapse/agent-build.json`
+(decidir single/multiagente -> blueprints -> confirmar ferramentas com o
+usuario -> contratos MCP -> threat model -> retrieval -> evals -> pass^k ->
+auditoria -> aprovacao humana).
+
+```powershell
+python .\scripts\scaffold_solution_agents.py --project-root . --force   # gerar a partir do ADR
+python .\scripts\scaffold_solution_agents.py --validate-only            # validar contra o contrato
+```
+
+O universo escolhido pelo usuario e o que a fabrica gera (`effective_universe`).
+Se o analisador sugerir outro (`recommended_universe`), o ADR registra
+`universe_confirmation` para o assistente confirmar no chat, e todos os
+artefatos, testes e fleets seguem o universo efetivo.
+
+## 6. Swarm, fleets e governanca agentica
+
+- 60 agentes disponiveis (15 core + 45 especialistas), topologia
+  hierarchical-mesh, workflows em `config/workflows/synapse/*.json`.
+- Perfis de ativacao (`config/cost_optimization_policy.json`):
+
+| Perfil | Agentes | Uso |
+|--------|---------|-----|
+| simple | 1 | pergunta curta, pequena correcao |
+| standard | ate 3 | implementacao comum, ML simples |
+| advanced | ate 5 | RAG, MCP, multiagente |
+| enterprise | ate 8 | producao, seguranca, LGPD |
+| extreme | ate 15 | auditoria; 60 somente com aprovacao humana explicita |
+
+- Fleets (`config/agent_fleets.json`): `project_factory_fleet` (somente no
+  Synapse), `ml_fleet`, `rag_fleet`, `mcp_fleet`, `security_fleet`,
+  `cost_optimization_fleet`, `business_transformation_fleet`.
+- Fleets recomendadas por universo (`config/runtime_manifest.json`):
+
+| Universo | Fleets |
+|----------|--------|
+| ML | ml_fleet, security_fleet |
+| IA | rag_fleet, mcp_fleet, security_fleet |
+| Chatbolt | rag_fleet, mcp_fleet, security_fleet |
+| Hibrido | ml_fleet, rag_fleet, mcp_fleet, cost_optimization_fleet |
+
+- Trust framework de 7 camadas, agent blueprint contract, padroes
+  arquiteturais agentic e improvement loop:
+  `config/agent_trust_framework.json`, `config/agent_blueprint_contract.json`,
+  `config/agentic_architectural_patterns.json`,
+  `config/agent_improvement_loop.json`. Detalhes em
+  `docs/architecture/agentic-mesh-governance.md`.
+
+## 7. IA agentica para transformacao empresarial
+
+O Synapse transforma objetivos empresariais em workflows auditaveis, executados
+por uma maquina de estados deterministica
+(`scripts/synapse_lib/business_transformation.py`, so biblioteca padrao):
+
+```text
+intake -> diagnosis -> process_mapping -> data_readiness -> opportunity_identification
+-> prioritization -> automation_architecture -> kpi_design -> execution_planning
+-> risk_governance -> human_approval -> simulation -> impact_evaluation -> final_report
+```
+
+- **Oito perfis funcionais** (Orchestrator, BusinessTransformation, ProcessMapping,
+  DataAnalysis, AutomationArchitect, KPIMonitor, RiskGovernance, HumanApproval),
+  cada um mapeado a um agente existente do catalogo de 60, com a
+  `business_transformation_fleet`.
+- **Fonte unica:** `config/business_transformation.json`; workflow e YAML de
+  perfis sao espelhos verificados por teste.
+- **Nada e inventado:** owner, processo, baseline/meta dos KPIs
+  (`cycle_time`, `rework_rate`, `cost_per_case`, `primary_business_outcome`,
+  `adoption_rate`), notas 1-5 e fatores de risco viram `pending_user_decisions`.
+- **Risco por regras explicitas:**
+
+| Nivel | Quando | Autonomia |
+|-------|--------|-----------|
+| `CRITICAL` | decisao regulada (credito, contratacao, saude...), irreversivel com efeito externo, impacto >= 1.000.000 | bloqueia acao externa; com aprovacao, so simulacao |
+| `HIGH` | efeito externo, irreversivel, dados pessoais, voltado ao cliente, impacto >= 100.000, ou fatores ausentes | exige aprovacao humana |
+| `MEDIUM` | escreve em sistema interno ou >= 1000 casos/mes | automatica com validacao e auditoria |
+| `LOW` | nenhum fator | automatica com auditoria |
+
+- **Priorizacao:** `0.4*valor + 0.2*prontidao + 0.2*simplicidade + 0.2*seguranca`.
+- **Simulation-first:** tools (`kpi_tool`, `process_tool`, `data_tool`,
+  `automation_tool`) rodam simuladas; execucao real exige tool MCP com
+  identidade, permissao, idempotencia, auditoria, compensacao e aprovacao.
+- O analisador reconhece pedidos de transformacao (processo, retrabalho, tempo
+  de ciclo, backoffice, KPIs) e adiciona a `business_transformation_fleet`.
+
+```powershell
+python .\scripts\run_business_transformation.py --brief templates\business\transformation_brief.json
+python .\scripts\run_business_transformation.py --cases evals\business_transformation_cases.jsonl
+```
+
+Todos os universos herdam essa camada, com o teste
+`tests/test_business_transformation_contract.py`. Detalhes em
+`docs/AGENTIC_AI_TRANSFORMATION.md`.
+
+## 8. Tratamento estatistico de dados
+
+Coloque arquivos brutos em `data/raw/` e peca no chat:
 
 ```text
 trate data/raw/clientes.csv com o swarm economico e especialistas sob demanda
 ```
 
-O caminho integrado e:
-
-```text
-Tasks: Run Task -> Codex: Tratar dados com swarm economico
-```
-
-Esse fluxo valida o stack, ativa um subconjunto economico dos 15 core agents, registra o contexto da
-conversa e executa o tratamento estatistico. Para rodar somente o script de
-tratamento sem passar pelo diagnostico do swarm, use:
-
-```text
-Tasks: Run Task -> Dados: Tratar dataset estatistico
-```
-
-Ou pelo terminal integrado:
+Ou use `Tasks: Run Task -> Codex: Tratar dados com swarm economico` (valida o
+stack e registra contexto) ou `Dados: Tratar dataset estatistico` (so o script):
 
 ```powershell
 python .\scripts\treat_dataset.py --input .\data\raw\clientes.csv
 ```
 
-O script gera dataset tratado em `data/processed/` e relatorio em
-`output/data_treatment/`. Por padrao ele corrige nomes/tipos, remove
-duplicatas exatas, trata ausentes com justificativa estatistica, agrupa
-categorias raras e cria flags de outliers sem remove-los automaticamente.
+Gera dataset tratado em `data/processed/` e relatorio em
+`output/data_treatment/`. Por padrao corrige nomes/tipos, remove duplicatas
+exatas, trata ausentes com justificativa estatistica, agrupa categorias raras e
+marca outliers por z-score sem remove-los. Limites em
+`config/data_treatment_policy.json`.
 
-## Project Factory
+## 9. Camada local de modelos ML
 
-The factory engine in `scripts/create_ai_project.ps1` is invoked by the dialog
-channels after the briefing is complete; it is an internal engine, not a
-user-facing entry point. See `docs/vscode-workflow.md`.
+`scripts/synapse_lib/model_service.py` treina baselines locais:
 
-The project factory configures `config/runtime_manifest.json`,
-`config/enterprise.yaml`, `config/project_universe.json`,
-`config/synapse_solution_contract.json`, and solution lifecycle contracts with
-the project name and selected universe.
-
-It also inherits `config/business_transformation.json`,
-`config/workflows/synapse/business-transformation.json`,
-`agents/definitions/business_transformation_agents.yaml`,
-`prompts/business_transformation.md`, and
-`docs/AGENTIC_AI_TRANSFORMATION.md`.
-
-It also creates `.env.example` and a real `.env` (git-ignored), a Python
-`.venv` with `requirements.txt` installed (skip with `-SkipActivation`),
-project data/experiment/artifact folders, project-specific prompt/eval seeds,
-a data contract, a model card, runbooks, a first setup checklist, a creation
-report, and runs validation by default.
-Artifacts that do not apply to the selected universe are removed. For example,
-an IA-only project does not receive an ML model card, while an ML-only project
-does not receive the RAG and AI framework layers.
-
-The generated project contains no application backend, frontend or factory
-script. It does contain its own swarm runtime, MCP configuration, memory,
-workflows and agent catalog.
-
-## Swarm Runtime Interno
-
-O swarm usa o MCP configurado em `.mcp.json` e os workflows versionados em
-`config/workflows/synapse/*.json`. O fluxo principal e pelo VS Code/Codex.
-Cada projeto recebe `.mcp.json`,
-`agents/definitions/enterprise_agents.yaml`
-e seus contratos de workflows e memoria.
-
-## Local Model Layer
-
-`scripts/synapse_lib/model_service.py` includes an ML model layer for local
-baselines:
-
-- trains regression (`linear_regression`, `ridge_regression`,
-  `neural_network_regression`), classification (`logistic_regression`,
-  `neural_network_classifier`), and forecasting (`moving_average_forecast`,
-  `seasonal_naive_forecast`) models from inline JSON data or JSONL files
-- stores versioned artifacts in `artifacts/models/`
-- maintains `artifacts/models/registry.json` as the local model registry and
-  experiment tracking source of truth
-- serves predictions through `ModelService.predict(model_id, request)`
-
-Example training payload:
+- regressao (`linear_regression`, `ridge_regression`,
+  `neural_network_regression`), classificacao (`logistic_regression`,
+  `neural_network_classifier`) e series temporais (`moving_average_forecast`,
+  `seasonal_naive_forecast`), a partir de JSON inline ou JSONL;
+- artefatos versionados em `artifacts/models/` e registry local em
+  `artifacts/models/registry.json` (fonte de verdade de experimentos);
+- predicao via `ModelService.predict(model_id, request)`.
 
 ```json
 {
@@ -253,74 +485,116 @@ Example training payload:
 }
 ```
 
-## Run Model And AI Evals
+## 10. Evals e quality gates
 
-The evaluation layer is split between ML and AI prompt checks, both served by
-`scripts/synapse_lib/eval_service.py` through `scripts/run_evals.py`:
+Todas as suites rodam por `scripts/run_evals.py` (servidas por
+`scripts/synapse_lib/eval_service.py`) e usam os gates de
+`evals/quality_gates.yaml`:
 
-- `EvalService.run_ml_eval` reads `evals/ml_cases.jsonl`, checks ML quality
-  gates, and computes prediction metrics when a `model_id` is provided with
-  cases that include `features` and `expected`.
-- `EvalService.run_ai_eval` reads `evals/prompt_cases.jsonl`, checks prompt
-  readiness, expected terms, and simple prompt-injection guards.
-- `EvalService.run_rag_eval` reads `evals/rag_cases.jsonl` and checks that
-  every expected answer term is textually grounded in the file it cites as
-  `expected_source`, enforcing `faithfulness_min`/`recall_at_k_min` from
-  `evals/quality_gates.yaml`. This is the hallucination/faithfulness gate for
-  RAG: a golden answer that claims something the cited source doesn't say
-  fails the eval instead of silently shipping. See `evals/README.md`.
+| Suite | Casos | O que verifica |
+|-------|-------|----------------|
+| `ml` | `evals/ml_cases.jsonl` | Gates de ML; metricas de predicao com `--model-id` |
+| `ai` | `evals/prompt_cases.jsonl` | Prompt existe, termos esperados, guarda de prompt injection |
+| `rag` | `evals/rag_cases.jsonl` | Fidelidade: cada termo da resposta esperada esta na fonte citada |
+| `retrieval` | `evals/retrieval_cases.jsonl` | Busca hibrida real: recall@k, MRR e nDCG |
 
-All three eval paths return a structured result with pass rates, metrics, and
-quality gates.
-
-From VS Code, run:
-
-- `Evals: Rodar testes ML`
-- `Evals: Rodar testes IA`
-- `Evals: Rodar testes RAG (faithfulness)`
-
-Or from PowerShell:
+Outros conjuntos: `evals/tool_workflow_cases.jsonl` (ferramentas, aprovacao,
+injecao, loops), `evals/voice_agent_cases.jsonl` e
+`evals/agentic_coding_cases.jsonl`. Secoes de gates: `prompt`, `rag`, `ml`,
+`llm_ops`, `retrieval`, `fine_tuning`, `agent_harness`.
 
 ```powershell
-.\scripts\run_ml_evals.ps1
-.\scripts\run_ai_evals.ps1
-.\scripts\run_rag_evals.ps1
+python .\scripts\run_evals.py ml
+python .\scripts\run_evals.py ai
+python .\scripts\run_evals.py rag
+python .\scripts\run_evals.py retrieval
 ```
 
-Synapse's product goal is a no-code ML and AI agent factory: the user describes
-the desired outcome to Codex in VS Code, the LLM asks for missing context, and
-the swarm routes the work to specialized agents in parallel. See
-`docs/architecture/no-code-ai-factory.md`.
+No VS Code: `Evals: Rodar testes ML`, `Evals: Rodar testes IA`,
+`Evals: Rodar testes RAG`. Projetos gerados com RAG tambem recebem
+`Evals: Rodar retrieval hibrido (recall@k, MRR, nDCG)`, e todos recebem
+`Synapse: Auditar harness engineering`.
 
-## Enterprise Principles
+## 11. Testes e validacao
 
-The architecture incorporates production AI practices from AI engineering,
-LLM engineering, prompt engineering, production LLM systems, ML systems design,
-mathematics for ML, and agentic coding:
+```powershell
+.\.venv\Scripts\python -m pytest tests -q
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterprise_stack.ps1
+```
 
-- define evals before shipping model behavior
-- keep prompts, tools, retrieval, and memory versionable
-- separate control plane, data plane, and application surfaces
-- use typed contracts at system boundaries
-- track lineage, observability, and failure modes
-- make retrieval measurable with recall and faithfulness checks
-- keep agents specialized but coordinated by a manager
-- redesign business processes before scaling automation
-- connect decisions to owners, approvals, KPIs, adoption, and value
-- keep deterministic workflow state around probabilistic model reasoning
+- `tests/test_project_factory_contracts.py`: gera projetos dos 4 universos e
+  roda os testes de cada um.
+- `tests/test_project_factory_rollback.py` e
+  `tests/test_project_factory_universe.py`: rollback e resolucao de universo.
+- `tests/test_ai_engineering_extensions.py`: vector store, busca hibrida,
+  planner de escala, fine-tuning, harness, coerencia de fleets/perfis e um guarda
+  que falha se qualquer config ou documento citar caminho inexistente.
+- `validate_enterprise_stack.ps1`: caminhos obrigatorios, contratos do runtime,
+  60 agentes, coerencia de politicas e gates de retrieval.
 
-## Book-Inspired Practice Layer
+O CI (`.github/workflows/ci.yml`) executa a validacao e os testes a cada push.
+O analisador de solucao roda apenas com a biblioteca padrao do Python, pois a
+fabrica o chama com o `python` do PATH.
 
-The project includes executable practice artifacts inspired by AI engineering,
-prompt engineering, LLM engineering, production LLMs, ML systems design,
-mathematics for ML, and agentic coding:
+## 12. Base de livros
 
-- `playbooks/`
-- `prompts/`
-- `evals/`
-- `llm_ops/`
-- `ml_systems/`
-- `rag_pipelines/`
-- `guardrails/`
-- `notebooks/foundations/`
-- `docs/books/implementation_map.md`
+O Synapse traduz licoes de livros em contratos executaveis, sem copiar texto.
+Mapa completo em `docs/books/implementation_map.md`.
+
+| Tema | Referencias | Onde vira codigo/contrato |
+|------|-------------|---------------------------|
+| AI engineering, evals, feedback | AI Engineering (Chip Huyen) | `evals/`, analisador |
+| RAG escalavel e vector DB | LLM Engineer's Handbook, AI Engineering, CLRS | `config/rag_scalability_policy.json` |
+| Fine-tuning | AI Engineering, LLM Engineer's Handbook, Build a LLM From Scratch | `config/fine_tuning_policy.json` |
+| Harness engineering | Production LLMs, Building Applications with AI Agents, Cybernetics | `config/harness_engineering_policy.json` |
+| ML foundations | Foundations of ML (lecture notes), Designing ML Systems | `config/ml_foundations_policy.json` |
+| Agentes e orquestracao | AI Agents in Action, Society of Mind, Agentic Architectural Patterns | `config/agentic_architectural_patterns.json` |
+| Transformacao empresarial | Agentic AI, Competing in the Age of AI, All-In on AI | `config/business_transformation.json` |
+
+Principios aplicados: evals antes de otimizar; prompts, ferramentas, retrieval e
+memoria versionados; contratos tipados nas bordas; retrieval mensuravel;
+agentes especializados coordenados por um orquestrador; estado deterministico ao
+redor do raciocinio probabilistico.
+
+## 13. Estrutura do repositorio
+
+```text
+config/                 politicas e contratos (fonte de verdade)
+  workflows/synapse/    workflows do swarm (new-ai-project, rag-build, ml-release, ...)
+scripts/
+  create_ai_project.ps1 motor da fabrica (+ project_factory/)
+  synapse_lib/          analisador, seletor, evals, modelos, RAG, fine-tuning, harness
+templates/              templates de RAG, fine-tuning e harness
+docs/
+  specifications/       especificacoes (RAG, fine-tuning, harness, ML foundations, ...)
+  architecture/         arquitetura do Synapse
+  books/                mapa de implementacao dos livros
+evals/                  casos e quality gates
+agents/definitions/     catalogo dos 60 agentes
+playbooks/ prompts/ guardrails/ llm_ops/ ml_systems/ rag/ rag_pipelines/ vector_db/
+notebooks/foundations/  laboratorio de fundamentos
+memory/                 memoria compartilhada entre canais
+tests/                  testes do Synapse
+```
+
+## 14. Referencia rapida de comandos
+
+| Objetivo | Comando |
+|----------|---------|
+| Criar projeto | `.\scripts\create_ai_project.ps1 -NomeProjeto ... -TipoProjeto ...` |
+| Diagnosticar projeto | `.\scripts\diagnose_project.ps1 -ProjectName ...` |
+| Analisar solucao (sem gravar) | `python .\scripts\analyze_business_solution.py --project-name x --universe IA --business-problem "..." --print-recommendation` |
+| Testes | `.\.venv\Scripts\python -m pytest tests -q` |
+| Validar stack | `.\scripts\validate_enterprise_stack.ps1` |
+| Evals | `python .\scripts\run_evals.py ml\|ai\|rag\|retrieval` |
+| Pipeline RAG local | `python .\templates\rag\rag_pipeline.py --query "..."` |
+| Dataset de fine-tuning | `python .\scripts\prepare_fine_tuning_dataset.py --input ...` |
+| Auditar harness | `python .\scripts\audit_harness.py` |
+| Agentes da solucao | `python .\scripts\scaffold_solution_agents.py --validate-only` |
+| Transformacao empresarial | `python .\scripts\run_business_transformation.py --brief ...` |
+| Tratar dados | `python .\scripts\treat_dataset.py --input .\data\raw\arquivo.csv` |
+| Filtrar contexto para LLM | `python .\scripts\context_filter.py --input ... --output ... --max-chars 12000` |
+| Market radar | `python .\scripts\market_radar.py` |
+
+Mais detalhes: `docs/vscode-workflow.md`, `docs/architecture/project-factory.md`
+e `docs/architecture/no-code-ai-factory.md`.
