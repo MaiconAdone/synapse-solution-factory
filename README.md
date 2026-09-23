@@ -94,10 +94,10 @@ O assistente coleta o briefing, consulta o `BusinessSolutionAnalyzer`, gera a
 analise (ADR) e cria o projeto.
 
 **2. Task do VS Code**: `Ctrl+Shift+P` -> `Tasks: Run Task` -> `AI Factory: Criar
-projeto com Codex + tratamento dados`. A task pergunta nome,
-universo, objetivo e problema de negocio. Ela nao coleta metrica de sucesso,
-fontes de dados nem nivel de risco; preencha depois em
-`config/business_solution_analysis.json` do projeto criado.
+projeto com Codex + tratamento dados`. A task pergunta o briefing minimo
+completo: nome, universo, objetivo, problema de negocio, metrica de sucesso,
+fontes de dados e nivel de risco. O menu `AI Factory: Menu interativo` pede os
+mesmos campos e nao cria o projeto se algum ficar vazio.
 
 **3. Terminal (motor interno usado pelos chats)**:
 

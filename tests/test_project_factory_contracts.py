@@ -379,6 +379,21 @@ def test_vscode_factory_task_enables_complete_bundle_for_every_universe():
         assert capability in script
     assert any(item["id"] == "businessProblem" for item in tasks["inputs"])
     assert "-BusinessProblem" in factory_task["args"]
+    # The factory refuses an incomplete briefing, so the task must collect every field.
+    for flag, input_id in (
+        ("-ProjectGoal", "projectGoal"),
+        ("-BusinessProblem", "businessProblem"),
+        ("-SuccessMetric", "successMetric"),
+        ("-AvailableSources", "availableSources"),
+        ("-RiskLevel", "riskLevel"),
+    ):
+        position = factory_task["args"].index(flag)
+        assert factory_task["args"][position + 1] == "${input:" + input_id + "}"
+        assert any(item["id"] == input_id for item in tasks["inputs"])
+    assert "-AllowIncompleteBriefing" not in factory_task["args"]
+    risk_input = next(item for item in tasks["inputs"] if item["id"] == "riskLevel")
+    assert risk_input["options"] == ["baixo", "medio", "alto", "critico"]
+    assert "default" not in risk_input
 
 
 def test_business_solution_analyzer_maps_business_problem_to_architecture():
@@ -481,6 +496,10 @@ def test_ai_factory_menu_creates_projects_without_swarm():
     menu = (root / "scripts" / "ai_factory_menu.ps1").read_text(encoding="utf-8-sig")
     assert "Criar projeto IA/ML completo" in menu
     assert "swarm" not in menu.lower()
+    assert "Read-Briefing" in menu
+    for field in ("ProjectGoal", "BusinessProblem", "SuccessMetric", "AvailableSources", "RiskLevel"):
+        assert field in menu
+    assert menu.count("@Briefing") == 2
     assert "Criar projeto IA/ML offline apenas com memoria local" in menu
     assert "Read-ProjectUniverse" in menu
     assert "-LocalMemoryOnly" in menu

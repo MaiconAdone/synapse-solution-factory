@@ -8,7 +8,7 @@ Use these workspace instructions for VS Code Chat/Copilot Chat.
    Codex, Anthropic for Claude Code) for triage, summaries, classification,
    planning, and code review.
 4. Destructive or external actions follow the autonomy matrix in `config/harness_engineering_policy.json`.
-5. Do not load `.claude-flow`, full memory dumps,
+5. Do not load full memory dumps,
    generated output, or artifacts unless directly needed.
 6. For simple tasks, use the smallest relevant file set. For medium tasks, keep
    context to about five relevant files unless the task justifies more.

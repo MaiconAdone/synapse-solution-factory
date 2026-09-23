@@ -7,7 +7,7 @@
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
 - Limite respostas locais normalmente a 512 tokens e contexto a 4096 tokens.
 - Para economizar limite do Codex, nao carregue manifests longos,
-  output, artifacts, .claude-flow ou memoria completa sem necessidade direta.
+  output, artifacts ou memoria completa sem necessidade direta.
 - Compartilhe memoria entre VS Code Chat, Codex e Claude Code pelo MCP local
   `synapse-peers`.
 - Antes de pedir contexto novamente ao usuario, consulte a memoria compartilhada

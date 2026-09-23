@@ -29,6 +29,27 @@
       "description": "Problema de negocio que o projeto precisa resolver"
     },
     {
+      "id": "successMetric",
+      "type": "promptString",
+      "description": "Metrica de sucesso ou criterio de aceite (ex.: 80% dos casos resolvidos sem humano)"
+    },
+    {
+      "id": "availableSources",
+      "type": "promptString",
+      "description": "Dados, documentos ou fontes disponiveis (ex.: FAQ, CSV de vendas, API de pedidos)"
+    },
+    {
+      "id": "riskLevel",
+      "type": "pickString",
+      "description": "Nivel de risco da solucao",
+      "options": [
+        "baixo",
+        "medio",
+        "alto",
+        "critico"
+      ]
+    },
+    {
       "id": "dataFile",
       "type": "promptString",
       "description": "Arquivo para tratar (ex.: data/raw/clientes.csv)"
@@ -103,7 +124,13 @@
         "-ProjectGoal",
         "${input:projectGoal}",
         "-BusinessProblem",
-        "${input:businessProblem}"
+        "${input:businessProblem}",
+        "-SuccessMetric",
+        "${input:successMetric}",
+        "-AvailableSources",
+        "${input:availableSources}",
+        "-RiskLevel",
+        "${input:riskLevel}"
       ],
       "group": {
         "kind": "build",

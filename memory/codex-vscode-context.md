@@ -66,3 +66,9 @@ Objetivo: remover swarm de 60 agentes, perfis de ativacao de agentes, 7 fleets e
 Arquivos tocados: removidos `config/agent_fleets.json`, `config/agent_trust_framework.json`, `agents/definitions/enterprise_agents.yaml`, `docs/architecture/agentic-mesh-governance.md`, `docs/architecture/generated-project-swarm-strategy.md`; criado `config/roles.json`; governanca movida para `config/harness_engineering_policy.json#governance`; fabrica, diagnose, validate, analisador, workflows, testes e docs atualizados.
 Decisoes: um unico assistente por tarefa; workflows usam papeis (`role`) de config/roles.json; cost policy manteve roteamento de modelos e virou `request_profiles` (tier + tokens, sem limite de agentes); agentes da solucao usam `owner_role` em vez de fleet; framework Swarms de terceiros continua no catalogo.
 Proximo passo: .claude/ ainda contem comandos claude-flow de swarm (ferramenta do Claude Code, fora do runtime do Synapse) - decidir com o usuario se remove.
+
+Data: 2026-09-23
+Objetivo: remover claude-flow de .claude/ e completar o briefing na task e no menu da fabrica.
+Arquivos tocados: .claude/ (comandos claude-flow, sparc e analysis e agentes com hooks npx claude-flow removidos; permissao /swarm removida do settings.json), `.vscode/tasks.json`, `scripts/ai_factory_menu.ps1`, README, AGENTS.md, copilot-instructions, teste de contrato.
+Decisoes: ficaram so as definicoes de agentes sem claude-flow; task e menu pedem objetivo, problema, metrica, fontes e risco (risco sem valor padrao) e o menu nao cria projeto com campo vazio.
+Proximo passo: nenhum pendente desta frente.

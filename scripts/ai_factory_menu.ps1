@@ -15,6 +15,25 @@ function Show-Header {
     Write-Host ""
 }
 
+function Read-Briefing {
+    # Mesmo briefing minimo exigido por create_ai_project.ps1; nada e inventado.
+    Write-Host ""
+    Write-Host "Briefing minimo do projeto:" -ForegroundColor Cyan
+    $Briefing = [ordered]@{
+        ProjectGoal = Read-Host "Objetivo do projeto"
+        BusinessProblem = Read-Host "Problema de negocio"
+        SuccessMetric = Read-Host "Metrica de sucesso ou criterio de aceite"
+        AvailableSources = Read-Host "Dados, documentos ou fontes disponiveis"
+        RiskLevel = Read-Host "Nivel de risco (baixo, medio, alto, critico)"
+    }
+    $Missing = @($Briefing.Keys | Where-Object { [string]::IsNullOrWhiteSpace($Briefing[$_]) })
+    if ($Missing.Count -gt 0) {
+        Write-Host "Briefing incompleto: $($Missing -join ', '). Projeto nao criado." -ForegroundColor Red
+        return $null
+    }
+    return $Briefing
+}
+
 function Read-ProjectUniverse {
     Write-Host ""
     Write-Host "Universo do projeto:" -ForegroundColor Cyan
@@ -43,7 +62,11 @@ while ($true) {
                 break
             }
             $TipoProjeto = Read-ProjectUniverse
-            & "$PSScriptRoot\create_ai_project.ps1" -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto
+            $Briefing = Read-Briefing
+            if ($null -eq $Briefing) {
+                break
+            }
+            & "$PSScriptRoot\create_ai_project.ps1" -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto @Briefing
         }
         "2" {
             $NomeProjeto = Read-Host "Nome do novo projeto"
@@ -52,7 +75,11 @@ while ($true) {
                 break
             }
             $TipoProjeto = Read-ProjectUniverse
-            & "$PSScriptRoot\create_ai_project.ps1" -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto -LocalMemoryOnly
+            $Briefing = Read-Briefing
+            if ($null -eq $Briefing) {
+                break
+            }
+            & "$PSScriptRoot\create_ai_project.ps1" -NomeProjeto $NomeProjeto -TipoProjeto $TipoProjeto @Briefing -LocalMemoryOnly
         }
         "3" {
             & "$PSScriptRoot\validate_enterprise_stack.ps1"
