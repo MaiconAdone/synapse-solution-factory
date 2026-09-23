@@ -69,9 +69,8 @@ Outputs `artifacts/fine_tuning/train.jsonl`, `validation.jsonl` and
 - `automatic_weight_updates` stays `false`: continual learning improves memory
   and evals; weights change only through this gated process.
 
-## Agents And Fleet
+## Roles
 
-`ml_fleet` for training discipline (`model-evaluation-specialist`,
-`experiment-tracking-specialist`) with `llm-engineering`; `security_fleet`
-(`privacy-lgpd-reviewer`) reviews the dataset; `cost_optimization_fleet`
-validates the cost/latency case.
+`machine-learning` owns training discipline and evaluation, with
+`llm-engineering`; `security-compliance` reviews the dataset for privacy and
+consent; `observability-ops` validates the cost/latency case.

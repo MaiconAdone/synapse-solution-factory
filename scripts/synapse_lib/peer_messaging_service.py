@@ -403,8 +403,8 @@ class PeerMessagingService:
         if active_agents is None:
             return None
         value = int(active_agents)
-        if value < 0 or value > 60:
-            raise PeerMessagingError("active_agents must be between 0 and 60")
+        if value < 0:
+            raise PeerMessagingError("active_agents must be a non-negative integer")
         return value
 
     @staticmethod

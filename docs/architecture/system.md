@@ -2,9 +2,9 @@
 
 ## Control Plane
 
-Codex and Claude Code are the engineering operators. The swarm runtime tracks
-governed agent state, coordination, durable memory, and semantic retrieval
-locally, with no external MCP swarm executor.
+Codex and Claude Code are the engineering operators. Workflows name the role
+that owns each step (`config/roles.json`); memory and semantic retrieval stay
+local, with no external MCP executor.
 
 The machine-readable runtime contract lives in `config/runtime_manifest.json`.
 `scripts/create_ai_project.ps1`, `scripts/diagnose_project.ps1`, and

@@ -265,37 +265,38 @@ def test_analyzer_exposes_rag_fine_tuning_and_harness_sections(universe):
         assert analysis["rag_scalability"]["plan"]["pending_user_decisions"]
         assert "config/rag_scalability_policy.json" in analysis["required_artifacts"]
         assert any("retrieval_cases" in item for item in analysis["eval_strategy"])
-    fleets = {fleet["id"] for fleet in load("config/agent_fleets.json")["fleets"]}
-    for fleet in analysis["swarm_strategy"]["recommended_fleets"]:
-        assert fleet in fleets and fleet != "project_factory_fleet"
+    roles = {role["id"] for role in load("config/roles.json")["roles"]}
+    assert set(analysis["execution_strategy"]["roles"]) <= roles
+    assert analysis["execution_strategy"]["default"] == "single_assistant_first"
     markdown = BusinessSolutionAnalyzer(root=ROOT).to_markdown(analysis)
     assert "## Harness Engineering" in markdown
 
 
-def test_recommended_fleets_exist_and_survive_generated_projects():
-    fleets = {fleet["id"] for fleet in load("config/agent_fleets.json")["fleets"]}
-    recommended = load("config/runtime_manifest.json")["generated_project_swarm_strategy"]["recommended_fleets_by_universe"]
+def test_roles_per_universe_exist():
+    roles = load("config/roles.json")
+    ids = {role["id"] for role in roles["roles"]}
 
-    assert set(recommended) == {"ml", "ia", "chatbolt", "hybrid"}
-    for universe, fleet_ids in recommended.items():
-        assert fleet_ids, universe
-        for fleet in fleet_ids:
-            # project_factory_fleet is removed from generated projects by the factory.
-            assert fleet in fleets and fleet != "project_factory_fleet", (universe, fleet)
+    assert set(roles["by_universe"]) == {"ml", "ia", "chatbolt", "hybrid"}
+    for universe, role_ids in roles["by_universe"].items():
+        assert role_ids and set(role_ids) <= ids, universe
+    assert set(roles["business_transformation_roles"]) <= ids
 
 
-def test_enterprise_spec_activation_targets_match_cost_policy():
-    cost = {
-        name: profile["active_agent_limit"]
-        for name, profile in load("config/cost_optimization_policy.json")["activation_profiles"].items()
-    }
-    assert load("config/ai_ml_enterprise_spec.json")["cost_aware_orchestration"]["activation_targets"] == cost
-
-
-def test_claude_md_lists_every_fleet():
-    claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8-sig")
-    for fleet in load("config/agent_fleets.json")["fleets"]:
-        assert f"`{fleet['id']}`" in claude, fleet["id"]
+def test_swarm_fleets_trust_framework_and_agent_activation_are_gone():
+    for path in ("config/agent_fleets.json", "config/agent_trust_framework.json", "agents/definitions/enterprise_agents.yaml"):
+        assert not (ROOT / path).exists(), path
+    runtime = load("config/runtime_manifest.json")
+    assert not {"swarm", "agentic_mesh", "generated_project_swarm_strategy"} & set(runtime)
+    cost = load("config/cost_optimization_policy.json")
+    assert "ruflo" not in cost and "activation_profiles" not in cost
+    assert all("active_agent_limit" not in profile for profile in cost["request_profiles"].values())
+    assert "activation_targets" not in load("config/ai_ml_enterprise_spec.json")["cost_aware_orchestration"]
+    governance = load("config/harness_engineering_policy.json")["governance"]
+    assert "external_action_requires_human_approval" in governance["authorization"]
+    assert "activate_all_60_agents" not in governance["autonomy_matrix"]["requires_human_approval"]
+    for doc in ("CLAUDE.md", "AGENTS.md", "README.md"):
+        text = (ROOT / doc).read_text(encoding="utf-8-sig").lower()
+        assert "60 agent" not in text and "_fleet" not in text and "trust framework" not in text, doc
 
 
 def test_technology_catalog_templates_exist_and_new_technologies_are_selectable():
@@ -388,11 +389,11 @@ def test_referenced_repository_paths_exist_or_are_generated_or_declared_runtime(
 # --- runtime agents of IA / Chatbolt / Hybrid solutions ----------------------------
 
 
-def test_agent_build_workflow_uses_catalog_agents_and_is_required():
-    catalog = set(re.findall(r"(?m)^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$", (ROOT / "agents/definitions/enterprise_agents.yaml").read_text(encoding="utf-8-sig")))
+def test_workflows_use_only_defined_roles_and_agent_build_is_required():
+    roles = {role["id"] for role in load("config/roles.json")["roles"]}
     for workflow_path in sorted((ROOT / "config/workflows/synapse").glob("*.json")):
         workflow = json.loads(workflow_path.read_text(encoding="utf-8-sig"))
-        missing = [step["agent"] for step in workflow.get("steps", []) if step["agent"] not in catalog]
+        missing = [step["role"] for step in workflow.get("steps", []) if step["role"] not in roles]
         assert not missing, (workflow_path.name, missing)
     assert "agent-build" in load("config/runtime_manifest.json")["validation"]["required_workflows"]
 

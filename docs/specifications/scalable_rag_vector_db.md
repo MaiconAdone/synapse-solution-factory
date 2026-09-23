@@ -102,8 +102,8 @@ The hashing embedder is lexical, not semantic. It exists so retrieval contracts
 are testable offline; production swaps in a semantic embedding model behind the
 same interface and re-runs the same gates.
 
-## Agents And Fleet
+## Roles
 
-`rag_fleet`: `rag-engineering` leads with `vector-db-engineer`,
-`embedding-specialist`, `hybrid-search-engineer`, `reranking-specialist`,
-`context-compression-specialist` and `knowledge-governance` on demand.
+`rag-engineering` owns chunking, indexes, retrieval and evaluation, with
+`data-engineering` for ingestion and `security-compliance` for tenant and ACL
+rules.

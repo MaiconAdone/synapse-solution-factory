@@ -14,19 +14,19 @@
     "engine": "scripts/synapse_lib/business_transformation.py"
   },
   "steps": [
-    {"name": "intake", "agent": "orchestration-manager", "profile": "orchestrator"},
-    {"name": "diagnosis", "agent": "product-strategy", "profile": "business-transformation"},
-    {"name": "process_mapping", "agent": "business-value-analyst", "profile": "process-mapping"},
-    {"name": "data_readiness", "agent": "data-science", "profile": "data-analysis"},
-    {"name": "opportunity_identification", "agent": "product-strategy", "profile": "business-transformation", "supporting_agents": ["llm-engineering"]},
-    {"name": "prioritization", "agent": "product-strategy", "profile": "business-transformation"},
-    {"name": "automation_architecture", "agent": "integration-automation", "profile": "automation-architect"},
-    {"name": "kpi_design", "agent": "metrics-instrumentation", "profile": "kpi-monitor"},
-    {"name": "execution_planning", "agent": "orchestration-manager", "profile": "orchestrator"},
-    {"name": "risk_governance", "agent": "security-compliance", "profile": "risk-governance"},
-    {"name": "human_approval", "agent": "policy-guardrails-engineer", "profile": "human-approval"},
-    {"name": "simulation", "agent": "integration-automation", "profile": "automation-architect", "supporting_agents": ["testing-qa"]},
-    {"name": "impact_evaluation", "agent": "metrics-instrumentation", "profile": "kpi-monitor", "supporting_agents": ["business-value-analyst"]},
-    {"name": "final_report", "agent": "orchestration-manager", "profile": "orchestrator", "supporting_agents": ["documentation"]}
+    {"name": "intake", "role": "orchestration-manager", "profile": "orchestrator"},
+    {"name": "diagnosis", "role": "product-strategy", "profile": "business-transformation"},
+    {"name": "process_mapping", "role": "business-value-analyst", "profile": "process-mapping"},
+    {"name": "data_readiness", "role": "data-science", "profile": "data-analysis"},
+    {"name": "opportunity_identification", "role": "product-strategy", "profile": "business-transformation", "supporting_roles": ["llm-engineering"]},
+    {"name": "prioritization", "role": "product-strategy", "profile": "business-transformation"},
+    {"name": "automation_architecture", "role": "integration-automation", "profile": "automation-architect"},
+    {"name": "kpi_design", "role": "metrics-instrumentation", "profile": "kpi-monitor"},
+    {"name": "execution_planning", "role": "orchestration-manager", "profile": "orchestrator"},
+    {"name": "risk_governance", "role": "security-compliance", "profile": "risk-governance"},
+    {"name": "human_approval", "role": "policy-guardrails-engineer", "profile": "human-approval"},
+    {"name": "simulation", "role": "integration-automation", "profile": "automation-architect", "supporting_roles": ["testing-qa"]},
+    {"name": "impact_evaluation", "role": "metrics-instrumentation", "profile": "kpi-monitor", "supporting_roles": ["business-value-analyst"]},
+    {"name": "final_report", "role": "orchestration-manager", "profile": "orchestrator", "supporting_roles": ["documentation"]}
   ]
 }

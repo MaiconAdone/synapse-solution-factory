@@ -12,14 +12,15 @@ generated behind it.
    metrics.
 3. SYNAPSE applies the book-inspired playbooks in `playbooks/` and
    `docs/books/implementation_map.md`.
-4. The swarm activates the specialized agents in parallel.
-5. The orchestration manager consolidates the answer for the user.
+4. A single assistant (Claude Code or Codex) executes the workflow steps,
+   each owned by a role from `config/roles.json`.
+5. The assistant consolidates the answer for the user.
 6. The created project includes a managed `data/` area for CSV, Excel, JSON,
    JSONL and Parquet uploads.
 
 ## Required Knowledge Base
 
-The dialog and swarm must apply these principles before creating a model or
+The dialog must apply these principles before creating a model or
 agent:
 
 - AI Engineering: evals, cost, latency and safety before optimization.
@@ -28,7 +29,7 @@ agent:
 - Production LLMs: fallbacks, guardrails, traces and release checks.
 - Designing ML Systems: data contracts, baselines, model cards and monitoring.
 - Mathematics for ML: metrics, uncertainty, similarity and acceptance criteria.
-- Agentic Coding: specialized agents, memory, validation and orchestration.
+- Agentic Coding: explicit roles, memory, validation and orchestration.
 - Classical AI: problem representation, search, planning and explainable
   decomposition before automation.
 - Cybernetics: feedback loops, control signals, stability and human authority
@@ -38,26 +39,24 @@ agent:
 - Cognitive-state signals: confidence, uncertainty, risk and blocked state are
   operational controls, not claims of human-like emotion.
 
-## Parallel Swarm Execution
+## Role-Based Execution
 
-The default workflow is `new-ai-project`. It must run with
-`parallelAgentActivation=true` and route work by domain:
+The default workflow is `new-ai-project`. Each step names the role that owns
+it (see `config/roles.json`):
 
 - `data-engineering`: uploads, schemas, lineage and data validation.
 - `data-science`: analysis, statistics, leakage checks, feature strategy and metrics.
 - `machine-learning`: baselines, target, features, metrics and local experiment tracking.
 - `llm-engineering`: prompts, tools, agents and guardrails.
 - `rag-engineering`: ingestion, chunking, embeddings and retrieval evals.
-- `backend-engineering`: APIs and secure runtime integration.
-- `frontend-engineering`: no-code dialog and project/data panels.
 - `product-strategy`: business objective, success metrics and acceptance criteria.
 - `integration-automation`: Codex, MCP, APIs and local tool wiring.
 - `security-compliance`: auth, privacy, LGPD, policies and safe autonomy limits.
 - `observability-ops`: traces, cost, latency, token budget, drift and health.
-- `devops`: swarm activation, deployment, cost and token strategy.
+- `devops`: release, rollback and environment automation.
 - `testing-qa`: ML, IA, RAG, security and regression gates.
 - `documentation`: user-facing summary and operational records.
 - `orchestration-manager`: task routing, consolidation and final answer.
 
-This keeps each agent focused and avoids sending the full prompt/context to
-every agent, reducing repeated tokens.
+Roles keep each step focused so only the context that step needs is sent to
+the model, reducing repeated tokens.

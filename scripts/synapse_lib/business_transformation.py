@@ -105,13 +105,13 @@ class BusinessTransformationWorkflow:
                 "stage": stage["id"],
                 "profile": profile["id"],
                 "class": profile["class"],
-                "agent_id": profile["agent_id"],
-                "supporting_agents": stage.get("supporting_agents", []),
+                "role": profile["role"],
+                "supporting_roles": stage.get("supporting_roles", []),
                 "tools": profile["tools"],
                 "output": output,
             }
             state.stage_results.append(record)
-            state.audit_log.append({"stage": stage["id"], "agent_id": profile["agent_id"], "decision": output.get("decision", "recorded")})
+            state.audit_log.append({"stage": stage["id"], "role": profile["role"], "decision": output.get("decision", "recorded")})
         blocked = [item for item in state.opportunities if item.get("execution_status") in {"awaiting_human_approval", "blocked_external_action"}]
         if state.pending_user_decisions:
             status = "needs_user_decisions"

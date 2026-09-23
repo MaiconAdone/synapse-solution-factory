@@ -99,7 +99,7 @@ $Attachment = [ordered]@{
 $Manifest = [ordered]@{
     project = $ProjectName
     source = "scripts/import_project_file.ps1"
-    usage = "Referencie stored_path no dialogo do Codex. Datasets em data/raw podem ser tratados com a task Codex: Tratar dados com swarm economico."
+    usage = "Referencie stored_path no dialogo do Codex. Datasets em data/raw podem ser tratados com a task Codex: Tratar dados."
     attachments = @($Existing + [pscustomobject]$Attachment)
 }
 

@@ -2,15 +2,12 @@
 
 - Codex usa o modelo OpenAI configurado diretamente para analisar, editar e revisar codigo.
 - Claude Code usa Anthropic diretamente.
-- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
-- Comece com um agente; escale somente quando o problema exigir outros dominios.
-- Nunca ative os 60 agentes por padrao.
+- Trabalhe com um unico assistente por tarefa; papeis de workflow ficam em `config/roles.json`.
+- Acoes destrutivas ou externas seguem a matriz de autonomia de `config/harness_engineering_policy.json`.
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
 - Limite respostas locais normalmente a 512 tokens e contexto a 4096 tokens.
-- Para economizar limite do Codex, nao carregue catalogos de agentes, manifests longos,
+- Para economizar limite do Codex, nao carregue manifests longos,
   output, artifacts, .claude-flow ou memoria completa sem necessidade direta.
-- Use o swarm como roteador local; nao replique o raciocinio de 60 agentes dentro
-  do prompt do Codex.
 - Compartilhe memoria entre VS Code Chat, Codex e Claude Code pelo MCP local
   `synapse-peers`.
 - Antes de pedir contexto novamente ao usuario, consulte a memoria compartilhada

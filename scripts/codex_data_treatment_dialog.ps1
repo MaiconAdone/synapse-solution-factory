@@ -67,7 +67,7 @@ $DialogContext = @{
         "Codex recebe o pedido pela caixa de dialogo do VS Code.",
         "Aplicar prompts/master_data_treatment.md como contrato metodologico.",
         "Aplicar config/data_treatment_policy.json para separar etapas automaticas, assistidas e avancadas.",
-        "O swarm ativa um subconjunto economico dos 15 core agents e mantem 45 especialistas disponiveis sob demanda.",
+        "Um unico assistente conduz o fluxo, assumindo os papeis abaixo conforme a etapa.",
         "data-engineering valida estrutura, tipos, ausentes e linhagem.",
         "data-science conduz diagnostico estatistico, outliers, distribuicoes e transformacoes.",
         "machine-learning consome somente dados tratados e relatorio antes de treino.",

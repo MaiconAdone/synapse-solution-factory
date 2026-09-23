@@ -42,7 +42,7 @@
         "loop_limits": "config/harness_engineering_policy.json#control_loop"
       },
       "success_criteria": "Projetos gerados passam diagnose_project e testes proprios em todos os universos",
-      "fleet": "mcp_fleet",
+      "owner_role": "llm-engineering",
       "evals": [
         "evals/tool_workflow_cases.jsonl",
         "evals/prompt_cases.jsonl"
@@ -99,7 +99,7 @@
         "loop_limits": "config/harness_engineering_policy.json#control_loop"
       },
       "success_criteria": "retrieval and faithfulness gates in evals/quality_gates.yaml",
-      "fleet": "rag_fleet",
+      "owner_role": "rag-engineering",
       "evals": [
         "evals/retrieval_cases.jsonl",
         "evals/rag_cases.jsonl"
@@ -155,7 +155,7 @@
         "loop_limits": "config/harness_engineering_policy.json#control_loop"
       },
       "success_criteria": "pending_user_confirmation",
-      "fleet": "mcp_fleet",
+      "owner_role": "integration-automation",
       "evals": [
         "evals/tool_workflow_cases.jsonl"
       ],

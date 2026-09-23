@@ -11,7 +11,7 @@
     "context",
     "boundaries",
     "success_criteria",
-    "fleet",
+    "owner_role",
     "evals",
     "observability",
     "cost_budget",
@@ -23,7 +23,10 @@
   ],
   "model_strategy": {
     "source": "config/model_providers.json and config/cost_optimization_policy.json model_routing",
-    "providers": ["openai", "anthropic"],
+    "providers": [
+      "openai",
+      "anthropic"
+    ],
     "local_models": "disabled while config/runtime_manifest.json local_llm.enabled is false",
     "model_tiers": {
       "economy": "classification, routing, summarization, schema checks (e.g. Claude Haiku)",
@@ -31,7 +34,10 @@
       "strong": "architecture, security, conflict resolution, final decisions (e.g. Claude Opus); requires justification"
     },
     "default_tier": "economy",
-    "teacher_review_models": ["gpt", "claude"],
+    "teacher_review_models": [
+      "gpt",
+      "claude"
+    ],
     "escalate_to_strong_tier_when": [
       "architecture_is_critical",
       "security_or_compliance_risk",
@@ -68,7 +74,12 @@
       "quality_gate",
       "observability"
     ],
-    "authority_levels": ["advisory", "drafting", "tool_use", "external_action"],
+    "authority_levels": [
+      "advisory",
+      "drafting",
+      "tool_use",
+      "external_action"
+    ],
     "default_authority_level": "advisory",
     "external_action_requires_human_approval": true,
     "model_access": "via_llm_gateway_only",
@@ -103,8 +114,8 @@
   ],
   "pattern_catalog_file": "config/agentic_architectural_patterns.json",
   "validation_rules": [
-    "must_match_agent_trust_framework",
-    "must_map_to_existing_fleet",
+    "must_match_harness_governance",
+    "must_map_to_existing_role",
     "must_define_human_approval_boundaries",
     "must_define_evals_before_release",
     "must_define_observability_before_production",

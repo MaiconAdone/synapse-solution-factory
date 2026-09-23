@@ -11,7 +11,6 @@
     [string]$SuccessMetric = "",
     [string]$AvailableSources = "",
     [string]$RiskLevel = "",
-    [int]$ActiveAgentLimit = 0,
     [switch]$SkipValidation,
     [switch]$SkipActivation,
     [switch]$LocalMemoryOnly,
@@ -50,7 +49,6 @@ if ([string]::IsNullOrWhiteSpace($ProjectSlug)) {
     Write-Host "ERRO: Nome do projeto nao gerou um slug valido." -ForegroundColor Red
     exit 1
 }
-$SwarmName = "$ProjectSlug-swarm"
 $CreationDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 
 # Project-factory helpers are modularized under scripts/project_factory/ so this
@@ -215,65 +213,17 @@ function Configure-RuntimeManifest {
         ai = $ProjectUniverse.ai_enabled
         rag = $ProjectUniverse.rag_enabled
         data_treatment = $true
-        swarm_15_agents = $true
-        swarm_core_agents = 15
-        swarm_max_agents = 60
-        swarm_specialist_agents = 45
-        cost_aware_orchestration = $true
+        cost_aware_model_routing = $true
         agentic_business_transformation = $true
         simulation_first = $true
-    }) -Force
-    $RuntimeManifest.swarm.name = $SwarmName
-    $RuntimeManifest | Add-Member -NotePropertyName "generated_project_swarm_strategy" -NotePropertyValue ([ordered]@{
-        inheritance_mode = "solution_runtime"
-        available_agents = 60
-        core_agents = 15
-        specialist_agents = 45
-        default_activation = "one_orchestrator_first"
-        standard_activation_limit = 3
-        enterprise_activation_limit = 8
-        full_activation_requires = @(
-            "explicit_high_complexity_request",
-            "human_approval",
-            "cost_budget_review",
-            "role_specific_context_filtering"
-        )
-        recommended_fleets_by_universe = [ordered]@{
-            ml = @("ml_fleet", "data_fleet", "quality_fleet")
-            ia = @("rag_fleet", "mcp_fleet", "security_fleet")
-            chatbolt = @("rag_fleet", "mcp_fleet", "quality_fleet")
-            hybrid = @("project_factory_fleet", "ml_fleet", "rag_fleet", "cost_optimization_fleet")
-        }
-        context_policy = "send_only_role_specific_context"
-        cloud_model_policy = "openai_claude_direct"
-        inherited_artifacts = @(
-            "config/agent_fleets.json",
-            "config/agent_trust_framework.json",
-            "config/cost_optimization_policy.json",
-            "config/model_providers.json",
-            "agents/definitions/enterprise_agents.yaml"
-        )
     }) -Force
     if ($RuntimeManifest.PSObject.Properties.Name -contains "cost_optimization") {
         $RuntimeManifest.cost_optimization.enabled = $true
         $RuntimeManifest.cost_optimization.policy_file = "config/cost_optimization_policy.json"
-        $RuntimeManifest.cost_optimization.default_profile = "standard"
-        $RuntimeManifest.cost_optimization.activate_all_60_requires_explicit_high_complexity = $true
         $RuntimeManifest.cost_optimization.prefer_prompt_cache = $true
         $RuntimeManifest.cost_optimization.prefer_semantic_cache = $true
         $RuntimeManifest.cost_optimization.compress_context_before_llm = $true
         $RuntimeManifest.cost_optimization.send_only_role_specific_context = $true
-    }
-    if ($RuntimeManifest.PSObject.Properties.Name -contains "agentic_mesh") {
-        $RuntimeManifest.agentic_mesh.enabled = $true
-        $RuntimeManifest.agentic_mesh.trust_framework_file = "config/agent_trust_framework.json"
-        $RuntimeManifest.agentic_mesh.fleets_file = "config/agent_fleets.json"
-        $RuntimeManifest.agentic_mesh.agent_blueprint_contract_file = "config/agent_blueprint_contract.json"
-        $RuntimeManifest.agentic_mesh | Add-Member -NotePropertyName "architectural_patterns_file" -NotePropertyValue "config/agentic_architectural_patterns.json" -Force
-        $RuntimeManifest.agentic_mesh.improvement_loop_file = "config/agent_improvement_loop.json"
-        $RuntimeManifest.agentic_mesh.trust_layers = 7
-        $RuntimeManifest.agentic_mesh.fleet_count = 7
-        $RuntimeManifest.agentic_mesh.human_approval_required_for_all_60_agents = $true
     }
     $RuntimeManifest | Add-Member -NotePropertyName "agentic_architectural_patterns" -NotePropertyValue ([ordered]@{
         enabled = $true
@@ -323,33 +273,13 @@ function Configure-EnterpriseSpec {
             ai = $ProjectUniverse.ai_enabled
             rag = $ProjectUniverse.rag_enabled
             data_treatment = $true
-            swarm_15_agents = $true
-            swarm_core_agents = 15
-            swarm_max_agents = 60
-            swarm_specialist_agents = 45
         }
-        swarm = $SwarmName
         created_at = $CreationDate
         codex_dialog_required = $true
-        ruflo_required = $true
-        parallel_agents = 15
-        max_agents = 60
-        specialist_agents = 45
-        cost_aware_orchestration = $true
-        default_active_agents = 1
-        enterprise_active_agents = 8
-        activate_all_60_requires_explicit_high_complexity = $true
+        cost_aware_model_routing = $true
         agentic_business_transformation = $true
     }) -Force
-    $Spec.execution_policy.ruflo_required_for_project_creation = $true
-    $Spec.execution_policy.parallel_agent_count = 15
-    $Spec.execution_policy | Add-Member -NotePropertyName "max_agent_count" -NotePropertyValue 60 -Force
-    $Spec.execution_policy | Add-Member -NotePropertyName "specialist_agent_count" -NotePropertyValue 45 -Force
-    $Spec.execution_policy | Add-Member -NotePropertyName "cost_aware_orchestration_required" -NotePropertyValue $true -Force
     $Spec.execution_policy | Add-Member -NotePropertyName "cost_optimization_policy_path" -NotePropertyValue "config/cost_optimization_policy.json" -Force
-    $Spec.execution_policy | Add-Member -NotePropertyName "default_active_agent_count" -NotePropertyValue 1 -Force
-    $Spec.execution_policy | Add-Member -NotePropertyName "enterprise_active_agent_count" -NotePropertyValue 8 -Force
-    $Spec.execution_policy | Add-Member -NotePropertyName "activate_all_60_requires_explicit_high_complexity" -NotePropertyValue $true -Force
     $Spec.execution_policy.specification_driven_development = $true
     Write-TextFile -Path $SpecPath -Content ($Spec | ConvertTo-Json -Depth 20)
     Write-Host "Especificacao enterprise IA/ML configurada." -ForegroundColor Green
@@ -373,54 +303,17 @@ function Configure-CostOptimizationPolicy {
         rag = $ProjectUniverse.rag_enabled
         created_at = $CreationDate
     }) -Force
-    $CostPolicy.ruflo.max_available_agents = 60
-    $CostPolicy.ruflo.core_agent_count = 15
-    $CostPolicy.ruflo.specialist_agent_count = 45
-    $CostPolicy.ruflo.default_active_agents = 1
-    $CostPolicy.ruflo.standard_active_agents = 3
-    $CostPolicy.ruflo.enterprise_active_agents = 8
-    $CostPolicy.ruflo.activate_all_60_requires_explicit_high_complexity = $true
     $CostPolicy.token_controls.prefer_prompt_cache = $true
     $CostPolicy.token_controls.prefer_semantic_cache = $true
     $CostPolicy.token_controls.compress_context_before_llm = $true
     $CostPolicy.token_controls.send_only_role_specific_context = $true
     Write-TextFile -Path $CostPolicyPath -Content ($CostPolicy | ConvertTo-Json -Depth 20)
-    Write-Host "Politica de orquestracao economica configurada." -ForegroundColor Green
+    Write-Host "Politica de custo e roteamento de modelos configurada." -ForegroundColor Green
 }
 
-function Configure-AgenticMeshGovernance {
-    $TrustPath = Join-Path $Destino "config\agent_trust_framework.json"
-    $FleetsPath = Join-Path $Destino "config\agent_fleets.json"
+function Configure-AgentGovernance {
     $BlueprintPath = Join-Path $Destino "config\agent_blueprint_contract.json"
     $ImprovementPath = Join-Path $Destino "config\agent_improvement_loop.json"
-
-    if (Test-Path $TrustPath) {
-        $Trust = Get-Content $TrustPath -Raw | ConvertFrom-Json
-        $Trust | Add-Member -NotePropertyName "project_context" -NotePropertyValue ([ordered]@{
-            name = $NomeProjeto
-            universe = $ProjectUniverse.universe
-            universe_label = $ProjectUniverse.label
-            solution_focus = $ProjectUniverse.solution_focus
-            created_at = $CreationDate
-        }) -Force
-        Write-TextFile -Path $TrustPath -Content ($Trust | ConvertTo-Json -Depth 20)
-    }
-
-    if (Test-Path $FleetsPath) {
-        $Fleets = Get-Content $FleetsPath -Raw | ConvertFrom-Json
-        $Fleets | Add-Member -NotePropertyName "project_context" -NotePropertyValue ([ordered]@{
-            name = $NomeProjeto
-            universe = $ProjectUniverse.universe
-            universe_label = $ProjectUniverse.label
-            solution_focus = $ProjectUniverse.solution_focus
-            created_at = $CreationDate
-        }) -Force
-        $Fleets.fleet_defaults.max_available_agents = 60
-        $Fleets.fleet_defaults.default_active_agents = 1
-        $Fleets.fleet_defaults.enterprise_active_agents = 8
-        $Fleets.fleet_defaults.human_approval_required_for_all_60_agents = $true
-        Write-TextFile -Path $FleetsPath -Content ($Fleets | ConvertTo-Json -Depth 20)
-    }
 
     foreach ($Path in @($BlueprintPath, $ImprovementPath)) {
         if (Test-Path $Path) {
@@ -436,7 +329,7 @@ function Configure-AgenticMeshGovernance {
         }
     }
 
-    Write-Host "Agentic mesh governance configurado." -ForegroundColor Green
+    Write-Host "Governanca de agentes configurada." -ForegroundColor Green
 }
 
 function Configure-LocalAiRuntime {
@@ -451,7 +344,6 @@ function Configure-LocalAiRuntime {
             managed = $true
             project_factory_available = $false
             model_routing_owned_by_project = $true
-            swarm_execution_owned_by_project = $true
             application_runtime_owned_by_synapse = $true
         }) -Force
         $Runtime.local_llm.enabled = $false
@@ -501,9 +393,6 @@ function Configure-LocalAiRuntime {
             cloud_model = "gpt-5.5"
             created_at = $CreationDate
         }) -Force
-        $Providers.swarm_bridge.enabled = $true
-        $Providers.swarm_bridge.all_60_agents_have_governed_router_access = $true
-        $Providers.swarm_bridge.single_consolidated_call_by_default = $true
         Write-TextFile -Path $ProvidersPath -Content ($Providers | ConvertTo-Json -Depth 20)
     }
 
@@ -519,25 +408,13 @@ function Configure-LocalAiRuntime {
     Write-Host "Runtime, agentes e politicas de modelo do projeto configurados." -ForegroundColor Green
 }
 
-function Configure-AgentsYaml {
-    $AgentsYamlPath = Join-Path $Destino "agents\definitions\enterprise_agents.yaml"
-    if (!(Test-Path $AgentsYamlPath)) {
-        return
-    }
-
-    $AgentsYaml = Get-Content $AgentsYamlPath -Raw
-    $AgentsYaml = $AgentsYaml -replace '(?m)^(\s*name:\s+).*-swarm\s*$', "`${1}$SwarmName"
-    $AgentsYaml | Set-Content -Path $AgentsYamlPath -Encoding UTF8
-    Write-Host "Agentes enterprise configurados." -ForegroundColor Green
-}
-
 function Create-AssistantInheritanceArtifacts {
     $CodexInstructions = @"
 # Synapse Solution Project
 
 - Use OpenAI/Codex diretamente para triagem, resumo, classificacao, planejamento inicial e revisao de codigo.
-- Comece com um agente; escale conforme `config/cost_optimization_policy.json`.
-- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
+- Trabalhe com um unico assistente por tarefa; escolha o tier de modelo conforme `config/cost_optimization_policy.json`.
+- Acoes destrutivas ou externas seguem a matriz de autonomia de `config/harness_engineering_policy.json`.
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
 - Limite respostas normalmente a 512 tokens de saida.
 - Use `synapse-peers` para trocar resumos curtos entre Codex e Claude antes de repetir contexto.
@@ -562,10 +439,10 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
 ## Politica De Provedores
 
 - Use Anthropic/Claude diretamente para resumo, classificacao, planejamento, revisao e tarefas de baixo risco.
-- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
-- Leia `config/synapse_solution_contract.json`, `config/project_universe.json` e `config/cost_optimization_policy.json` antes de escalar agentes.
+- Acoes destrutivas ou externas seguem a matriz de autonomia de `config/harness_engineering_policy.json`.
+- Leia `config/synapse_solution_contract.json`, `config/project_universe.json` e `config/cost_optimization_policy.json` antes de escolher o tier de modelo.
 - Leia `config/business_solution_analysis.json` antes de decidir arquitetura, agentes, RAG, ML, testes ou evals.
-- Ative um agente primeiro; use perfis de custo para escalar para 3 ou 8. Sessenta agentes exigem alta complexidade explicita.
+- Comece com um unico assistente; papeis de workflow ficam em `config/roles.json`.
 - Use o MCP `synapse-peers` para coordenar com Codex por resumos curtos, sem secrets e sem colar arquivos grandes.
 - Ao concluir ou bloquear uma tarefa de chat, registre resumo curto na memoria compartilhada.
 
@@ -967,30 +844,17 @@ function Create-ProjectArtifacts {
     "ai": $($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant()),
     "rag": $($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant()),
     "data_treatment": true,
-    "swarm_15_agents": true,
-    "swarm_core_agents": 15,
-    "swarm_max_agents": 60,
-    "swarm_specialist_agents": 45,
-    "cost_aware_orchestration": true,
+    "cost_aware_model_routing": true,
     "governed_model_routing": true,
     "continual_learning": true,
     "tests": true,
-    "evals": true,
-    "default_active_agents": 1,
-    "enterprise_active_agents": 8
+    "evals": true
   },
   "creation_rules": {
     "managed_by": "synapse",
     "factory_capable": false,
     "contains_backend": false,
     "contains_frontend": false,
-    "ruflo_required": true,
-    "parallel_agents": 15,
-    "max_agents": 60,
-    "specialist_agents": 45,
-    "default_active_agents": 1,
-    "enterprise_active_agents": 8,
-    "activate_all_60_requires_explicit_high_complexity": true,
     "data_treatment_required": true,
     "sdd_required": true,
     "codex_dialog_required": true
@@ -1158,7 +1022,7 @@ observability.
 
 ## Safety and Governance
 
-- Use the agentic mesh to route sensitive requests through security_fleet.
+- Route sensitive requests through the security-compliance review defined in `config/harness_engineering_policy.json`.
 - Enforce tool access via MCP and explicit approval for destructive actions.
 - Log every fallback and uncertainty response.
 "@
@@ -1197,7 +1061,7 @@ chatbot:
 - [ ] The chatbot logs conversation metadata to `data/session_logs`.
 - [ ] The chatbot uses attachments and documents only when relevant.
 - [ ] The chatbot maintains a consistent persona and tone.
-- [ ] The chatbot is governed by the projectâ€™s agentic mesh and compliance rules.
+- [ ] The chatbot is governed by the project agent governance (config/harness_engineering_policy.json) and compliance rules.
 "@
         Write-TextFile (Join-Path $Destino "docs\checklists\chatbot_quality_checklist.md") $ChatbotChecklist
     }
@@ -1227,7 +1091,7 @@ chatbot:
 {
   "project": "$NomeProjeto",
   "source": "scripts/create_ai_project.ps1",
-  "usage": "Fotos e arquivos anexados pela task AI Factory: Anexar foto ou arquivo ao projeto aparecem aqui para o Codex, os 15 core agents e especialistas sob demanda.",
+  "usage": "Fotos e arquivos anexados pela task AI Factory: Anexar foto ou arquivo ao projeto aparecem aqui para o Codex e o Claude Code.",
   "attachments": []
 }
 "@
@@ -1245,19 +1109,14 @@ Este projeto segue `config/ai_ml_enterprise_spec.json` como contrato principal.
 - ML ativo: $($ProjectUniverse.ml_enabled)
 - IA ativa: $($ProjectUniverse.ai_enabled)
 - RAG ativo: $($ProjectUniverse.rag_enabled)
-- Swarm core agents ativos: 15
-- Swarm max agents: 60
-- Swarm especialistas sob demanda: 45
-- Swarm default economic active agents: 5
-- Swarm enterprise active agents: 15
 - Tratamento de dados ativo: True
 - Roteamento governado OpenAI/Anthropic: True
 - Aprendizagem por memoria do projeto: True
 - IA agentica aplicada a transformacao empresarial: True
 - Descricao: $($ProjectUniverse.description)
 
-O swarm com 15 core agents configurados, ativacao economica, pool escalavel ate 60 agentes e o fluxo de tratamento estatistico de dados sao base
-obrigatoria em todos os universos. O universo define o foco da solucao, nao
+O fluxo de tratamento estatistico de dados e base obrigatoria em todos os
+universos. O universo define o foco da solucao, nao
 remove a preparacao, validacao e tratamento dos dados.
 
 ## Gate SDD
@@ -1274,21 +1133,14 @@ Nenhuma implementacao deve comecar sem:
 
 ## Execucao no Codex + Claude Code
 
-- Swarm ativo e obrigatorio por padrao.
-- O roteador deve ativar em paralelo apenas o subconjunto de core agents necessario ao cenario.
-- Os 45 especialistas devem ser roteados sob demanda pelo orchestration-manager quando a solicitacao justificar.
-- Para baixo custo, o roteador economico deve ativar 3, 5, 8 ou 15 agentes por padrao conforme complexidade.
-- Os 60 agentes so devem ser ativados em auditoria completa ou fluxo extremo explicitamente justificado.
-- Fleets governadas devem ser selecionadas por `config/agent_fleets.json`.
-- Identidade, permissoes, proposito, explicabilidade, observabilidade, certificacao e lifecycle devem seguir `config/agent_trust_framework.json`.
-- O `orchestration-manager` consolida respostas antes de acionar modelos ou ferramentas.
-- Solicitacoes usam o provedor cloud configurado (OpenAI/Anthropic) pela ponte governada.
-- Os 60 agentes acessam modelos apenas por `governed_llm_router`.
+- Comece com um unico assistente (Codex ou Claude Code); papeis de workflow ficam em `config/roles.json`.
+- Identidade, permissoes, explicabilidade, lifecycle e matriz de autonomia seguem a secao `governance` de `config/harness_engineering_policy.json`.
+- Solicitacoes usam o provedor cloud configurado (OpenAI/Anthropic) com o tier de modelo de `config/cost_optimization_policy.json`.
 - Todo objetivo empresarial deve passar pelo workflow `business-transformation`
   antes de escalar automacoes ou integracoes.
 - Riscos HIGH e CRITICAL exigem aprovacao humana registrada.
 - Experiencias aprovadas entram na memoria do projeto; pesos do modelo nunca mudam automaticamente.
-- Cada agente recebe apenas o contexto necessario para reduzir custo de tokens.
+- Envie ao modelo apenas o contexto necessario para reduzir custo de tokens.
 - Contexto estavel, ferramentas e especificacoes devem ser mantidos em prefixos cacheaveis quando o provedor suportar prompt caching.
 
 ## IA
@@ -1333,7 +1185,6 @@ antes de criar agentes, RAG, LLM, MCP ou workflows no-code.
 ## Politica
 
 - Codex classifica o cenario da solicitacao do usuario.
-- O swarm ativa um subconjunto economico dos 15 core agents e roteia especialistas sob demanda ate 60 agentes.
 - Frameworks sao candidatos arquiteturais, nao dependencias instaladas cegamente.
 - A selecao deve respeitar SDD, evals, observabilidade, seguranca, custo e latencia.
 
@@ -1418,7 +1269,7 @@ templates a partir do problema de negocio.
 - Usar registry local de modelos e evals em projetos ML e hibridos.
 - Usar RAG somente quando conhecimento confiavel, busca ou citacoes forem necessarios.
 - Usar agentes somente quando houver planejamento, ferramentas, coordenacao ou execucao multi-etapas.
-- Nao ativar os 60 agentes sem pedido explicito e aprovacao humana.
+- Acoes externas ou destrutivas seguem a matriz de autonomia do harness.
 "@
         Write-TextFile (Join-Path $Destino "docs\specifications\technology_layer.md") $TechnologyLayerSpec
         $RuntimePath = Join-Path $Destino "config\runtime_manifest.json"
@@ -1439,106 +1290,41 @@ templates a partir do problema de negocio.
         }
     }
 
-    $AgenticMeshSpec = @"
-# Agentic Mesh Governance - $NomeProjeto
+    $AgentGovernanceSpec = @"
+# Governanca de Agentes - $NomeProjeto
 
-Este projeto usa `config/agent_trust_framework.json` e `config/agent_fleets.json`
-para criar, operar e auditar agents e fleets de forma corporativa.
+Regras de governanca vivem na secao ``governance`` de
+``config/harness_engineering_policy.json``. Os agentes que rodam na solucao
+ficam em ``config/solution_agents.json`` (universos com IA) e sao validados
+contra ``config/agent_blueprint_contract.json``.
 
 ## Contexto
 
 - Projeto: $NomeProjeto
 - Universo: $($ProjectUniverse.label)
-- Tipo tecnico: $TipoProjeto
 - ML ativo: $($ProjectUniverse.ml_enabled)
 - IA ativa: $($ProjectUniverse.ai_enabled)
 - RAG ativo: $($ProjectUniverse.rag_enabled)
-- Swarm max agents: 60
-- Swarm default economic active agents: 5
-- Swarm enterprise active agents: 15
-
-## Trust Layers Obrigatorias
-
-1. Identity and Authentication
-2. Authorization and Tool Permissions
-3. Purpose and Policy
-4. Planning and Explainability
-5. Observability and Agent SRE
-6. Certification and Compliance
-7. Lifecycle Governance
-
-## Fleets Governadas
-
-- A fabrica de projetos permanece exclusiva da plataforma Synapse.
-- ml_fleet: dados, baseline, treino, avaliacao, tracking de experimentos, model card e drift.
-- rag_fleet: ingestao, chunking, retrieval, reranking, citacoes e fidelidade.
-- mcp_fleet: MCP, tool calling, schemas, permissoes e fallbacks.
-- security_fleet: LGPD, threat modeling, policies, red team e aprovacoes.
-- cost_optimization_fleet: tokens, cache, contexto, latencia e custo.
 
 ## Matriz de Autonomia
 
-Permitido sem aprovacao:
+Permitido sem aprovacao: leitura de arquivos, resumo de contexto, proposta de
+arquitetura, geracao de testes, validacoes nao destrutivas e documentacao
+solicitada.
 
-- leitura de arquivos do projeto
-- resumo de contexto
-- proposta de arquitetura
-- geracao de testes
-- validacoes nao destrutivas
-- documentacao solicitada
+Exige aprovacao humana: deletar arquivos, alterar segredos, deploy em producao,
+mudar auth/permissoes e chamadas pagas externas em escala.
 
-Exige aprovacao humana:
-
-- deletar arquivos
-- alterar segredos
-- deploy em producao
-- mudar auth/permissoes
-- ativar todos os 60 agentes
-- chamadas pagas externas em escala
-
-Proibido:
-
-- exfiltrar segredos
-- burlar SDD
-- desativar seguranca
-- esconder falhas de ferramentas
-- fabricar resultados de avaliacao
+Proibido: exfiltrar segredos, burlar SDD, desativar seguranca, esconder falhas
+de ferramentas e fabricar resultados de avaliacao.
 
 ## Gate de Criacao de Agents
 
-Antes de criar ou alterar agents:
-
-- definir objetivo
-- definir ferramentas permitidas
-- definir memoria
-- definir contexto
-- definir limites de atuacao
-- definir criterios de sucesso
-- definir fleet responsavel
-- definir evals e observabilidade
-- definir status de certificacao
-
-## Gate de Fleet
-
-Cada fleet deve ter:
-
-- lead agent
-- agentes core
-- especialistas sob demanda
-- metricas de sucesso
-- criterio de ativacao
-- limite economico de agents
-- regras de aprovacao humana
-- owner operacional
-
-## Relacao Com Baixo Custo
-
-O agentic mesh deve trabalhar junto com `config/cost_optimization_policy.json`.
-Os 60 agentes permanecem disponiveis, mas a criacao e execucao devem priorizar
-3, 5, 8 ou 15 agentes conforme complexidade. Ativar os 60 exige justificativa
-explicita, aprovacao humana e registro no runbook.
+Antes de criar ou alterar um agent: objetivo, ferramentas permitidas, memoria,
+contexto, limites, criterios de sucesso, papel responsavel (``config/roles.json``),
+evals, observabilidade e status de certificacao.
 "@
-    Write-TextFile (Join-Path $Destino "docs\specifications\agentic_mesh_governance.md") $AgenticMeshSpec
+    Write-TextFile (Join-Path $Destino "docs\specifications\agent_governance.md") $AgentGovernanceSpec
 
     $AgenticPatternsSpec = @"
 # Padroes Arquiteturais Agentic - $NomeProjeto
@@ -1549,7 +1335,7 @@ multiagente empresariais. O catalogo executavel fica em
 
 ## Padroes Herdados
 
-- Orchestrator Specialist: um lider coordena especialistas sob demanda.
+- Orchestrator Specialist: um orquestrador delega a especialistas apenas quando o dominio exige.
 - Critic Reviewer Gate: risco alto passa por revisao, evals e aprovacao.
 - A2A Message Contract: Codex, Claude e humanos trocam resumos
   curtos por `synapse-peers`.
@@ -1561,10 +1347,9 @@ multiagente empresariais. O catalogo executavel fica em
 
 ## Regras Locais
 
-- Comece com um agente.
-- Escale especialistas apenas quando o dominio exigir.
+- Comece com um unico agente.
 - Cloud exige pedido explicito e aprovacao humana.
-- Ativar todos os 60 agentes exige justificativa e aprovacao.
+- Acoes externas ou destrutivas exigem aprovacao conforme o risco.
 - Mensagens A2A nao devem conter secrets.
 "@
     Write-TextFile (Join-Path $Destino "docs\specifications\agentic_architectural_patterns.md") $AgenticPatternsSpec
@@ -1620,7 +1405,7 @@ def test_required_solution_runtime_artifacts_exist():
         "config/context_policy.json",
         "config/data_treatment_policy.json",
         "scripts/treat_dataset.py",
-        "agents/definitions/enterprise_agents.yaml",
+        "config/roles.json",
         "docs/briefings/business_solution_analysis.md",
         "docs/specifications/llm_solution_factory_governance.md",
         "evals/project_cases.jsonl",
@@ -1747,7 +1532,7 @@ def test_business_transformation_contract_workflow_and_profiles_agree():
 
     assert [step["name"] for step in workflow["steps"]] == [stage["id"] for stage in contract["workflow"]["stages"]]
     for step, stage in zip(workflow["steps"], contract["workflow"]["stages"]):
-        assert step["agent"] == profiles[stage["profile"]]["agent_id"]
+        assert step["role"] == profiles[stage["profile"]]["role"]
     yaml_ids = re.findall(r"(?m)^  - id: ([a-z-]+)$", (ROOT / "agents/definitions/business_transformation_agents.yaml").read_text(encoding="utf-8-sig"))
     assert yaml_ids == list(profiles)
 
@@ -2029,7 +1814,7 @@ function Create-Runbooks {
         "- anexos de fotos e arquivos para contexto do Codex",
         "- avaliacoes",
         "- documentacao",
-        "- ajustes de workflows do swarm",
+        "- ajustes de workflows",
         "",
         "## Ambiente Virtual E .env",
         "",
@@ -2063,7 +1848,7 @@ function Create-Runbooks {
         "Coloque arquivos em data/raw/ e, pela conversa com Codex, peca:",
         "",
         "~~~text",
-        "trate data/raw/seu_arquivo.csv com o swarm economico e especialistas sob demanda",
+        "trate data/raw/seu_arquivo.csv",
         "~~~",
         "",
         "Tasks locais podem existir como atalho, mas a caixa de dialogo e o caminho principal.",
@@ -2104,24 +1889,23 @@ function Create-Runbooks {
     $AgentSre = @(
         "# Runbook Agent SRE - $NomeProjeto",
         "",
-        "Este runbook orienta operacao, incidentes e confiabilidade de agents e fleets.",
+        "Este runbook orienta operacao, incidentes e confiabilidade dos agents.",
         "",
         "## Sinais Obrigatorios",
         "",
-        "- active_agent_count",
-        "- selected_fleet",
+        "- agent_id",
+        "- model_tier",
         "- token_budget",
         "- cached_token_ratio",
         "- cost_per_request",
         "- latency_ms",
         "- tool_error_rate",
         "- eval_pass_rate",
-        "- fleet_health",
         "",
         "## Triage de Incidente",
         "",
-        "1. Identificar fleet afetada em config/agent_fleets.json.",
-        "2. Verificar se a ativacao respeitou config/cost_optimization_policy.json.",
+        "1. Identificar o agent afetado em config/solution_agents.json (ou o workflow em config/workflows/).",
+        "2. Verificar se o tier de modelo e o orcamento respeitaram config/cost_optimization_policy.json.",
         "3. Conferir logs estruturados, tokens, latencia e erros de ferramentas.",
         "4. Confirmar se houve aprovacao humana para acoes criticas.",
         "5. Rodar testes e evals relevantes.",
@@ -2129,18 +1913,17 @@ function Create-Runbooks {
         "",
         "## Escalacao",
         "",
-        "- Seguranca/LGPD: security_fleet.",
-        "- RAG ou alucinacao: rag_fleet.",
-        "- MCP/tool calling: mcp_fleet.",
-        "- Custo/tokens/latencia: cost_optimization_fleet.",
-        "- ML/modelo/drift: ml_fleet.",
+        "- Seguranca/LGPD: papel security-compliance.",
+        "- RAG ou alucinacao: papel rag-engineering.",
+        "- MCP/tool calling: papel integration-automation.",
+        "- Custo/tokens/latencia: papel observability-ops.",
+        "- ML/modelo/drift: papel machine-learning.",
         "",
         "## Guardrails Operacionais",
         "",
-        "- Nunca ativar os 60 agentes sem justificativa explicita.",
         "- Nunca permitir ferramenta destrutiva sem aprovacao humana.",
         "- Nunca esconder falha de tool, RAG, eval ou validacao.",
-        "- Sempre preservar rastreabilidade de prompt, agent, fleet e decisao.",
+        "- Sempre preservar rastreabilidade de prompt, agent e decisao.",
         "",
         "## Validacao",
         "",
@@ -2166,16 +1949,16 @@ function Create-Runbooks {
         "- [x] Prompt mestre de tratamento estatistico em prompts/master_data_treatment.md.",
         "- [x] Politica de tratamento em config/data_treatment_policy.json.",
         "- [x] Prompt de tratamento de dados em prompts/codex_data_treatment_dialog.md.",
-        "- [x] Fluxo Codex + swarm + 15 core agents para tratar dados.",
+        "- [x] Fluxo Codex/Claude Code para tratar dados.",
         "- [x] Fluxo de anexos para fotos e arquivos com manifesto para Codex.",
         "- [x] Camadas ML, IA, RAG, guardrails e evals copiadas do template.",
-        "- [x] SDD, swarm ativo, 15 core agents e limite escalavel de 60 agentes definidos como padrao.",
+        "- [x] SDD e execucao com um unico assistente definidos como padrao.",
         "- [x] Especificacao de execucao criada em docs/specifications/ai_ml_execution_spec.md.",
-        "- [x] Especificacao agentic mesh criada em docs/specifications/agentic_mesh_governance.md.",
-        "- [x] Checklist de certificacao de fleets criado em docs/checklists/agent_fleet_certification.md.",
+        "- [x] Governanca de agentes criada em docs/specifications/agent_governance.md.",
+        "- [x] Checklist de certificacao de agents criado em docs/checklists/agent_certification.md.",
         "- [x] Runbook Agent SRE criado em docs/runbooks/agent_sre.md.",
         "- [x] Codex/OpenAI e Claude Code/Anthropic configurados como provedores diretos.",
-        "- [x] Ponte governada do swarm -> OpenAI/Anthropic configurada para os 60 agentes.",
+        "- [x] Roteamento de modelos OpenAI/Anthropic por tier configurado.",
         "- [x] Aprendizagem continua por memoria configurada sem atualizar pesos automaticamente.",
         "- [x] Catalogo de frameworks IA disponivel em config/ai_framework_selection.json.",
         "- [x] Projetos IA/Hibridos/Chatbolt recebem docs/specifications/ai_framework_selection.md.",
@@ -2188,15 +1971,15 @@ function Create-Runbooks {
     $Checklist = $Checklist -join $NewLine
     Write-TextFile -Path (Join-Path $Destino "docs\checklists\first_project_setup.md") -Content $Checklist
 
-    $FleetCertification = @(
-        "# Checklist de Certificacao de Agent Fleet - $NomeProjeto",
+    $AgentCertification = @(
+        "# Checklist de Certificacao de Agent - $NomeProjeto",
         "",
-        "Use este checklist antes de liberar qualquer agent ou fleet para uso corporativo.",
+        "Use este checklist antes de liberar qualquer agent para uso corporativo.",
         "",
         "## Identidade e Ownership",
         "",
-        "- [ ] Fleet tem id estavel em config/agent_fleets.json.",
-        "- [ ] Lead agent definido.",
+        "- [ ] Agent tem id estavel em config/solution_agents.json.",
+        "- [ ] Papel responsavel definido em config/roles.json.",
         "- [ ] Owner operacional definido.",
         "- [ ] Versao e status de certificacao definidos.",
         "",
@@ -2216,7 +1999,7 @@ function Create-Runbooks {
         "",
         "## Planejamento e Explicabilidade",
         "",
-        "- [ ] Fleet planeja antes de agir.",
+        "- [ ] Agent planeja antes de agir.",
         "- [ ] Decisoes registram racional.",
         "- [ ] Handoffs A2A documentados.",
         "- [ ] Conflitos escalam para orchestration-manager.",
@@ -2226,7 +2009,7 @@ function Create-Runbooks {
         "- [ ] Logs estruturados definidos.",
         "- [ ] Metricas de tokens e custo definidas.",
         "- [ ] Latencia medida.",
-        "- [ ] Health da fleet monitorado.",
+        "- [ ] Saude do agent monitorada.",
         "- [ ] Runbook Agent SRE revisado.",
         "",
         "## Evals e Compliance",
@@ -2244,7 +2027,7 @@ function Create-Runbooks {
         "- [ ] Release gate aprovado.",
         "- [ ] Mudancas registradas em docs/runbooks/agent_sre.md."
     ) -join $NewLine
-    Write-TextFile -Path (Join-Path $Destino "docs\checklists\agent_fleet_certification.md") -Content $FleetCertification
+    Write-TextFile -Path (Join-Path $Destino "docs\checklists\agent_certification.md") -Content $AgentCertification
 
     if ($ProjectUniverse.universe -eq "chatbolt") {
         $ChatbotOperations = @"
@@ -2261,7 +2044,7 @@ function Create-Runbooks {
 
 - Valide que nenhuma informacao privada seja exposta sem permissao.
 - Garanta que o chatbot responda com fallback seguro quando a consulta for insegura.
-- Escale casos sensiveis ao security_fleet.
+- Escale casos sensiveis ao papel security-compliance.
 
 ## Manutencao
 
@@ -2308,9 +2091,6 @@ Capacidades ativas:
 - ML: `$($ProjectUniverse.ml_enabled)`
 - IA: `$($ProjectUniverse.ai_enabled)`
 - RAG: `$($ProjectUniverse.rag_enabled)`
-- Swarm core agents: `15`
-- Swarm max agents: `60`
-- Swarm especialistas sob demanda: `45`
 - Transformacao empresarial agentica: `True`
 - Tratamento de dados: `True`
 - Governanca de modelos: `True`
@@ -2326,7 +2106,7 @@ Machine Learning, Estatistica, Governanca e Tratamento de Dados.
 - Nao contem backend.
 - Nao contem frontend.
 - Nao contem fabrica de projetos.
-- Swarm, agentes, memoria e orquestracao executam no contexto deste projeto.
+- Agentes, memoria e orquestracao executam no contexto deste projeto.
 
 ## Configuracao Principal
 
@@ -2372,12 +2152,8 @@ function Create-CreationReport {
 - ML enabled: $($ProjectUniverse.ml_enabled)
 - IA enabled: $($ProjectUniverse.ai_enabled)
 - RAG enabled: $($ProjectUniverse.rag_enabled)
-- Swarm core agents enabled: 15
-- Swarm max agents enabled: 60
-- Swarm specialist agents available: 45
 - Data treatment enabled: True
 - Slug: $ProjectSlug
-- Swarm: $SwarmName
 - Created at: $CreationDate
 - Template: $Template
 - Destination: $Destino
@@ -2400,14 +2176,14 @@ function Create-CreationReport {
 - Codex data treatment prompt and task available
  - No backend or frontend copied into the solution project
  - No project factory copied into the solution project
-- Swarm runtime and agents copied into the solution project
+- Roles, agent governance and blueprint contract copied into the solution project
 - OpenAI/Codex and Anthropic/Claude Code configured as direct cloud providers
-- Governed swarm model bridge and project-scoped continual learning configured
+- Model-tier routing and project-scoped continual learning configured
 - Agentic business transformation workflow, prompt, profiles and governance inherited
 
 ## Ready
 
-Codex and Claude Code operate directly in the cloud; no external swarm activation is required.
+Codex and Claude Code operate directly in the cloud.
 "@
     Write-TextFile (Join-Path $Destino "output\project_creation_report.md") $Report
     Write-Host "Relatorio de criacao gerado." -ForegroundColor Green
@@ -2496,7 +2272,6 @@ function Finalize-SynapseSolutionProject {
     $RuntimePath = Join-Path $Destino "config\runtime_manifest.json"
     if (Test-Path $RuntimePath) {
         $Runtime = Get-Content $RuntimePath -Raw | ConvertFrom-Json
-        $Runtime.agentic_mesh.fleet_count = 6
         $Runtime.validation.required_workflows = @(
             "solution-lifecycle",
             "business-transformation",
@@ -2509,21 +2284,6 @@ function Finalize-SynapseSolutionProject {
                 Where-Object { Test-Path (Join-Path $Destino $_) }
         )
         Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
-    }
-
-    $FleetsPath = Join-Path $Destino "config\agent_fleets.json"
-    if (Test-Path $FleetsPath) {
-        $Fleets = Get-Content $FleetsPath -Raw | ConvertFrom-Json
-        $Fleets.fleets = @($Fleets.fleets | Where-Object { $_.id -ne "project_factory_fleet" })
-        $Fleets | Add-Member -NotePropertyName "managed_by" -NotePropertyValue "synapse" -Force
-        Write-TextFile -Path $FleetsPath -Content ($Fleets | ConvertTo-Json -Depth 20)
-    }
-
-    $ProvidersPath = Join-Path $Destino "config\model_providers.json"
-    if (Test-Path $ProvidersPath) {
-        $Providers = Get-Content $ProvidersPath -Raw | ConvertFrom-Json
-        $Providers.swarm_bridge | Add-Member -NotePropertyName "managed_by" -NotePropertyValue "synapse" -Force
-        Write-TextFile -Path $ProvidersPath -Content ($Providers | ConvertTo-Json -Depth 20)
     }
 
     $DataTreatmentPromptPath = Join-Path $Destino "prompts\codex_data_treatment_dialog.md"
@@ -2542,7 +2302,6 @@ function Finalize-SynapseSolutionProject {
         factory_capable = $false
         contains_backend = $false
         contains_frontend = $false
-        swarm_runtime = "inherited"
         agents_runtime = "inherited"
         practices = @(
             "ai_engineering",
@@ -2595,7 +2354,7 @@ function Run-ProjectValidation {
         "docs\specifications\harness_engineering.md",
         "scripts\treat_dataset.py"
         "prompts\master_data_treatment.md"
-        "agents\definitions\enterprise_agents.yaml"
+        "config\roles.json"
         "agents\definitions\business_transformation_agents.yaml"
         "config\business_transformation.json"
         "config\workflows\synapse\business-transformation.json"
@@ -2638,15 +2397,6 @@ function Run-ProjectValidation {
             throw "Componente exclusivo do Synapse copiado para o projeto: $ForbiddenPath"
         }
     }
-    $EnvExamplePath = Join-Path $Destino ".env.example"
-    if (Test-Path $EnvExamplePath) {
-        $EnvExample = Get-Content $EnvExamplePath -Raw
-        if ($EnvExample -notmatch "PROJECT_DEFAULT_ACTIVE_AGENTS=1" -or $EnvExample -notmatch "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8") {
-            Write-Host "ERRO: limites de agentes do .env.example divergem da politica de custo." -ForegroundColor Red
-            throw "Limites de agentes do .env.example divergem da politica de custo."
-        }
-    }
-
     $McpPath = Join-Path $Destino ".mcp.json"
     if (Test-Path $McpPath) {
         $Mcp = Get-Content $McpPath -Raw | ConvertFrom-Json
@@ -2742,7 +2492,6 @@ function Configure-SolutionVsCodeTasks {
 }
 
 function Activate-GeneratedProject {
-    Write-Host "Nenhuma ativacao de swarm externa e necessaria; Codex/Claude Code operam direto na nuvem." -ForegroundColor Yellow
 
     if ($SkipActivation) {
         Write-Host "Ambiente virtual Python nao criado (-SkipActivation)." -ForegroundColor Yellow
@@ -2814,10 +2563,9 @@ try {
     Configure-RuntimeManifest
     Configure-EnterpriseSpec
     Configure-CostOptimizationPolicy
-    Configure-AgenticMeshGovernance
+    Configure-AgentGovernance
     Configure-LocalAiRuntime
     Configure-EnterpriseYaml
-    Configure-AgentsYaml
     Configure-WorkflowsYaml
     Create-EnvironmentFiles
     Create-ProjectStructure
@@ -2842,7 +2590,6 @@ catch {
 
 Write-Host "Projeto criado: $Destino" -ForegroundColor Green
 Write-Host "Tipo: $TipoProjeto" -ForegroundColor Green
-Write-Host "Swarm: $SwarmName" -ForegroundColor Green
 Write-Host "Proximos comandos:" -ForegroundColor Cyan
 Write-Host "  cd $Destino"
 Write-Host "  .\.venv\Scripts\Activate.ps1"

@@ -52,9 +52,7 @@ def test_resolve_project_universe_maps_capabilities(requested, expected_universe
     for key, value in expected_caps.items():
         assert result[key] == value
     assert result["data_treatment_enabled"] is True
-    assert result["swarm_core_agents"] == 15
-    assert result["swarm_max_agents"] == 60
-    assert result["swarm_specialist_agents"] == 45
+    assert not [key for key in result if key.startswith("swarm")]
 
 
 def test_resolve_project_universe_rejects_unknown_universe():

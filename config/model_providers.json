@@ -1,10 +1,5 @@
 {
   "routing_strategy": "assistant_boundaries",
-  "swarm_bridge": {
-    "enabled": true,
-    "all_60_agents_have_governed_router_access": true,
-    "single_consolidated_call_by_default": true
-  },
   "continual_learning": {
     "mode": "project_scoped_retrieval_augmented_learning",
     "capture_from": "llm_gateway",
@@ -16,7 +11,6 @@
     "default": "openai",
     "cloud_default_enabled": true,
     "cloud_requires_human_approval": false,
-    "human_approval_required_for": "activate_all_60_agents",
     "sensitive_content_blocked": true,
     "metrics": [
       "latency_ms",

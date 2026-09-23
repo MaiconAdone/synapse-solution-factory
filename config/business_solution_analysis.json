@@ -677,16 +677,23 @@
     "evals/retrieval_cases.jsonl using recall_at_k, mrr, ndcg_at_k",
     "evals/tool_workflow_cases.jsonl using pass^k over repeated trials"
   ],
-  "swarm_strategy": {
-    "default": "start_with_one_orchestrator",
-    "core_agents": 15,
-    "max_agents": 60,
-    "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
-    "recommended_fleets": [
-      "ml_fleet",
-      "rag_fleet",
-      "mcp_fleet",
-      "cost_optimization_fleet"
+  "execution_strategy": {
+    "default": "single_assistant_first",
+    "rule": "Single assistant first. Split work across more sessions only when the task spans domains that justify it; the user decides.",
+    "roles_file": "config/roles.json",
+    "roles": [
+      "orchestration-manager",
+      "product-strategy",
+      "data-engineering",
+      "testing-qa",
+      "documentation",
+      "data-science",
+      "machine-learning",
+      "llm-engineering",
+      "rag-engineering",
+      "integration-automation",
+      "security-compliance",
+      "observability-ops"
     ]
   },
   "book_alignment": [

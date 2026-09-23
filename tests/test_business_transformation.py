@@ -27,26 +27,20 @@ def test_contract_workflow_profiles_and_catalog_agree():
     contract = load("config/business_transformation.json")
     workflow = load("config/workflows/synapse/business-transformation.json")
     profiles = {profile["id"]: profile for profile in contract["functional_agents"]}
-    catalog = set(
-        re.findall(r"(?m)^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$", (ROOT / "agents/definitions/enterprise_agents.yaml").read_text(encoding="utf-8-sig"))
-    )
+    catalog = {role["id"] for role in load("config/roles.json")["roles"]}
 
     assert [step["name"] for step in workflow["steps"]] == [stage["id"] for stage in contract["workflow"]["stages"]]
     for step, stage in zip(workflow["steps"], contract["workflow"]["stages"]):
-        assert step["agent"] == profiles[stage["profile"]]["agent_id"]
-        assert set(stage.get("supporting_agents", [])) <= catalog
-    assert {profile["agent_id"] for profile in profiles.values()} <= catalog
+        assert step["role"] == profiles[stage["profile"]]["role"]
+        assert set(stage.get("supporting_roles", [])) <= catalog
+    assert {profile["role"] for profile in profiles.values()} <= catalog
     for profile in profiles.values():
         assert set(profile["tools"]) <= set(contract["tools"]), profile["id"]
 
     yaml_text = (ROOT / "agents/definitions/business_transformation_agents.yaml").read_text(encoding="utf-8-sig")
     assert re.findall(r"(?m)^  - id: ([a-z-]+)$", yaml_text) == list(profiles)
     for profile in profiles.values():
-        assert f"agent_id: {profile['agent_id']}" in yaml_text
-
-    fleet = next(item for item in load("config/agent_fleets.json")["fleets"] if item["id"] == "business_transformation_fleet")
-    fleet_agents = {fleet["lead_agent"], *fleet["core_agents"], *fleet["specialist_agents"]}
-    assert {"orchestration-manager", "product-strategy", "security-compliance"} <= fleet_agents
+        assert f"role: {profile['role']}" in yaml_text
 
 
 @pytest.mark.parametrize(
@@ -120,7 +114,7 @@ def test_eval_cases_and_cli_pass():
     assert json.loads(completed.stdout)["status"] == "awaiting_human_approval"
 
 
-def test_analyzer_recognizes_transformation_requests_and_adds_the_fleet():
+def test_analyzer_recognizes_transformation_requests_and_adds_business_roles():
     analyzer = BusinessSolutionAnalyzer(root=ROOT)
     transformation = analyzer.analyze(
         project_goal="Reduzir retrabalho",
@@ -128,11 +122,11 @@ def test_analyzer_recognizes_transformation_requests_and_adds_the_fleet():
         requested_universe="IA",
     )
     assert transformation["business_transformation"]["active"] is True
-    assert "business_transformation_fleet" in transformation["swarm_strategy"]["recommended_fleets"]
+    assert "business-value-analyst" in transformation["execution_strategy"]["roles"]
 
     churn = analyzer.analyze(project_goal="Modelo de churn", business_problem="Prever cancelamento de clientes", requested_universe="ML")
     assert churn["business_transformation"]["active"] is False
-    assert "business_transformation_fleet" not in churn["swarm_strategy"]["recommended_fleets"]
+    assert "business-value-analyst" not in churn["execution_strategy"]["roles"]
 
 
 def test_engine_is_stdlib_only():

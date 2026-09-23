@@ -1,7 +1,7 @@
 # Synapse - Claude Code Configuration
 
 Este arquivo orienta o uso do Synapse quando a execucao passa por Claude Code,
-Anthropic API, Claude Agent SDK ou fluxos assistidos pelo swarm de agentes.
+Anthropic API ou Claude Agent SDK.
 
 ## Regras Gerais
 
@@ -48,7 +48,7 @@ Evite:
 
 - Reenviar repositorios inteiros.
 - Repetir logs, diffs, build artifacts ou `node_modules`.
-- Ativar muitos agentes para tarefas simples.
+- Usar tier de modelo acima do necessario para tarefas simples.
 - Usar Opus sem justificativa explicita.
 - Misturar contexto estavel e dinamico de forma que quebre cache.
 
@@ -64,100 +64,48 @@ Referencias oficiais:
 - https://code.claude.com/docs/en/prompt-caching
 - https://platform.claude.com/docs/en/about-claude/pricing
 
-## Swarm de 60 Agents com Baixo Custo
+## Governanca de Agentes e Custo
 
-O Synapse mantem 60 agentes disponiveis, mas nao deve ativar todos por padrao.
-
-Contrato atual:
-
-- Max agents disponiveis: 60
-- Core agents: 15
-- Specialist pool: 45
-- Default economic active agents: 1
-- Standard active agents: 3
-- Enterprise active agents: 8
-- All 60 agents: somente com justificativa explicita de alta complexidade
-
-Antes de ativar agentes, leia `config/cost_optimization_policy.json` e decida o
-perfil de custo (default/standard/enterprise/extreme) com base nele; nao ha um
-roteador de custo em codigo, a decisao e feita pelo assistente a partir dessa
-politica.
-
-## Agentic Mesh Governance
-
-O Synapse opera como um mesh governado de agentes e fleets, nao apenas como uma
-lista plana de agentes.
-
-Nao ha um servico em codigo que aplique essa governanca em runtime; a
-observancia e responsabilidade do assistente ao ler e seguir estes arquivos
-antes de criar ou escalar agentes.
+Trabalhe com **um unico assistente por tarefa**. Nao ha swarm, fleets nem
+perfis de ativacao de agentes. Divida o trabalho em mais sessoes ou subagentes
+somente quando o usuario pedir.
 
 Arquivos oficiais:
 
-- `config/agent_trust_framework.json`
-- `config/agent_fleets.json`
-- `config/agent_blueprint_contract.json`
-- `config/agent_improvement_loop.json`
+- `config/roles.json`: papeis responsaveis pelas etapas dos workflows (quem
+  responde por cada etapa, nao agentes em execucao).
+- `config/harness_engineering_policy.json` (secao `governance`): identidade,
+  autorizacao com menor privilegio, explicabilidade, lifecycle e matriz de
+  autonomia (permitido, exige aprovacao, proibido).
+- `config/agent_blueprint_contract.json`: campos obrigatorios de todo agente
+  da solucao, incluindo `owner_role`.
+- `config/agent_improvement_loop.json`: falhas, revisoes GPT/Claude, exemplos
+  aprovados e novos evals.
+- `config/cost_optimization_policy.json`: tier de modelo, orcamento de tokens
+  e modo de RAG por complexidade (`request_profiles`).
 
-Gerados por projeto (em `docs/specifications/agentic_mesh_governance.md`,
-`docs/checklists/agent_fleet_certification.md` e `docs/runbooks/agent_sre.md`
-dentro do projeto criado, nao no Synapse):
+| Perfil | Tier de modelo | Orcamento de tokens | Uso |
+|--------|----------------|---------------------|-----|
+| simple | economy | 1200 | pergunta curta, pequena correcao, classificacao |
+| standard | balanced | 3000 | implementacao comum, ML simples, testes locais |
+| advanced | balanced | 5000 | RAG, MCP, fluxo hibrido |
+| enterprise | strong | 8000 | producao, seguranca, LGPD, arquitetura critica |
+| extreme | strong | 16000 | auditoria |
 
-- especificacao agentic mesh
-- checklist de certificacao de fleets
-- runbook Agent SRE
-
-Trust framework obrigatorio:
-
-1. Identity and Authentication
-2. Authorization and Tool Permissions
-3. Purpose and Policy
-4. Planning and Explainability
-5. Observability and Agent SRE
-6. Certification and Compliance
-7. Lifecycle Governance
-
-Fleets atuais:
-
-- `project_factory_fleet` (somente no Synapse; removida dos projetos gerados)
-- `ml_fleet`
-- `rag_fleet`
-- `mcp_fleet`
-- `security_fleet`
-- `cost_optimization_fleet`
-- `business_transformation_fleet`
+Gerados por projeto (dentro do projeto criado, nao no Synapse):
+`docs/specifications/agent_governance.md`,
+`docs/checklists/agent_certification.md` e `docs/runbooks/agent_sre.md`.
 
 Antes de criar agents, RAG, MCP ou workflows IA:
 
 - aplique o Agent Blueprint Contract
-- decida single-agent versus multiagent/fleet antes de escalar custo
-- selecione uma fleet pelo cenario do usuario
-- valide que todos os agentes da fleet existem no catalogo
 - aplique menor privilegio para ferramentas
-- defina matriz de autonomia: permitido, exige aprovacao, proibido
+- siga a matriz de autonomia do harness
 - registre criterio de sucesso, observabilidade e certificacao
-- exija aprovacao humana para ativar todos os 60 agentes
-- em projetos corporativos novos, gere especificacao agentic mesh, checklist de certificacao e runbook Agent SRE
-- use o improvement loop para salvar falhas, revisoes GPT/Claude, exemplos aprovados e novos evals
-
-Perfis:
-
-| Perfil | Agents | Uso |
-|--------|--------|-----|
-| simple | 1 | pergunta curta, pequena correcao, classificacao |
-| standard | ate 3 | implementacao comum, ML simples, testes locais |
-| advanced | ate 5 | RAG, MCP, multiagente, fluxo hibrido |
-| enterprise | ate 8 | producao, seguranca, LGPD, arquitetura critica |
-| extreme | ate 15 | auditoria; 60 somente com aprovacao explicita |
+- use o improvement loop para salvar falhas, exemplos aprovados e novos evals
 
 Claude Code usa Anthropic diretamente para analisar, editar e revisar o Synapse.
 Edicoes e comandos continuam sujeitos aos gates de aprovacao humana e seguranca.
-
-Regra de arquitetura:
-
-- Comece com single-agent quando a tarefa for simples, de baixo risco e de um unico dominio.
-- Use multiagent quando houver RAG, MCP, seguranca, compliance, producao, dominios multiplos ou conflito.
-- Use fleet governada quando a solucao exigir release corporativo, auditoria ou coordenacao de varios papeis.
 
 ## Context Filter antes de LLM
 
@@ -209,60 +157,6 @@ Categorias:
 - ux_product
 - ml_data
 
-## Agent Comms
-
-Agentes coordenados devem usar mensagens direcionadas, nao polling nem estado global.
-
-Fluxo preferido:
-
-```text
-Lead -> researcher -> architect -> coder -> tester -> reviewer
-```
-
-Regras:
-
-- Nomeie agentes por papel.
-- Inclua no prompt quem deve receber o resultado.
-- Envie apenas contexto necessario ao papel do agente.
-- Consolide respostas no `orchestration-manager`.
-- Use especialistas somente quando o roteador economico justificar.
-- Use fleets governadas quando o pedido envolver IA, RAG, MCP, seguranca, custo ou criacao de novo projeto.
-
-## Spawning Economico
-
-Nao use "spawn all agents" como padrao. Use roteamento por complexidade.
-
-Exemplo conceitual:
-
-```javascript
-Agent({
-  prompt: "Classifique o pedido, filtre contexto, estime custo e envie decisao ao architect.",
-  subagent_type: "researcher",
-  name: "researcher",
-  run_in_background: true
-})
-Agent({
-  prompt: "Projete a solucao com SDD e envie plano ao coder.",
-  subagent_type: "system-architect",
-  name: "architect",
-  run_in_background: true
-})
-Agent({
-  prompt: "Implemente somente apos plano claro e envie diff/testes ao tester.",
-  subagent_type: "coder",
-  name: "coder",
-  run_in_background: true
-})
-Agent({
-  prompt: "Rode testes e envie resultado ao reviewer.",
-  subagent_type: "tester",
-  name: "tester",
-  run_in_background: true
-})
-```
-
-Para custo baixo, prefira 3 a 5 agentes. Para producao critica, use ate 15. Use 60 apenas em auditoria extrema.
-
 ## Universos de Projeto
 
 Ao criar projeto novo, confirme ou infira o universo:
@@ -275,14 +169,13 @@ Ao criar projeto novo, confirme ou infira o universo:
 Em todos os universos:
 
 - Aplicar o analisador de solucao de negocio antes de definir arquitetura.
-- Swarm ativo.
 - Tratamento de dados ativo.
-- Cost-aware orchestration ativa.
-- Agentic mesh governance ativa.
+- Roteamento de modelos por custo ativo.
+- Governanca de agentes pelo harness ativa.
 - Context filter disponivel.
 - Camada `tests/` obrigatoria.
 - Evals e observabilidade obrigatorios.
-- Docs corporativos de agentic mesh, certificacao de fleets e Agent SRE.
+- Docs de governanca de agentes, certificacao de agents e Agent SRE.
 
 ## Framework Selection
 
@@ -333,8 +226,7 @@ Use:
   do ADR e validados contra `config/agent_blueprint_contract.json`
   (`python scripts/scaffold_solution_agents.py --validate-only`); siga o
   workflow `agent-build`. Nao invente ferramentas: confirme inventario,
-  permissoes e matriz de aprovacao com o usuario. Nao confunda com os 60
-  agentes construtores do swarm.
+  permissoes e matriz de aprovacao com o usuario.
 - O universo escolhido pelo usuario e o gerado (`effective_universe`); se o ADR
   trouxer `universe_confirmation`, confirme o universo no chat.
 - Transformacao empresarial: `config/business_transformation.json` e fonte
@@ -387,9 +279,8 @@ em vez de seguir com a implementacao.
 - A solicitacao passou pelo SDD gate?
 - O contexto foi filtrado se for grande?
 - O cache Anthropic pode ser aproveitado?
-- O numero de agentes esta justificado pelo custo/complexidade?
-- A fleet correta foi selecionada e validada?
-- O trust framework foi respeitado?
+- O tier de modelo esta justificado pelo custo/complexidade?
+- A matriz de autonomia do harness foi respeitada?
 - O agent blueprint contract foi respeitado?
 - O improvement loop deve salvar exemplo aprovado ou caso de falha?
 - RAG/MCP/frameworks foram escolhidos por fit?

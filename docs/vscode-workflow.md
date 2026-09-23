@@ -6,7 +6,7 @@ navegador.
 ## Stack Oficial
 
 - Codex dentro do VS Code para orientar, revisar e evoluir o projeto.
-- Swarm com 15 core agents configurados, ativacao economica e pool escalavel ate 60 agentes.
+- Um unico assistente por tarefa, com papeis de workflow em `config/roles.json` e governanca em `config/harness_engineering_policy.json`.
 - Project Factory em PowerShell para criar projetos completos.
 - Memoria local, Vector DB, playbooks, evals, guardrails e workflows versionados.
 
@@ -57,8 +57,8 @@ Tasks: Run Task
 Use uma destas tarefas:
 
 - `AI Factory: Menu interativo`
-- `AI Factory: Criar projeto com Codex + swarm economico + tratamento dados`
-- `Codex: Tratar dados com swarm economico`
+- `AI Factory: Criar projeto com Codex + tratamento dados`
+- `Codex: Tratar dados`
 - `Dados: Tratar dataset estatistico`
 - `Enterprise: Validar stack`
 - `Synapse: Preparar runtime VS Code`
@@ -68,7 +68,7 @@ O fluxo recomendado e:
 1. Rodar `Enterprise: Validar stack`.
 2. Rodar `Synapse: Preparar runtime VS Code`.
 3. Rodar `AI Factory: Menu interativo`.
-4. Escolher criar projeto; o padrao ativa um subconjunto economico dos core agents e mantem o pool de 60 disponivel.
+4. Escolher criar projeto.
 5. Abrir a pasta gerada com `code C:\Users\<seu_usuario>\Documents\Projetos\nome_do_projeto`.
 
 ## Criar Via Terminal Integrado
@@ -77,7 +77,7 @@ O fluxo recomendado e:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\create_ai_project.ps1 -NomeProjeto "meu_projeto_ai"
 ```
 
-Para preparar apenas memoria local sem ativar o swarm, somente quando offline:
+Para preparar apenas memoria local, somente quando offline:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\create_ai_project.ps1 -NomeProjeto "meu_projeto_ai" -LocalMemoryOnly
@@ -87,11 +87,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\create_ai_project.
 
 Cada projeto novo nasce com:
 
-- 15 core agents obrigatorios configurados.
-- 45 specialist agents sob demanda configurados.
-- workflow `new-ai-project` com ativacao paralela dos core agents e limite maximo de 60 agentes.
+- papeis de workflow em `config/roles.json` e governanca de agentes no harness.
 - prompt `prompts/codex_data_treatment_dialog.md`.
-- task `Codex: Tratar dados com swarm economico`.
+- task `Codex: Tratar dados`.
 - `data/` para CSV, Excel, JSON, JSONL e Parquet.
 - `scripts/treat_dataset.py` para tratamento estatistico rastreavel.
 - `experiments/`, `artifacts/`, `memory/` e `output/`.
@@ -107,8 +105,8 @@ Cada projeto novo nasce com:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterprise_stack.ps1
 ```
 
-Essa validacao falha se o projeto nao tiver 15 core agents, 45 specialists,
-`max_agents=60` e workflow do swarm paralelo.
+Essa validacao falha se algum workflow usar papel fora de `config/roles.json`,
+se contratos obrigatorios estiverem ausentes ou se os gates de avaliacao falharem.
 
 ## Tratar Dados
 
@@ -116,16 +114,16 @@ Coloque a base bruta em `data/raw/` e, quando estiver conversando com Codex,
 peca algo como:
 
 ```text
-trate data/raw/clientes.csv com o swarm economico e especialistas sob demanda
+trate data/raw/clientes.csv
 ```
 
 O caminho integrado e a task:
 
 ```text
-Codex: Tratar dados com swarm economico
+Codex: Tratar dados
 ```
 
-Essa task valida o stack, ativa um subconjunto economico dos 15 core agents, registra o contexto
+Essa task valida o stack, registra o contexto
 da conversa em `output/codex_dialog/` e executa o tratamento estatistico.
 
 Se quiser apenas rodar o tratamento isolado, use:
@@ -161,6 +159,5 @@ Depois de abrir o projeto gerado no VS Code, use Codex como caixa de dialogo:
 - informe o problema de negocio;
 - indique os dados disponiveis;
 - peca modelos de ML, agentes de IA, RAG, avaliacoes e documentacao;
-- peca para rodar o swarm quando quiser paralelizar com os 15 core agents e acionar especialistas sob demanda.
 
 Nenhuma etapa exige abrir navegador.

@@ -21,4 +21,4 @@ contracts.
 
 `config/runtime_manifest.json` is the machine-readable contract used by the
 project factory and validation scripts. Keep it aligned with
-`config/enterprise.yaml` and `agents/definitions/enterprise_agents.yaml`.
+`config/enterprise.yaml` and `config/roles.json`.

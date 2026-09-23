@@ -42,11 +42,8 @@ if (!(Test-Path $ProjectRoot)) {
 $RuntimePath = Join-Path $ProjectRoot "config\runtime_manifest.json"
 $UniversePath = Join-Path $ProjectRoot "config\project_universe.json"
 $SolutionContractPath = Join-Path $ProjectRoot "config\synapse_solution_contract.json"
-$AgentsPath = Join-Path $ProjectRoot "agents\definitions\enterprise_agents.yaml"
 $CostPolicyPath = Join-Path $ProjectRoot "config\cost_optimization_policy.json"
 $ContextPolicyPath = Join-Path $ProjectRoot "config\context_policy.json"
-$TrustFrameworkPath = Join-Path $ProjectRoot "config\agent_trust_framework.json"
-$FleetsPath = Join-Path $ProjectRoot "config\agent_fleets.json"
 $BlueprintContractPath = Join-Path $ProjectRoot "config\agent_blueprint_contract.json"
 $ImprovementLoopPath = Join-Path $ProjectRoot "config\agent_improvement_loop.json"
 $ModelProvidersPath = Join-Path $ProjectRoot "config\model_providers.json"
@@ -57,8 +54,7 @@ Test-RelativePath "solution_contract" "config\synapse_solution_contract.json" "C
 Test-RelativePath "enterprise_spec" "config\ai_ml_enterprise_spec.json" "Especificacao enterprise IA/ML existe"
 Test-RelativePath "cost_optimization_policy" "config\cost_optimization_policy.json" "Politica de orquestracao economica existe"
 Test-RelativePath "context_policy" "config\context_policy.json" "Politica central de contexto LLM existe"
-Test-RelativePath "agent_trust_framework" "config\agent_trust_framework.json" "Agentic mesh trust framework existe"
-Test-RelativePath "agent_fleets" "config\agent_fleets.json" "Agentic mesh fleets existem"
+Test-RelativePath "roles" "config\roles.json" "Papeis dos workflows existem"
 Test-RelativePath "agent_blueprint_contract" "config\agent_blueprint_contract.json" "Contrato de agent blueprint existe"
 Test-RelativePath "agentic_architectural_patterns" "config\agentic_architectural_patterns.json" "Catalogo de padroes arquiteturais agentic existe"
 Test-RelativePath "agent_improvement_loop" "config\agent_improvement_loop.json" "Loop de melhoria de agents existe"
@@ -78,12 +74,11 @@ Test-RelativePath "peer_messaging_runbook" "docs\runbooks\peer_messaging.md" "Ru
 Test-RelativePath "peer_messaging_mcp" "scripts\synapse_solution_peers_mcp.py" "MCP peer messaging standalone existe"
 Test-RelativePath "vscode_settings" ".vscode\settings.json" "Settings VS Code existem"
 Test-RelativePath "vscode_extensions" ".vscode\extensions.json" "Recomendacoes de extensoes VS Code existem"
-Test-RelativePath "agents_yaml" "agents\definitions\enterprise_agents.yaml" "Catalogo de agentes do projeto existe"
 Test-RelativePath "attachment_manifest" "docs\briefings\codex_attachments_manifest.json" "Manifesto de anexos Codex existe"
 Test-RelativePath "execution_spec" "docs\specifications\ai_ml_execution_spec.md" "Especificacao de execucao existe"
-Test-RelativePath "agentic_mesh_spec" "docs\specifications\agentic_mesh_governance.md" "Especificacao agentic mesh existe"
+Test-RelativePath "agent_governance_spec" "docs\specifications\agent_governance.md" "Especificacao de governanca de agentes existe"
 Test-RelativePath "agentic_patterns_spec" "docs\specifications\agentic_architectural_patterns.md" "Especificacao de padroes arquiteturais agentic existe"
-Test-RelativePath "agent_fleet_certification" "docs\checklists\agent_fleet_certification.md" "Checklist de certificacao de fleets existe"
+Test-RelativePath "agent_certification" "docs\checklists\agent_certification.md" "Checklist de certificacao de agents existe"
 Test-RelativePath "agent_sre_runbook" "docs\runbooks\agent_sre.md" "Runbook Agent SRE existe"
 Test-RelativePath "harness_engineering_policy" "config\harness_engineering_policy.json" "Politica de harness engineering existe"
 Test-RelativePath "harness_engineering_spec" "docs\specifications\harness_engineering.md" "Especificacao de harness engineering existe"
@@ -104,7 +99,6 @@ if (Test-Path $SolutionContractPath) {
         Add-Check "solution_managed_by_synapse" "Solucao e gerenciada pelo Synapse" ($SolutionContract.managed_by -eq "synapse") "managed_by=$($SolutionContract.managed_by)"
         Add-Check "solution_not_factory" "Solucao nao pode criar projetos" (-not [bool]$SolutionContract.factory_capable) "factory_capable=$($SolutionContract.factory_capable)"
         Add-Check "solution_no_application_stack" "Solucao nao inclui backend ou frontend" (-not [bool]$SolutionContract.contains_backend -and -not [bool]$SolutionContract.contains_frontend) "backend=$($SolutionContract.contains_backend), frontend=$($SolutionContract.contains_frontend)"
-        Add-Check "solution_swarm_inherited" "Solucao herda runtime do swarm" ($SolutionContract.swarm_runtime -eq "inherited") "swarm_runtime=$($SolutionContract.swarm_runtime)"
         Add-Check "solution_agents_inherited" "Solucao herda agentes" ($SolutionContract.agents_runtime -eq "inherited") "agents_runtime=$($SolutionContract.agents_runtime)"
     }
     catch {
@@ -117,26 +111,16 @@ if (Test-Path $RuntimePath) {
     try {
         $Runtime = Get-Content $RuntimePath -Raw | ConvertFrom-Json
         Add-Check "runtime_json" "Runtime manifest e JSON valido" $true "config/runtime_manifest.json"
-        Add-Check "swarm_max_agents" "Swarm max_agents=60" ([int]$Runtime.swarm.max_agents -eq 60) "max_agents=$($Runtime.swarm.max_agents)"
-        Add-Check "swarm_core_agents" "Swarm core_agent_count=15" ([int]$Runtime.swarm.core_agent_count -eq 15) "core_agent_count=$($Runtime.swarm.core_agent_count)"
-        Add-Check "swarm_specialists" "Swarm specialist_agent_count=45" ([int]$Runtime.swarm.specialist_agent_count -eq 45) "specialist_agent_count=$($Runtime.swarm.specialist_agent_count)"
-        Add-Check "runtime_required_agents" "Runtime declara 15 core agents" (@($Runtime.validation.required_agents).Count -eq 15) "required_agents=$(@($Runtime.validation.required_agents).Count)"
-        Add-Check "runtime_specialist_agents" "Runtime declara 45 especialistas" (@($Runtime.validation.specialist_agents).Count -eq 45) "specialist_agents=$(@($Runtime.validation.specialist_agents).Count)"
-        Add-Check "runtime_cost_policy_enabled" "Runtime ativa orquestracao economica" ([bool]$Runtime.cost_optimization.enabled) "enabled=$($Runtime.cost_optimization.enabled)"
+        Add-Check "runtime_cost_policy_enabled" "Runtime ativa roteamento de modelos por custo" ([bool]$Runtime.cost_optimization.enabled) "enabled=$($Runtime.cost_optimization.enabled)"
         Add-Check "runtime_cost_policy_path" "Runtime aponta para politica de custo" ($Runtime.cost_optimization.policy_file -eq "config/cost_optimization_policy.json") "policy_file=$($Runtime.cost_optimization.policy_file)"
-        Add-Check "runtime_no_all_60_default" "Runtime exige justificativa para ativar 60 agentes" ([bool]$Runtime.cost_optimization.activate_all_60_requires_explicit_high_complexity) "activate_all_60_requires_explicit_high_complexity=$($Runtime.cost_optimization.activate_all_60_requires_explicit_high_complexity)"
-        Add-Check "runtime_default_agent_limit" "Runtime inicia com apenas 1 agente" ([int]$Runtime.swarm.cost_aware_default_active_agents -eq 1) "default_agents=$($Runtime.swarm.cost_aware_default_active_agents)"
-        Add-Check "runtime_enterprise_agent_limit" "Runtime limita perfil enterprise a 8 agentes" ([int]$Runtime.swarm.cost_aware_enterprise_active_agents -eq 8) "enterprise_agents=$($Runtime.swarm.cost_aware_enterprise_active_agents)"
-        Add-Check "runtime_agentic_mesh_enabled" "Runtime ativa agentic mesh governance" ([bool]$Runtime.agentic_mesh.enabled) "enabled=$($Runtime.agentic_mesh.enabled)"
-        Add-Check "runtime_agentic_mesh_layers" "Runtime declara 7 trust layers" ([int]$Runtime.agentic_mesh.trust_layers -eq 7) "trust_layers=$($Runtime.agentic_mesh.trust_layers)"
-        Add-Check "runtime_agentic_mesh_fleets" "Runtime declara fleets de solucao" ([int]$Runtime.agentic_mesh.fleet_count -ge 5) "fleet_count=$($Runtime.agentic_mesh.fleet_count)"
-        Add-Check "runtime_blueprint_contract_path" "Runtime aponta para agent blueprint contract" ($Runtime.agentic_mesh.agent_blueprint_contract_file -eq "config/agent_blueprint_contract.json") "agent_blueprint_contract_file=$($Runtime.agentic_mesh.agent_blueprint_contract_file)"
-        Add-Check "runtime_improvement_loop_path" "Runtime aponta para improvement loop" ($Runtime.agentic_mesh.improvement_loop_file -eq "config/agent_improvement_loop.json") "improvement_loop_file=$($Runtime.agentic_mesh.improvement_loop_file)"
+        Add-Check "runtime_agent_governance_enabled" "Runtime ativa governanca de agentes" ([bool]$Runtime.agent_governance.enabled) "enabled=$($Runtime.agent_governance.enabled)"
+        Add-Check "runtime_governance_policy" "Governanca aponta para o harness" ($Runtime.agent_governance.governance_policy_file -eq "config/harness_engineering_policy.json") "governance_policy_file=$($Runtime.agent_governance.governance_policy_file)"
+        Add-Check "runtime_blueprint_contract_path" "Runtime aponta para agent blueprint contract" ($Runtime.agent_governance.agent_blueprint_contract_file -eq "config/agent_blueprint_contract.json") "agent_blueprint_contract_file=$($Runtime.agent_governance.agent_blueprint_contract_file)"
+        Add-Check "runtime_improvement_loop_path" "Runtime aponta para improvement loop" ($Runtime.agent_governance.improvement_loop_file -eq "config/agent_improvement_loop.json") "improvement_loop_file=$($Runtime.agent_governance.improvement_loop_file)"
         Add-Check "runtime_cloud_provider" "Runtime usa OpenAI como provedor direto" ($Runtime.local_llm.provider -eq "openai") "provider=$($Runtime.local_llm.provider)"
         Add-Check "runtime_cloud_routing" "Runtime roteia direto para a nuvem" ($Runtime.local_llm.routing_strategy -eq "cloud_only") "routing_strategy=$($Runtime.local_llm.routing_strategy)"
         Add-Check "runtime_cloud_default" "Cloud fica ativada por padrao" ([bool]$Runtime.local_llm.cloud_default_enabled) "cloud_default=$($Runtime.local_llm.cloud_default_enabled)"
         Add-Check "runtime_output_limit" "Resposta padrao limitada a 512 tokens" ([int]$Runtime.local_llm.default_max_output_tokens -eq 512) "max_output=$($Runtime.local_llm.default_max_output_tokens)"
-        Add-Check "runtime_governed_model_access" "60 agentes usam acesso governado aos modelos" ($Runtime.local_llm.all_60_agents_model_access -eq "governed_on_demand") "access=$($Runtime.local_llm.all_60_agents_model_access)"
         Add-Check "runtime_sensitive_blocked" "Dados sensiveis sao bloqueados em vez de roteados" ([bool]$Runtime.local_llm.sensitive_content_blocked) "sensitive_content_blocked=$($Runtime.local_llm.sensitive_content_blocked)"
         Add-Check "runtime_continual_learning" "Aprendizagem continua por memoria esta ativa" ([bool]$Runtime.continual_learning.enabled) "enabled=$($Runtime.continual_learning.enabled)"
         Add-Check "runtime_no_auto_weight_update" "Pesos do modelo nao mudam automaticamente" (-not [bool]$Runtime.continual_learning.automatic_weight_updates) "automatic_weight_updates=$($Runtime.continual_learning.automatic_weight_updates)"
@@ -149,19 +133,11 @@ if (Test-Path $RuntimePath) {
     }
 }
 
-if (Test-Path $AgentsPath) {
-    $AgentIds = @(Select-String -Path $AgentsPath -Pattern '^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$' | ForEach-Object { $_.Matches[0].Groups[1].Value })
-    Add-Check "agents_total" "Projeto contem 60 agentes" ($AgentIds.Count -eq 60) "agents=$($AgentIds.Count)"
-    Add-Check "agents_unique" "Agentes do projeto nao estao duplicados" (@($AgentIds | Sort-Object -Unique).Count -eq 60) "unique_agents=$(@($AgentIds | Sort-Object -Unique).Count)"
-}
-
 if (Test-Path $ModelProvidersPath) {
     try {
         $Providers = Get-Content $ModelProvidersPath -Raw | ConvertFrom-Json
         Add-Check "model_providers_json" "Politica de provedores e JSON valido" $true "config/model_providers.json"
         Add-Check "model_providers_assistant_boundaries" "Politica de provedores usa fronteiras por assistente" ($Providers.routing_strategy -eq "assistant_boundaries") "routing_strategy=$($Providers.routing_strategy)"
-        Add-Check "model_providers_swarm_bridge" "Ponte de swarm governada esta ativa" ([bool]$Providers.swarm_bridge.enabled) "enabled=$($Providers.swarm_bridge.enabled)"
-        Add-Check "model_providers_all_60" "Todos os 60 agentes podem acessar o roteador governado" ([bool]$Providers.swarm_bridge.all_60_agents_have_governed_router_access) "all_60=$($Providers.swarm_bridge.all_60_agents_have_governed_router_access)"
         Add-Check "model_providers_cloud_no_friction" "Chamadas de rotina nao exigem aprovacao humana" ([bool]$Providers.automatic_routing.cloud_default_enabled -and (-not [bool]$Providers.automatic_routing.cloud_requires_human_approval)) "cloud_default=$($Providers.automatic_routing.cloud_default_enabled)"
     }
     catch {
@@ -175,8 +151,6 @@ if (Test-Path $UniversePath) {
         $Universe = Get-Content $UniversePath -Raw | ConvertFrom-Json
         Add-Check "universe_json" "Project universe e JSON valido" $true "config/project_universe.json"
         Add-Check "data_treatment_enabled" "Tratamento de dados ativo" ([bool]$Universe.capabilities.data_treatment) "data_treatment=$($Universe.capabilities.data_treatment)"
-        Add-Check "swarm_core_capability" "Capacidade swarm core agents=15" ([int]$Universe.capabilities.swarm_core_agents -eq 15) "swarm_core_agents=$($Universe.capabilities.swarm_core_agents)"
-        Add-Check "swarm_max_capability" "Capacidade swarm max agents=60" ([int]$Universe.capabilities.swarm_max_agents -eq 60) "swarm_max_agents=$($Universe.capabilities.swarm_max_agents)"
         if ([bool]$Universe.capabilities.ai) {
             Test-RelativePath "rag_scalability_policy" "config\rag_scalability_policy.json" "Politica de RAG escalavel e vector DB existe"
             Test-RelativePath "fine_tuning_policy" "config\fine_tuning_policy.json" "Politica de fine-tuning existe"
@@ -194,22 +168,13 @@ if (Test-Path $CostPolicyPath) {
     try {
         $CostPolicy = Get-Content $CostPolicyPath -Raw | ConvertFrom-Json
         Add-Check "cost_policy_json" "Politica de custo e JSON valido" $true "config/cost_optimization_policy.json"
-        Add-Check "cost_policy_max_agents" "Politica mantem 60 agentes disponiveis" ([int]$CostPolicy.ruflo.max_available_agents -eq 60) "max_available_agents=$($CostPolicy.ruflo.max_available_agents)"
-        Add-Check "cost_policy_default_agents" "Politica nao ativa 60 agentes por padrao" ([int]$CostPolicy.ruflo.default_active_agents -lt 60) "default_active_agents=$($CostPolicy.ruflo.default_active_agents)"
-        Add-Check "cost_policy_simple_budget" "Perfil simples usa no maximo 1 agente e budget 1200" (([int]$CostPolicy.activation_profiles.simple.active_agent_limit -eq 1) -and ([int]$CostPolicy.activation_profiles.simple.token_budget -eq 1200)) "agents=$($CostPolicy.activation_profiles.simple.active_agent_limit); budget=$($CostPolicy.activation_profiles.simple.token_budget)"
+        Add-Check "cost_policy_simple_budget" "Perfil simples usa tier economico e budget 1200" (($CostPolicy.request_profiles.simple.model_tier -eq "economy") -and ([int]$CostPolicy.request_profiles.simple.token_budget -eq 1200)) "tier=$($CostPolicy.request_profiles.simple.model_tier); budget=$($CostPolicy.request_profiles.simple.token_budget)"
         Add-Check "cost_policy_prompt_cache" "Politica prioriza prompt cache" ([bool]$CostPolicy.token_controls.prefer_prompt_cache) "prefer_prompt_cache=$($CostPolicy.token_controls.prefer_prompt_cache)"
         Add-Check "cost_policy_context_compression" "Politica comprime contexto antes do LLM" ([bool]$CostPolicy.token_controls.compress_context_before_llm) "compress_context_before_llm=$($CostPolicy.token_controls.compress_context_before_llm)"
     }
     catch {
         Add-Check "cost_policy_json" "Politica de custo e JSON valido" $false $_.Exception.Message
     }
-}
-
-$EnvExamplePath = Join-Path $ProjectRoot ".env.example"
-if (Test-Path $EnvExamplePath) {
-    $EnvExample = Get-Content $EnvExamplePath -Raw
-    Add-Check "env_default_agent_limit" ".env.example usa 1 agente por padrao" ($EnvExample -match "PROJECT_DEFAULT_ACTIVE_AGENTS=1") "PROJECT_DEFAULT_ACTIVE_AGENTS"
-    Add-Check "env_enterprise_agent_limit" ".env.example usa 8 agentes no perfil enterprise" ($EnvExample -match "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8") "PROJECT_ENTERPRISE_ACTIVE_AGENTS"
 }
 
 $McpPath = Join-Path $ProjectRoot ".mcp.json"
@@ -264,29 +229,15 @@ if (Test-Path $ImprovementLoopPath) {
     }
 }
 
-if (Test-Path $TrustFrameworkPath) {
+$HarnessPolicyPath = Join-Path $ProjectRoot "config\harness_engineering_policy.json"
+if (Test-Path $HarnessPolicyPath) {
     try {
-        $Trust = Get-Content $TrustFrameworkPath -Raw | ConvertFrom-Json
-        Add-Check "trust_framework_json" "Trust framework e JSON valido" $true "config/agent_trust_framework.json"
-        Add-Check "trust_framework_layers" "Trust framework contem 7 camadas" (@($Trust.layers).Count -eq 7) "layers=$(@($Trust.layers).Count)"
-        Add-Check "trust_framework_approval" "Trust framework exige aprovacao humana para acoes criticas" (@($Trust.autonomy_matrix.requires_human_approval).Count -gt 0) "requires_human_approval=$(@($Trust.autonomy_matrix.requires_human_approval).Count)"
+        $Harness = Get-Content $HarnessPolicyPath -Raw | ConvertFrom-Json
+        Add-Check "harness_governance" "Harness define governanca de agentes" ($null -ne $Harness.governance) "governance"
+        Add-Check "harness_approval" "Harness exige aprovacao humana para acoes criticas" (@($Harness.governance.autonomy_matrix.requires_human_approval).Count -gt 0) "requires_human_approval=$(@($Harness.governance.autonomy_matrix.requires_human_approval).Count)"
     }
     catch {
-        Add-Check "trust_framework_json" "Trust framework e JSON valido" $false $_.Exception.Message
-    }
-}
-
-if (Test-Path $FleetsPath) {
-    try {
-        $Fleets = Get-Content $FleetsPath -Raw | ConvertFrom-Json
-        Add-Check "agent_fleets_json" "Agent fleets e JSON valido" $true "config/agent_fleets.json"
-        Add-Check "agent_fleets_count" "Projeto contem apenas fleets de solucao" (@($Fleets.fleets).Count -ge 5) "fleets=$(@($Fleets.fleets).Count)"
-        Add-Check "agent_fleets_no_factory" "Fleet de fabrica permanece exclusiva do Synapse" (-not (@($Fleets.fleets.id) -contains "project_factory_fleet")) "project_factory_fleet=false"
-        Add-Check "agent_fleets_cost_aware" "Fleets usam ativacao economica" ($Fleets.fleet_defaults.activation_policy -eq "cost_aware_on_demand") "activation_policy=$($Fleets.fleet_defaults.activation_policy)"
-        Add-Check "agent_fleets_approval" "Fleets exigem aprovacao para 60 agentes" ([bool]$Fleets.fleet_defaults.human_approval_required_for_all_60_agents) "human_approval_required_for_all_60_agents=$($Fleets.fleet_defaults.human_approval_required_for_all_60_agents)"
-    }
-    catch {
-        Add-Check "agent_fleets_json" "Agent fleets e JSON valido" $false $_.Exception.Message
+        Add-Check "harness_policy_json" "Politica de harness e JSON valido" $false $_.Exception.Message
     }
 }
 

@@ -21,7 +21,7 @@ Conceptual references without copied text:
 SYNAPSE application:
 
 - Use Codex/OpenAI or Claude Code/Anthropic directly for triage and review.
-- Require human approval only to activate all 60 agents.
+- Require human approval for destructive or external actions, by risk.
 - Promote prompts, models, agents, or datasets only after eval evidence exists.
 
 ## Prompt Engineering
@@ -110,19 +110,17 @@ SYNAPSE application:
 
 - Use deterministic workflow state around LLM calls.
 - Measure cost, latency, and memory impact before adding new routing layers.
-- Prefer small, testable algorithms for project factory, RAG, memory, and swarm
+- Prefer small, testable algorithms for project factory, RAG, memory, and workflow
   scheduling concerns.
 
 ## Agentic Coding
 
 - Codex + Claude Code control plane.
-- Specialized swarm agents.
+- Explicit workflow roles.
 - Persistent memory.
 - Workflow validation.
 - One-agent-first execution, with specialist escalation only when the task
   requires another domain.
-- Never activate all 60 agents by default; full activation remains an explicit,
-  justified, human-approved path.
 
 Conceptual references without copied text:
 
@@ -142,8 +140,7 @@ SYNAPSE application:
 - Model agent roles as contracts: goal, tools, memory, permissions, evals, and
   stop conditions.
 - Treat multiagent collaboration as a routing choice, not as the default answer.
-- Keep the swarm as the local router instead of embedding large agent catalogs in
-  prompts.
+- Keep large catalogs out of prompts; follow workflow roles instead.
 - Use `config/agentic_architectural_patterns.json` as the reusable pattern
   catalog for orchestrator-specialist routing, critic gates, A2A messages,
   tool gateways, model routers, shared memory retrieval and lifecycle callbacks.

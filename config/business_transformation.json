@@ -22,20 +22,74 @@
     "stateful": true,
     "simulation_first": true,
     "stages": [
-      {"id": "intake", "profile": "orchestrator"},
-      {"id": "diagnosis", "profile": "business-transformation"},
-      {"id": "process_mapping", "profile": "process-mapping"},
-      {"id": "data_readiness", "profile": "data-analysis"},
-      {"id": "opportunity_identification", "profile": "business-transformation", "supporting_agents": ["llm-engineering"]},
-      {"id": "prioritization", "profile": "business-transformation"},
-      {"id": "automation_architecture", "profile": "automation-architect"},
-      {"id": "kpi_design", "profile": "kpi-monitor"},
-      {"id": "execution_planning", "profile": "orchestrator"},
-      {"id": "risk_governance", "profile": "risk-governance"},
-      {"id": "human_approval", "profile": "human-approval"},
-      {"id": "simulation", "profile": "automation-architect", "supporting_agents": ["testing-qa"]},
-      {"id": "impact_evaluation", "profile": "kpi-monitor", "supporting_agents": ["business-value-analyst"]},
-      {"id": "final_report", "profile": "orchestrator", "supporting_agents": ["documentation"]}
+      {
+        "id": "intake",
+        "profile": "orchestrator"
+      },
+      {
+        "id": "diagnosis",
+        "profile": "business-transformation"
+      },
+      {
+        "id": "process_mapping",
+        "profile": "process-mapping"
+      },
+      {
+        "id": "data_readiness",
+        "profile": "data-analysis"
+      },
+      {
+        "id": "opportunity_identification",
+        "profile": "business-transformation",
+        "supporting_roles": [
+          "llm-engineering"
+        ]
+      },
+      {
+        "id": "prioritization",
+        "profile": "business-transformation"
+      },
+      {
+        "id": "automation_architecture",
+        "profile": "automation-architect"
+      },
+      {
+        "id": "kpi_design",
+        "profile": "kpi-monitor"
+      },
+      {
+        "id": "execution_planning",
+        "profile": "orchestrator"
+      },
+      {
+        "id": "risk_governance",
+        "profile": "risk-governance"
+      },
+      {
+        "id": "human_approval",
+        "profile": "human-approval"
+      },
+      {
+        "id": "simulation",
+        "profile": "automation-architect",
+        "supporting_roles": [
+          "testing-qa"
+        ]
+      },
+      {
+        "id": "impact_evaluation",
+        "profile": "kpi-monitor",
+        "supporting_roles": [
+          "business-value-analyst"
+        ]
+      },
+      {
+        "id": "final_report",
+        "profile": "orchestrator",
+        "supporting_roles": [
+          "documentation"
+        ]
+      }
     ]
   },
   "autonomy": {
@@ -45,38 +99,142 @@
     "CRITICAL": "explicit_human_approval_and_no_external_automatic_action"
   },
   "functional_agents": [
-    {"id": "orchestrator", "class": "OrchestratorAgent", "agent_id": "orchestration-manager", "tools": []},
-    {"id": "business-transformation", "class": "BusinessTransformationAgent", "agent_id": "product-strategy", "tools": ["kpi_tool"]},
-    {"id": "process-mapping", "class": "ProcessMappingAgent", "agent_id": "business-value-analyst", "tools": ["process_tool"]},
-    {"id": "data-analysis", "class": "DataAnalysisAgent", "agent_id": "data-science", "tools": ["data_tool"]},
-    {"id": "automation-architect", "class": "AutomationArchitectAgent", "agent_id": "integration-automation", "tools": ["automation_tool"]},
-    {"id": "kpi-monitor", "class": "KPIMonitorAgent", "agent_id": "metrics-instrumentation", "tools": ["kpi_tool"]},
-    {"id": "risk-governance", "class": "RiskGovernanceAgent", "agent_id": "security-compliance", "tools": []},
-    {"id": "human-approval", "class": "HumanApprovalAgent", "agent_id": "policy-guardrails-engineer", "tools": []}
+    {
+      "id": "orchestrator",
+      "class": "OrchestratorAgent",
+      "role": "orchestration-manager",
+      "tools": []
+    },
+    {
+      "id": "business-transformation",
+      "class": "BusinessTransformationAgent",
+      "role": "product-strategy",
+      "tools": [
+        "kpi_tool"
+      ]
+    },
+    {
+      "id": "process-mapping",
+      "class": "ProcessMappingAgent",
+      "role": "business-value-analyst",
+      "tools": [
+        "process_tool"
+      ]
+    },
+    {
+      "id": "data-analysis",
+      "class": "DataAnalysisAgent",
+      "role": "data-science",
+      "tools": [
+        "data_tool"
+      ]
+    },
+    {
+      "id": "automation-architect",
+      "class": "AutomationArchitectAgent",
+      "role": "integration-automation",
+      "tools": [
+        "automation_tool"
+      ]
+    },
+    {
+      "id": "kpi-monitor",
+      "class": "KPIMonitorAgent",
+      "role": "metrics-instrumentation",
+      "tools": [
+        "kpi_tool"
+      ]
+    },
+    {
+      "id": "risk-governance",
+      "class": "RiskGovernanceAgent",
+      "role": "security-compliance",
+      "tools": []
+    },
+    {
+      "id": "human-approval",
+      "class": "HumanApprovalAgent",
+      "role": "policy-guardrails-engineer",
+      "tools": []
+    }
   ],
   "tools": {
-    "kpi_tool": {"purpose": "read KPI baselines and targets", "side_effect": "none", "mode": "simulated"},
-    "process_tool": {"purpose": "read and analyze the current process map", "side_effect": "none", "mode": "simulated"},
-    "data_tool": {"purpose": "profile data sources for readiness", "side_effect": "none", "mode": "simulated"},
+    "kpi_tool": {
+      "purpose": "read KPI baselines and targets",
+      "side_effect": "none",
+      "mode": "simulated"
+    },
+    "process_tool": {
+      "purpose": "read and analyze the current process map",
+      "side_effect": "none",
+      "mode": "simulated"
+    },
+    "data_tool": {
+      "purpose": "profile data sources for readiness",
+      "side_effect": "none",
+      "mode": "simulated"
+    },
     "automation_tool": {
       "purpose": "trigger an automation in a business system",
       "side_effect": "external",
       "mode": "simulated",
-      "real_execution_requires": ["mcp_tool", "identity", "permission", "idempotency_key", "audit_record", "compensation_plan", "human_authorization_by_risk"]
+      "real_execution_requires": [
+        "mcp_tool",
+        "identity",
+        "permission",
+        "idempotency_key",
+        "audit_record",
+        "compensation_plan",
+        "human_authorization_by_risk"
+      ]
     }
   },
   "risk_rules": {
-    "factors": ["external_side_effect", "irreversible", "personal_data", "regulated_decision", "customer_facing", "writes_internal_systems", "financial_impact", "affected_cases_per_month"],
-    "critical_when": ["regulated_decision", "irreversible_and_external_side_effect", "financial_impact >= 1000000"],
-    "high_when": ["external_side_effect", "irreversible", "personal_data", "customer_facing", "financial_impact >= 100000"],
-    "medium_when": ["writes_internal_systems", "affected_cases_per_month >= 1000"],
+    "factors": [
+      "external_side_effect",
+      "irreversible",
+      "personal_data",
+      "regulated_decision",
+      "customer_facing",
+      "writes_internal_systems",
+      "financial_impact",
+      "affected_cases_per_month"
+    ],
+    "critical_when": [
+      "regulated_decision",
+      "irreversible_and_external_side_effect",
+      "financial_impact >= 1000000"
+    ],
+    "high_when": [
+      "external_side_effect",
+      "irreversible",
+      "personal_data",
+      "customer_facing",
+      "financial_impact >= 100000"
+    ],
+    "medium_when": [
+      "writes_internal_systems",
+      "affected_cases_per_month >= 1000"
+    ],
     "otherwise": "LOW",
     "missing_factors": "classify as HIGH and ask the user: weak evidence increases human authority",
-    "regulated_decision_examples": ["credit", "hiring", "firing", "health", "insurance_claims", "legal_outcome"]
+    "regulated_decision_examples": [
+      "credit",
+      "hiring",
+      "firing",
+      "health",
+      "insurance_claims",
+      "legal_outcome"
+    ]
   },
   "prioritization": {
     "scale": "1 to 5 for value, complexity and data_readiness, supplied by the user",
-    "weights": {"value": 0.4, "data_readiness": 0.2, "simplicity": 0.2, "safety": 0.2},
+    "weights": {
+      "value": 0.4,
+      "data_readiness": 0.2,
+      "simplicity": 0.2,
+      "safety": 0.2
+    },
     "missing_scores": "opportunity is not ranked until the user provides them"
   },
   "initial_business_areas": [
@@ -96,15 +254,28 @@
     "adoption_rate"
   ],
   "activation_signals": [
-    "transformacao", "transformacao digital", "processo", "processos", "eficiencia", "produtividade",
-    "reduzir tempo", "tempo de ciclo", "retrabalho", "backoffice", "kpi", "kpis", "operacao",
-    "redesenhar", "automatizar processo", "business transformation", "process redesign"
+    "transformacao",
+    "transformacao digital",
+    "processo",
+    "processos",
+    "eficiencia",
+    "produtividade",
+    "reduzir tempo",
+    "tempo de ciclo",
+    "retrabalho",
+    "backoffice",
+    "kpi",
+    "kpis",
+    "operacao",
+    "redesenhar",
+    "automatizar processo",
+    "business transformation",
+    "process redesign"
   ],
   "framework_policy": {
     "current_engine": "typed_python_state_machine",
     "langgraph_when": "durable checkpoints, cycles, distributed resume or complex handoffs are required",
     "langchain_when": "a maintained chain, retriever or integration component reduces implementation risk",
-    "mcp_required_for_external_tools": true,
-    "swarm_control_plane": true
+    "mcp_required_for_external_tools": true
   }
 }

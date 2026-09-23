@@ -174,37 +174,5 @@ def announce_task(objective: str, target_peer_type: str = "claude", required_age
         return {"ok": False, "error": str(error)}
 
 
-@mcp.tool()
-def route_to_swarm_agents(objective: str, required_agents_csv: str = "", max_agents: int = 60):
-    """Prepara a rota governada para ate 60 agentes do swarm com chamadas cloud consolidadas."""
-    try:
-        requested = [
-            item.strip()
-            for item in required_agents_csv.split(",")
-            if item.strip()
-        ][:60]
-        agent_count = max(1, min(int(max_agents), 60))
-        selected = requested[:agent_count] if requested else ["auto"]
-        announcement = service.announce_task(
-            from_id=registered_peer["id"],
-            objective=objective,
-            target_peer_type="claude",
-            required_agents=selected if selected != ["auto"] else [],
-        )
-        return {
-            "ok": True,
-            "route": "swarm-cloud",
-            "provider": "openai",
-            "cloud_used": True,
-            "max_agents": 60,
-            "active_agent_budget": agent_count,
-            "selected_agents": selected,
-            "llm_policy": "Consolidar o conselho de agentes em poucas chamadas cloud; nao executar 60 geracoes paralelas.",
-            "announcement": announcement,
-        }
-    except PeerMessagingError as error:
-        return {"ok": False, "error": str(error)}
-
-
 if __name__ == "__main__":
     mcp.run(transport="stdio")

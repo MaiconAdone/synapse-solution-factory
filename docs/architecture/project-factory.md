@@ -13,5 +13,5 @@ managed by SYNAPSE and cannot create other projects.
 They contain data, experiments, prompts, evals, governance, treatment scripts,
 model artifacts and documentation selected for ML, IA or hybrid projects.
 They do not contain SYNAPSE's project-factory scripts. Each project does
-inherit its own swarm runtime, MCP configuration, workflows, memory namespace
-and agent catalog.
+inherit its own MCP configuration, workflows, roles, memory namespace and
+agent governance.

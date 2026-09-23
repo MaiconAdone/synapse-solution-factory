@@ -31,7 +31,7 @@ governanca, testes e evals.
 Se faltar qualquer informacao essencial, o assistente deve perguntar ao usuario
 pela propria conversa antes de criar ou implementar. Nao deve inventar problema
 de negocio, metrica de sucesso, dados/fontes disponiveis, nivel de risco,
-aprovacao de cloud ou aprovacao para ativar todos os 60 agentes.
+ou aprovacao de cloud.
 
 ## Protocolo De Perguntas
 
@@ -57,8 +57,8 @@ IA/RAG/agentes, Chatbolt ou hibrido?"
 - `docs/specifications/technology_layer.md`
 - `config/ai_ml_enterprise_spec.json`
 - `config/cost_optimization_policy.json`
-- `config/agent_trust_framework.json`
-- `config/agent_fleets.json`
+- `config/roles.json`
+- `config/harness_engineering_policy.json`
 - `config/agent_blueprint_contract.json`
 - `config/agentic_architectural_patterns.json`
 - `config/agent_improvement_loop.json`
@@ -141,11 +141,9 @@ evals, observabilidade e custo.
 
 - Usar Codex/OpenAI ou Claude Code/Anthropic diretamente para triagem,
   classificacao, resumo, planejamento e revisao inicial.
-- Aprovacao humana explicita e exigida somente para ativar os 60 agentes.
-- Comecar com um agente.
-- Escalar o swarm por dominio somente quando necessario.
-- Nunca ativar 60 agentes por padrao.
-- Usar `config/cost_optimization_policy.json` antes de ampliar agentes.
+- Trabalhar com um unico assistente por tarefa.
+- Acoes destrutivas ou externas seguem a matriz de autonomia do harness.
+- Usar `config/cost_optimization_policy.json` para escolher tier de modelo e orcamento de tokens.
 - Usar `synapse-peers` para handoff curto entre Codex, Claude e
   operadores humanos.
 
@@ -167,10 +165,10 @@ operacional. Preserve prompt caching e contexto pequeno.
 Receba o pedido pela conversa, colete lacunas minimas e consulte o analisador
 antes de sugerir arquitetura ou gerar handoff para Codex.
 
-### Swarm
+### Papeis
 
-Use a analise para escolher fleets e especialistas. O padrao e um orquestrador;
-especialistas entram por dominio e 60 agentes exigem aprovacao explicita.
+Use `execution_strategy.roles` da analise para saber quais papeis de
+`config/roles.json` respondem pelas etapas. Papeis nao sao agentes em execucao.
 
 ## Validacao
 

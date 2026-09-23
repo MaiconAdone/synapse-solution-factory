@@ -6,11 +6,11 @@ contracts. It does not copy book content.
 
 ## Operating Policy
 
-- Start with one orchestrator and escalate only when the task needs another
-  domain.
+- Start with one assistant; specialists are roles in `config/roles.json`, not
+  separately activated agents.
 - Route all model calls through the LLM Gateway / Model Router.
-- Use Codex/OpenAI or Claude Code/Anthropic directly; human approval is
-  required only to activate all 60 agents.
+- Use Codex/OpenAI or Claude Code/Anthropic directly; destructive or external
+  actions follow the autonomy matrix in `config/harness_engineering_policy.json`.
 - Share short local peer summaries before sending large context to a model.
 - Treat callbacks as audit events, not as extra model calls.
 - Keep high-risk actions simulation-first until a human approves execution.
@@ -21,9 +21,9 @@ contracts. It does not copy book content.
 
 Use a lead orchestrator to choose the smallest useful set of specialists. In
 SYNAPSE there is no standalone runtime/router/governance service; the
-assistant executes the swarm directly and is responsible for reading
+assistant executes the workflow directly and is responsible for reading
 `config/runtime_manifest.json`, `config/cost_optimization_policy.json`, and
-`config/agent_trust_framework.json` before selecting or scaling agents.
+the `governance` section of `config/harness_engineering_policy.json`.
 
 ### Critic Reviewer Gate
 
@@ -70,7 +70,7 @@ Stable callbacks make plans auditable without adding model calls:
 
 ## Production Checks
 
-- Every workflow has a fleet lead, conflict resolver and handoff contract.
+- Every workflow step has an owner role, a conflict resolver and a handoff contract.
 - Every agent blueprint defines role, authority, tools, model profile, memory
   scope, escalation rule and quality gate.
 - Every high-risk path records a human approval decision.

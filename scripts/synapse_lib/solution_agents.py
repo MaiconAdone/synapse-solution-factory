@@ -1,7 +1,7 @@
 """Runtime agents of a generated IA/Chatbolt/Hybrid solution.
 
-The 60 swarm agents in agents/definitions/enterprise_agents.yaml *build* the
-solution. This module covers the agents the solution itself *runs* (e.g. an
+Roles in config/roles.json say who owns each build step. This module covers
+the agents the solution itself *runs* (e.g. an
 order-status assistant with tools): initial blueprints derived from the
 business solution analysis, validated against config/agent_blueprint_contract.json.
 
@@ -32,7 +32,7 @@ def _base_blueprint(
     authority: str,
     tier: str,
     tools: list[str],
-    fleet: str,
+    owner_role: str,
     evals: list[str],
     risk_level: str,
     token_budget: int,
@@ -50,7 +50,7 @@ def _base_blueprint(
             "loop_limits": "config/harness_engineering_policy.json#control_loop",
         },
         "success_criteria": PENDING,
-        "fleet": fleet,
+        "owner_role": owner_role,
         "evals": evals,
         "observability": ["model", "prompt_version", "tool_calls", "tokens", "latency_ms", "outcome"],
         "cost_budget": {"token_budget_per_task": token_budget},
@@ -70,8 +70,7 @@ def build_solution_agents(analysis: dict[str, Any], root: Path) -> dict[str, Any
     goal = analysis.get("dialog_context", {}).get("project_goal") or PENDING
     risk = analysis.get("dialog_context", {}).get("risk_level", "")
     success = analysis.get("dialog_context", {}).get("success_metric_or_acceptance_criteria") or PENDING
-    fleets = analysis.get("swarm_strategy", {}).get("recommended_fleets", []) or ["rag_fleet"]
-    profiles = _load(root, "config/cost_optimization_policy.json").get("activation_profiles", {})
+    profiles = _load(root, "config/cost_optimization_policy.json").get("request_profiles", {})
     budget = int(profiles.get("standard", {}).get("token_budget", 4000))
     agent_evals = ["evals/tool_workflow_cases.jsonl", "evals/prompt_cases.jsonl"]
     if universe == "chatbolt":
@@ -83,7 +82,7 @@ def build_solution_agents(analysis: dict[str, Any], root: Path) -> dict[str, Any
         "drafting",
         "balanced",
         ["delegate_to_specialist", "ask_user", "request_human_approval"],
-        "mcp_fleet" if "mcp_fleet" in fleets else fleets[0],
+        "llm-engineering",
         agent_evals,
         risk,
         budget,
@@ -98,7 +97,7 @@ def build_solution_agents(analysis: dict[str, Any], root: Path) -> dict[str, Any
             "advisory",
             "economy",
             ["hybrid_retrieve"],
-            "rag_fleet",
+            "rag-engineering",
             ["evals/retrieval_cases.jsonl", "evals/rag_cases.jsonl"],
             risk,
             budget,
@@ -110,7 +109,7 @@ def build_solution_agents(analysis: dict[str, Any], root: Path) -> dict[str, Any
             "external_action",
             "balanced",
             [],
-            "mcp_fleet",
+            "integration-automation",
             ["evals/tool_workflow_cases.jsonl"],
             risk,
             budget,
@@ -133,7 +132,7 @@ def build_solution_agents(analysis: dict[str, Any], root: Path) -> dict[str, Any
 def validate_solution_agents(document: dict[str, Any], root: Path) -> list[str]:
     """Return contract violations; an empty list means the blueprints are valid."""
     contract = _load(root, "config/agent_blueprint_contract.json")
-    fleets = {fleet["id"] for fleet in _load(root, "config/agent_fleets.json").get("fleets", [])}
+    roles = {role["id"] for role in _load(root, "config/roles.json").get("roles", [])}
     authority_levels = set(contract.get("agent_role_contract", {}).get("authority_levels", []))
     required = contract.get("required_fields", [])
     problems: list[str] = []
@@ -152,8 +151,8 @@ def validate_solution_agents(document: dict[str, Any], root: Path) -> list[str]:
             problems.append(f"{name}: external_action requires human_approval_required=true")
         if agent.get("model_strategy", {}).get("tier") not in MODEL_TIERS:
             problems.append(f"{name}: model tier must be one of {sorted(MODEL_TIERS)}")
-        if fleets and agent.get("fleet") not in fleets:
-            problems.append(f"{name}: fleet {agent.get('fleet')} not in config/agent_fleets.json")
+        if roles and agent.get("owner_role") not in roles:
+            problems.append(f"{name}: owner_role {agent.get('owner_role')} not in config/roles.json")
         problems.extend(
             f"{name}: eval file missing {path}" for path in agent.get("evals", []) if not (root / path).exists()
         )

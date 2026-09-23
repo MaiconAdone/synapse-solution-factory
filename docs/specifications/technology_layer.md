@@ -7,7 +7,7 @@ technology mix needed to solve it: architecture components, frameworks, agent
 patterns, pipelines, templates, evals, and production risks.
 
 It is not an installer and does not add dependencies blindly. It is a governed
-selection layer used before SDD, implementation, project generation, or swarm
+selection layer used before SDD, implementation, project generation, or role
 specialist routing.
 
 ## Source Of Truth
@@ -51,4 +51,4 @@ specialist routing.
 - Use RAG technologies only when trusted knowledge or citations matter.
 - Use agents only when the solution must plan, call tools, coordinate steps, or execute workflows.
 - Use Swarms or larger swarm routes only when parallel exploration or many specialists are justified.
-- Cloud tools and all 60 agents require explicit user request and human approval.
+- Cloud tools and external actions follow the autonomy matrix in `config/harness_engineering_policy.json`.

@@ -4,12 +4,12 @@ Set-Location $Root
 function Show-Header {
     Write-Host ""
     Write-Host "Synapse AI/ML Factory" -ForegroundColor Cyan
-    Write-Host "1. Criar projeto IA/ML completo com swarm de 60 agents"
+    Write-Host "1. Criar projeto IA/ML completo"
     Write-Host "2. Criar projeto IA/ML offline apenas com memoria local"
     Write-Host "3. Validar stack atual"
-    Write-Host "4. Tratar dados com Codex + swarm economico"
+    Write-Host "4. Tratar dados com Codex"
     Write-Host "5. Abrir manifesto runtime"
-    Write-Host "6. Abrir agentes"
+    Write-Host "6. Abrir papeis dos workflows"
     Write-Host "7. Abrir workflows"
     Write-Host "8. Sair"
     Write-Host ""
@@ -75,7 +75,7 @@ while ($true) {
             code "$Root\config\runtime_manifest.json"
         }
         "6" {
-            code "$Root\agents\definitions\enterprise_agents.yaml"
+            code "$Root\config\roles.json"
         }
         "7" {
             code "$Root\config\workflows\enterprise_workflows.yaml"

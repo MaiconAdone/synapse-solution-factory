@@ -1,11 +1,11 @@
 # Agent Harness Spec
 
-One card per agent (or fleet) before it runs with real tools.
+One card per agent before it runs with real tools.
 Policy: `config/harness_engineering_policy.json`. Spec: `docs/specifications/harness_engineering.md`.
 
 ## Identity
 
-- Agent id and fleet:
+- Agent id and owner role (`config/roles.json`):
 - Objective and success criteria:
 - Model tier (economy / standard / strong) and why:
 

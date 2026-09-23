@@ -1,4 +1,4 @@
-# IA Agentica Aplicada a Transformacao Empresarial
+﻿# IA Agentica Aplicada a Transformacao Empresarial
 
 ## Objetivo
 
@@ -17,7 +17,7 @@ AI Agents and Applications, Cybernetics, The Society of Mind).
 | Arquivo | Papel |
 | --- | --- |
 | `config/business_transformation.json` | Contrato: estagios, perfis, tools, regras de risco, autonomia, priorizacao, KPIs |
-| `config/workflows/synapse/business-transformation.json` | Workflow do swarm (mesmos estagios e agentes do contrato) |
+| `config/workflows/synapse/business-transformation.json` | Workflow (mesmos estagios e papeis do contrato) |
 | `agents/definitions/business_transformation_agents.yaml` | Perfis funcionais (espelho do contrato) |
 | `scripts/synapse_lib/business_transformation.py` | Motor: maquina de estados deterministica, so biblioteca padrao |
 | `scripts/run_business_transformation.py` | CLI |
@@ -25,15 +25,15 @@ AI Agents and Applications, Cybernetics, The Society of Mind).
 | `evals/business_transformation_cases.jsonl` | Casos de avaliacao de risco, autonomia e aprovacao |
 | `prompts/business_transformation.md` | Prompt de orquestracao |
 
-Testes garantem que contrato, workflow e YAML concordam e que todos os agentes
-existem no catalogo de 60 agentes.
+Testes garantem que contrato, workflow e YAML concordam e que todos os papeis
+existem em `config/roles.json`.
 
 ## Estagios
 
-Cada estagio e executado por um perfil funcional, que usa um agente governado
-ja existente no catalogo (os perfis nao aumentam o tamanho do swarm):
+Cada estagio e executado por um perfil funcional, ligado a um papel
+de `config/roles.json`:
 
-| Estagio | Perfil | Agente |
+| Estagio | Perfil | Papel |
 | --- | --- | --- |
 | intake | OrchestratorAgent | orchestration-manager |
 | diagnosis | BusinessTransformationAgent | product-strategy |
@@ -115,8 +115,9 @@ risco e status de execucao, a saida de cada estagio e o log de auditoria
 (estagio, agente, decisao).
 
 O analisador de solucao reconhece pedidos de transformacao (processo,
-retrabalho, tempo de ciclo, backoffice, KPIs...) e adiciona a
-`business_transformation_fleet` as fleets recomendadas.
+retrabalho, tempo de ciclo, backoffice, KPIs...) e adiciona os papeis
+empresariais (business-value-analyst, metrics-instrumentation,
+policy-guardrails-engineer) a estrategia de execucao.
 
 ## Projetos Criados
 

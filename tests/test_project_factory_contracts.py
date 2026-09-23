@@ -84,24 +84,24 @@ def test_peer_messaging_supports_codex_claude_and_local_task_routes(tmp_path, mo
         pid=201,
         capabilities=["synapse-system-questions", "cloud-models"],
         model_profile="openai:gpt-5.5",
-        active_agents=60,
+        active_agents=3,
     )
     claude = service.register(
         peer_type="claude",
         cwd=str(tmp_path),
-        summary="Claude Code 60-agent council ready.",
+        summary="Claude Code review session ready.",
         pid=202,
-        capabilities=["60-agent-council", "local-routing"],
-        active_agents=60,
+        capabilities=["code-review", "local-routing"],
+        active_agents=3,
     )
 
     published = service.publish_context(
         codex["id"],
         summary="Codex routes simple Synapse questions through Claude Code and the cloud provider.",
         role="Codex local assistant",
-        capabilities=["synapse-system-questions", "claude-60-agent-routing"],
+        capabilities=["synapse-system-questions", "claude-code-routing"],
         model_profile="openai",
-        active_agents=60,
+        active_agents=3,
     )
     announced = service.announce_task(
         from_id=codex["id"],
@@ -112,8 +112,8 @@ def test_peer_messaging_supports_codex_claude_and_local_task_routes(tmp_path, mo
     inbox = service.check_messages(claude["id"])
 
     assert published["peer_type"] == "codex"
-    assert published["capabilities"] == ["synapse-system-questions", "claude-60-agent-routing"]
-    assert published["active_agents"] == 60
+    assert published["capabilities"] == ["synapse-system-questions", "claude-code-routing"]
+    assert published["active_agents"] == 3
     assert announced["targeted_count"] == 1
     assert announced["cost_control"].startswith("Task announcement stayed local")
     assert inbox["message_count"] == 1
@@ -246,41 +246,38 @@ def test_ai_framework_selector_has_required_frameworks_and_selects_by_scenario()
     assert "mlflow" not in ml_selection["technology_layer"]["recommended_technology_ids"]
 
 
-def test_swarm_workflow_files_exist_for_required_workflows():
+def test_workflow_files_exist_for_required_workflows():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    for workflow_id in ("new-ai-project", "rag-build", "ml-release"):
+    for workflow_id in ("new-ai-project", "rag-build", "ml-release", "agent-build", "business-transformation"):
         assert (root / "config" / "workflows" / "synapse" / f"{workflow_id}.json").exists()
 
 
 def test_project_factory_script_creates_solution_projects_without_platform_stack():
     root = Path(__file__).resolve().parents[1]
     script = _read_factory_sources(root)
-    assert "max_agents: 60" in script
-    assert "specialist_agent_count: 45" in script
     assert "LocalMemoryOnly" in script
-    assert "ActiveAgentLimit" in script
-    assert "activation_policy: cost_aware_core_subset_and_route_specialists_on_demand" in script
+    for removed in ("max_agents: 60", "ActiveAgentLimit", "agent_trust_framework.json", "agent_fleets.json", "enterprise_agents.yaml", "SwarmName"):
+        assert removed not in script, removed
+    assert "execution: single_assistant_first" in script
     assert "Configure-EnterpriseSpec" in script
     assert "ai_ml_enterprise_spec.json" in script
     assert "ai_framework_selection.json" in script
     assert "cost_optimization_policy.json" in script
     assert "Configure-CostOptimizationPolicy" in script
-    assert "agent_trust_framework.json" in script
-    assert "agent_fleets.json" in script
+    assert "config/roles.json" in script
     assert "agent_blueprint_contract.json" in script
     assert "agentic_architectural_patterns.json" in script
     assert "agent_improvement_loop.json" in script
-    assert "Configure-AgenticMeshGovernance" in script
+    assert "Configure-AgentGovernance" in script
     assert "Configure-LocalAiRuntime" in script
     assert 'cloud_model = "gpt-5.5"' in script
-    assert "governed_on_demand" in script
     assert "continual_learning" in script
     assert "automatic_weight_updates = $false" in script
-    assert "docs\\specifications\\agentic_mesh_governance.md" in script
+    assert "docs\\specifications\\agent_governance.md" in script
     assert "docs\\specifications\\agentic_architectural_patterns.md" in script
-    assert "docs\\checklists\\agent_fleet_certification.md" in script
+    assert "docs\\checklists\\agent_certification.md" in script
     assert "docs\\runbooks\\agent_sre.md" in script
     assert "docs\\specifications\\ai_framework_selection.md" in script
     assert "docs\\specifications\\ai_ml_execution_spec.md" in script
@@ -320,13 +317,13 @@ def test_codex_data_treatment_dialog_is_available_in_vscode_tasks():
     labels = {task["label"] for task in tasks["tasks"]}
     factory_task = next(
         task for task in tasks["tasks"]
-        if task["label"] == "AI Factory: Criar projeto com Codex + swarm economico + tratamento dados"
+        if task["label"] == "AI Factory: Criar projeto com Codex + tratamento dados"
     )
     project_type_input = next(item for item in tasks["inputs"] if item["id"] == "projectType")
     assert project_type_input["type"] == "pickString"
     assert project_type_input["options"] == ["ML", "IA", "ML + IA (Hibrido)", "Chatbolt"]
     assert "tratamento de dados" in factory_task["detail"]
-    assert "Codex: Tratar dados com swarm economico" in labels
+    assert "Codex: Tratar dados" in labels
     assert "AI Factory: Anexar foto ou arquivo ao projeto" in labels
     assert "Synapse: Diagnosticar projeto criado" in labels
     assert "Synapse: Market Radar + Context Filter" in labels
@@ -360,25 +357,21 @@ def test_vscode_factory_task_enables_complete_bundle_for_every_universe():
     tasks = json.loads((root / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     factory_task = next(
         task for task in tasks["tasks"]
-        if task["label"] == "AI Factory: Criar projeto com Codex + swarm economico + tratamento dados"
+        if task["label"] == "AI Factory: Criar projeto com Codex + tratamento dados"
     )
     project_type_input = next(item for item in tasks["inputs"] if item["id"] == "projectType")
     script = _read_factory_sources(root)
 
     assert project_type_input["options"] == ["ML", "IA", "ML + IA (Hibrido)", "Chatbolt"]
-    assert factory_task["args"][-1] == "3"
+    assert "-ActiveAgentLimit" not in factory_task["args"]
     for capability in (
         "data_treatment_enabled = $true",
-        "swarm_max_agents = 60",
-        "swarm_specialist_agents = 45",
-        "cost_aware_orchestration = $true",
+        "cost_aware_model_routing = $true",
         "prompts/codex_data_treatment_dialog.md",
         "config/ai_ml_enterprise_spec.json",
         "config/ai_framework_selection.json",
-        "config/agent_trust_framework.json",
-        "config/agent_fleets.json",
+        "config/roles.json",
         "config/agent_blueprint_contract.json",
-        "config/agent_improvement_loop.json",
         "Create-BusinessSolutionAnalysis",
         "config/business_solution_analysis.json",
         "docs/briefings/business_solution_analysis.md",
@@ -483,10 +476,11 @@ def test_market_radar_offline_generates_prioritized_report(tmp_path, monkeypatch
     assert "Lowfat" in Path(outputs["markdown"]).read_text(encoding="utf-8")
 
 
-def test_ai_factory_menu_defaults_to_swarm_activation():
+def test_ai_factory_menu_creates_projects_without_swarm():
     root = Path(__file__).resolve().parents[1]
     menu = (root / "scripts" / "ai_factory_menu.ps1").read_text(encoding="utf-8-sig")
-    assert "Criar projeto IA/ML completo com swarm de 60 agents" in menu
+    assert "Criar projeto IA/ML completo" in menu
+    assert "swarm" not in menu.lower()
     assert "Criar projeto IA/ML offline apenas com memoria local" in menu
     assert "Read-ProjectUniverse" in menu
     assert "-LocalMemoryOnly" in menu
@@ -764,15 +758,18 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     project = tmp_path / project_name
     diagnostics_json = project / "output" / "project_diagnostics.json"
     diagnostics_md = project / "output" / "project_diagnostics.md"
-    agentic_mesh_spec = project / "docs" / "specifications" / "agentic_mesh_governance.md"
+    agent_governance_spec = project / "docs" / "specifications" / "agent_governance.md"
     agentic_patterns_spec = project / "docs" / "specifications" / "agentic_architectural_patterns.md"
-    fleet_certification = project / "docs" / "checklists" / "agent_fleet_certification.md"
+    agent_certification = project / "docs" / "checklists" / "agent_certification.md"
     agent_sre = project / "docs" / "runbooks" / "agent_sre.md"
     assert diagnose_result.returncode == 0, diagnose_result.stderr
     assert not (project / "backend").exists()
     assert not (project / "frontend").exists()
     assert not (project / "scripts" / "create_ai_project.ps1").exists()
-    assert (project / "agents" / "definitions" / "enterprise_agents.yaml").exists()
+    assert (project / "config" / "roles.json").exists()
+    assert not (project / "agents" / "definitions" / "enterprise_agents.yaml").exists()
+    assert not (project / "config" / "agent_fleets.json").exists()
+    assert not (project / "config" / "agent_trust_framework.json").exists()
     assert (project / ".mcp.json").exists()
     assert (project / "config" / "data_treatment_policy.json").exists()
     assert (project / "config" / "context_policy.json").exists()
@@ -798,8 +795,9 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     tasks = json.loads((project / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     assert any(task["label"] == "Synapse: Rodar testes do projeto" for task in tasks["tasks"])
     env_example = (project / ".env.example").read_text(encoding="utf-8-sig")
-    assert "PROJECT_DEFAULT_ACTIVE_AGENTS=1" in env_example
-    assert "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8" in env_example
+    assert "ACTIVE_AGENTS" not in env_example
+    assert "SWARM" not in env_example
+    assert "PROJECT_DEFAULT_MODEL_TIER=economy" in env_example
     mcp = json.loads((project / ".mcp.json").read_text(encoding="utf-8-sig"))
     assert mcp["mcpServers"]["synapse-peers"]["args"] == ["scripts/synapse_solution_peers_mcp.py"]
     assert mcp["mcpServers"]["synapse-peers"]["env"]["PEER_MESSAGING_MAX_MESSAGE_CHARS"] == "1200"
@@ -814,7 +812,7 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert solution_contract["factory_capable"] is False
     assert solution_contract["contains_backend"] is False
     assert solution_contract["contains_frontend"] is False
-    assert solution_contract["swarm_runtime"] == "inherited"
+    assert "swarm_runtime" not in solution_contract
     assert solution_contract["agents_runtime"] == "inherited"
     assert solution_contract["capabilities"] == {
         "ml": False,
@@ -830,18 +828,18 @@ def test_diagnose_project_script_validates_generated_ia_project(tmp_path):
     assert (project / "rag_pipelines").exists()
     assert diagnostics_json.exists()
     assert diagnostics_md.exists()
-    assert agentic_mesh_spec.exists()
+    assert agent_governance_spec.exists()
     assert agentic_patterns_spec.exists()
-    assert fleet_certification.exists()
+    assert agent_certification.exists()
     assert agent_sre.exists()
     diagnostics = diagnostics_json.read_text(encoding="utf-8-sig")
     assert '"overall_status":  "passed"' in diagnostics or '"overall_status": "passed"' in diagnostics
     assert "ai_framework_count" in diagnostics
     assert "blueprint_contract_json" in diagnostics
     assert "improvement_loop_json" in diagnostics
-    assert "agentic_mesh_spec" in diagnostics
+    assert "agent_governance_spec" in diagnostics
     assert "agentic_patterns_spec" in diagnostics
-    assert "agent_fleet_certification" in diagnostics
+    assert "agent_certification" in diagnostics
     assert "agent_sre_runbook" in diagnostics
     assert "business_solution_analysis_json" in diagnostics
     assert "business_solution_analysis_md" in diagnostics
@@ -914,7 +912,10 @@ def test_generated_solution_project_matches_selected_universe(
     assert not (project / "backend").exists()
     assert not (project / "frontend").exists()
     assert not (project / "scripts" / "create_ai_project.ps1").exists()
-    assert (project / "agents" / "definitions" / "enterprise_agents.yaml").exists()
+    assert (project / "config" / "roles.json").exists()
+    assert not (project / "agents" / "definitions" / "enterprise_agents.yaml").exists()
+    assert not (project / "config" / "agent_fleets.json").exists()
+    assert not (project / "config" / "agent_trust_framework.json").exists()
     assert (project / ".mcp.json").exists()
     assert (project / "config" / "data_treatment_policy.json").exists()
     assert (project / "config" / "context_policy.json").exists()
@@ -933,8 +934,9 @@ def test_generated_solution_project_matches_selected_universe(
     tasks = json.loads((project / ".vscode" / "tasks.json").read_text(encoding="utf-8-sig"))
     assert any(task["label"] == "Synapse: Rodar testes do projeto" for task in tasks["tasks"])
     env_example = (project / ".env.example").read_text(encoding="utf-8-sig")
-    assert "PROJECT_DEFAULT_ACTIVE_AGENTS=1" in env_example
-    assert "PROJECT_ENTERPRISE_ACTIVE_AGENTS=8" in env_example
+    assert "ACTIVE_AGENTS" not in env_example
+    assert "SWARM" not in env_example
+    assert "PROJECT_DEFAULT_MODEL_TIER=economy" in env_example
     mcp = json.loads((project / ".mcp.json").read_text(encoding="utf-8-sig"))
     assert mcp["mcpServers"]["synapse-peers"]["args"] == ["scripts/synapse_solution_peers_mcp.py"]
     assert "scripts/synapse_peers_mcp.py" not in mcp["mcpServers"]["synapse-peers"]["args"]
@@ -967,9 +969,9 @@ def test_generated_solution_project_matches_selected_universe(
     assert (project / "tests" / "test_harness_contract.py").exists()
     assert (project / "config" / "harness_engineering_policy.json").exists()
     assert "tests/test_harness_contract.py" in runtime["validation"]["required_practice_paths"]
-    fleets = {fleet["id"] for fleet in json.loads((project / "config" / "agent_fleets.json").read_text(encoding="utf-8-sig"))["fleets"]}
-    for fleet in analysis["swarm_strategy"]["recommended_fleets"]:
-        assert fleet in fleets, fleet
+    roles = {role["id"] for role in json.loads((project / "config" / "roles.json").read_text(encoding="utf-8-sig"))["roles"]}
+    assert set(analysis["execution_strategy"]["roles"]) <= roles
+    assert "swarm_strategy" not in analysis
     task_labels = {task["label"] for task in tasks["tasks"]}
     assert "Synapse: Auditar harness engineering" in task_labels
 

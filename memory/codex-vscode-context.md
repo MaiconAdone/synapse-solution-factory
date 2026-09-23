@@ -60,3 +60,9 @@ Objetivo: tornar real a camada de agentes empresariais (transformacao empresaria
 Arquivos tocados: `config/business_transformation.json` (v2), workflow e YAML de perfis alinhados, `scripts/synapse_lib/business_transformation.py`, `scripts/run_business_transformation.py`, `templates/business/transformation_brief.json`, `evals/business_transformation_cases.jsonl`, analisador, fabrica, diagnose, validate, docs.
 Decisoes: motor deterministico stdlib com 14 estagios; risco por regras explicitas (fator ausente = HIGH); CRITICAL nunca executa acao externa; tools sempre simuladas ate MCP autorizado; analisador adiciona business_transformation_fleet em pedidos de processo/KPI.
 Proximo passo: para um caso real, coletar do usuario owner, processo, KPIs baseline/meta, notas 1-5 e fatores de risco por oportunidade.
+
+Data: 2026-09-23
+Objetivo: remover swarm de 60 agentes, perfis de ativacao de agentes, 7 fleets e trust framework de 7 camadas.
+Arquivos tocados: removidos `config/agent_fleets.json`, `config/agent_trust_framework.json`, `agents/definitions/enterprise_agents.yaml`, `docs/architecture/agentic-mesh-governance.md`, `docs/architecture/generated-project-swarm-strategy.md`; criado `config/roles.json`; governanca movida para `config/harness_engineering_policy.json#governance`; fabrica, diagnose, validate, analisador, workflows, testes e docs atualizados.
+Decisoes: um unico assistente por tarefa; workflows usam papeis (`role`) de config/roles.json; cost policy manteve roteamento de modelos e virou `request_profiles` (tier + tokens, sem limite de agentes); agentes da solucao usam `owner_role` em vez de fleet; framework Swarms de terceiros continua no catalogo.
+Proximo passo: .claude/ ainda contem comandos claude-flow de swarm (ferramenta do Claude Code, fora do runtime do Synapse) - decidir com o usuario se remove.

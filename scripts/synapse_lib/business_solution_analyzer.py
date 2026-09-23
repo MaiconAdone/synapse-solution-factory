@@ -55,7 +55,7 @@ class BusinessSolutionAnalyzer:
         requested = self._normalize_universe(requested_universe or solution_focus or "hybrid")
         recommended = self._recommend_universe(requested, ml_match, ai_match)
         # The universe the user chose is the one the factory generates, so every
-        # artifact, test, eval and fleet below follows it. A different
+        # artifact, test, eval and role below follows it. A different
         # recommendation is advisory and must be confirmed in the chat.
         effective = requested
         stack = self._solution_stack(effective, ml_match, ai_match)
@@ -103,7 +103,7 @@ class BusinessSolutionAnalyzer:
             "data_strategy": self._data_strategy(effective, ml_match),
             "test_strategy": self._test_strategy(effective),
             "eval_strategy": self._eval_strategy(effective, ml_match, ai_match),
-            "swarm_strategy": self._swarm_strategy(effective, text),
+            "execution_strategy": self._execution_strategy(effective, text),
             "book_alignment": self._book_alignment(effective, ml_match, ai_match),
             "required_artifacts": self._required_artifacts(effective, ml_match, ai_match),
         }
@@ -369,25 +369,16 @@ class BusinessSolutionAnalyzer:
             evals.append("evals/chatbot_cases.jsonl")
         return evals
 
-    def _swarm_strategy(self, universe: str, text: str = "") -> dict[str, Any]:
-        # Single source of truth: runtime_manifest generated_project_swarm_strategy,
-        # whose fleet ids are validated against config/agent_fleets.json in tests.
-        fleets_by_universe = (
-            self.runtime_manifest.get("generated_project_swarm_strategy", {}).get("recommended_fleets_by_universe", {})
-        )
+    def _execution_strategy(self, universe: str, text: str = "") -> dict[str, Any]:
+        roles = self._load_optional_json("config/roles.json")
+        involved = list(roles.get("by_universe", {}).get(universe, []))
+        if self._business_transformation(text)["active"]:
+            involved.extend(roles.get("business_transformation_roles", []))
         return {
-            "default": "start_with_one_orchestrator",
-            "core_agents": 15,
-            "max_agents": 60,
-            "activate_all_60": "requires explicit high-complexity request, human approval, and cost review",
-            "recommended_fleets": list(
-                dict.fromkeys(
-                    [
-                        *fleets_by_universe.get(universe, ["ml_fleet", "rag_fleet"]),
-                        *(["business_transformation_fleet"] if self._business_transformation(text)["active"] else []),
-                    ]
-                )
-            ),
+            "default": "single_assistant_first",
+            "rule": roles.get("execution_rule", ""),
+            "roles_file": "config/roles.json",
+            "roles": list(dict.fromkeys(involved)),
         }
 
     def _business_transformation(self, text: str) -> dict[str, Any]:

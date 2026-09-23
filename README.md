@@ -8,8 +8,8 @@ governado para um de quatro universos: **ML**, **IA**, **Chatbolt** ou
 
 - Canais oficiais de dialogo: **VS Code Chat**, **Claude Code** e **Codex**,
   todos ligados a mesma Solution Factory, memoria compartilhada e governanca.
-- Nucleo multiagente: swarm de ate 60 agentes (15 core + 45 especialistas),
-  ativado de forma economica (1 agente por padrao).
+- Um unico assistente por tarefa, com governanca de agentes e roteamento de
+  modelos por custo.
 - Sem backend, frontend ou chaves de API: roda como scripts locais; Claude Code
   e Codex usam a propria autenticacao.
 
@@ -25,7 +25,7 @@ governado para um de quatro universos: **ML**, **IA**, **Chatbolt** ou
    - [Harness engineering](#53-harness-engineering)
    - [Selecao de tecnologias e templates](#54-selecao-de-tecnologias-e-templates)
    - [Agentes da solucao (runtime)](#55-agentes-da-solucao-runtime)
-6. [Swarm, fleets e governanca agentica](#6-swarm-fleets-e-governanca-agentica)
+6. [Governanca de agentes e custo](#6-governanca-de-agentes-e-custo)
 7. [IA agentica para transformacao empresarial](#7-ia-agentica-para-transformacao-empresarial)
 8. [Tratamento estatistico de dados](#8-tratamento-estatistico-de-dados)
 9. [Camada local de modelos ML](#9-camada-local-de-modelos-ml)
@@ -94,7 +94,7 @@ O assistente coleta o briefing, consulta o `BusinessSolutionAnalyzer`, gera a
 analise (ADR) e cria o projeto.
 
 **2. Task do VS Code**: `Ctrl+Shift+P` -> `Tasks: Run Task` -> `AI Factory: Criar
-projeto com Codex + swarm economico + tratamento dados`. A task pergunta nome,
+projeto com Codex + tratamento dados`. A task pergunta nome,
 universo, objetivo e problema de negocio. Ela nao coleta metrica de sucesso,
 fontes de dados nem nivel de risco; preencha depois em
 `config/business_solution_analysis.json` do projeto criado.
@@ -133,8 +133,8 @@ Projetos gerados:
 
 - nao possuem `backend/`, `frontend/`, Supabase nem infraestrutura web;
 - nao possuem `scripts/create_ai_project.ps1` e nao podem criar outros projetos;
-- possuem seu proprio runtime de swarm, `.mcp.json`, memoria, workflows e
-  catalogo de agentes (`agents/definitions/enterprise_agents.yaml`),
+- possuem seu proprio `.mcp.json`, memoria, workflows, papeis
+  (`config/roles.json`) e governanca de agentes,
   mais os agentes da propria solucao em `config/solution_agents.json` nos
   universos com IA;
 - recebem dados, experimentos, prompts, evals, governanca, documentacao e
@@ -153,8 +153,8 @@ Principais contratos do Synapse:
 | `config/business_solution_catalog.json` | Arquetipos de negocio ML/IA |
 | `scripts/synapse_lib/business_solution_analyzer.py` | Analisador de solucao (ADR) |
 | `config/ai_framework_selection.json` | Catalogo de frameworks e tecnologias |
-| `config/runtime_manifest.json` | Runtime, swarm, memoria, RAG, fine-tuning, harness |
-| `config/cost_optimization_policy.json` | Perfis de ativacao e custo |
+| `config/runtime_manifest.json` | Runtime, governanca de agentes, memoria, RAG, fine-tuning, harness |
+| `config/cost_optimization_policy.json` | Tier de modelo, orcamento de tokens e custo |
 | `config/ai_ml_enterprise_spec.json` | Especificacao enterprise IA/ML |
 
 Memoria: hibrida (working, episodic, semantic), compartilhada entre canais pelo
@@ -286,7 +286,7 @@ dos agentes da solucao e harness de avaliacao.
 | Componente | Evidencia | Universos |
 |------------|-----------|-----------|
 | context_map | `AGENTS.md`, `CLAUDE.md`, `config/context_policy.json` | todos |
-| tool_boundary | `config/agent_trust_framework.json`, `guardrails/policy.yaml` | todos |
+| tool_boundary | `config/harness_engineering_policy.json`, `guardrails/policy.yaml` | todos |
 | control_loop | `config/cost_optimization_policy.json`, `config/agent_blueprint_contract.json` | todos |
 | verification | `tests/`, `evals/quality_gates.yaml` | todos |
 | agent_evals | `evals/tool_workflow_cases.jsonl` | IA, Chatbolt, Hibrido |
@@ -323,12 +323,10 @@ Veja `docs/specifications/technology_layer.md` e `templates/README.md`.
 
 ### 5.5 Agentes da solucao (runtime)
 
-Ha dois tipos de agentes, e eles nao se confundem:
-
-| Tipo | Onde | Papel |
-|------|------|-------|
-| Agentes construtores (swarm) | `agents/definitions/enterprise_agents.yaml` (60) | Projetam, implementam e testam a solucao |
-| Agentes da solucao (runtime) | `config/solution_agents.json` | Rodam dentro do produto IA/Chatbolt/Hibrido (ex.: assistente que consulta pedidos e abre ocorrencias) |
+Os agentes da solucao rodam dentro do produto IA/Chatbolt/Hibrido (ex.:
+assistente que consulta pedidos e abre ocorrencias). Nao confunda com os papeis
+de `config/roles.json`, que so indicam quem responde por cada etapa de
+workflow durante a construcao.
 
 Nos universos IA, Chatbolt e Hibrido, a fabrica gera `config/solution_agents.json`
 a partir do ADR, validado contra `config/agent_blueprint_contract.json`:
@@ -339,7 +337,7 @@ a partir do ADR, validado contra `config/agent_blueprint_contract.json`:
   responde com fontes citadas) e `action-executor` (external_action, **exige
   aprovacao humana**);
 - cada blueprint define objetivo, tier de modelo (economy/balanced/strong via
-  OpenAI/Anthropic), ferramentas, memoria, limites, fleet, evals, orcamento de
+  OpenAI/Anthropic), ferramentas, memoria, limites, papel responsavel, evals, orcamento de
   tokens, autoridade, regra de escalonamento e gate pass^k;
 - as ferramentas do executor **nao sao inventadas**: ficam em
   `pending_user_decisions` (inventario, permissoes e matriz de aprovacao) ate o
@@ -358,40 +356,36 @@ python .\scripts\scaffold_solution_agents.py --validate-only            # valida
 O universo escolhido pelo usuario e o que a fabrica gera (`effective_universe`).
 Se o analisador sugerir outro (`recommended_universe`), o ADR registra
 `universe_confirmation` para o assistente confirmar no chat, e todos os
-artefatos, testes e fleets seguem o universo efetivo.
+artefatos, testes e papeis seguem o universo efetivo.
 
-## 6. Swarm, fleets e governanca agentica
+## 6. Governanca de agentes e custo
 
-- 60 agentes disponiveis (15 core + 45 especialistas), topologia
-  hierarchical-mesh, workflows em `config/workflows/synapse/*.json`.
-- Perfis de ativacao (`config/cost_optimization_policy.json`):
+- **Um unico assistente por tarefa** (Claude Code ou Codex). Nao ha swarm,
+  fleets nem perfis de ativacao de agentes.
+- **Papeis** (`config/roles.json`): 16 responsabilidades usadas pelos
+  workflows em `config/workflows/synapse/*.json` para dizer quem responde por
+  cada etapa (orchestration-manager, product-strategy, data-engineering,
+  rag-engineering, security-compliance, testing-qa...). Papel nao e agente em
+  execucao.
+- **Governanca** (`config/harness_engineering_policy.json`, secao
+  `governance`): identidade, menor privilegio, aprovacao humana para acao
+  destrutiva ou externa, explicabilidade, lifecycle e matriz de autonomia.
+- **Custo** (`config/cost_optimization_policy.json`, `request_profiles`):
 
-| Perfil | Agentes | Uso |
-|--------|---------|-----|
-| simple | 1 | pergunta curta, pequena correcao |
-| standard | ate 3 | implementacao comum, ML simples |
-| advanced | ate 5 | RAG, MCP, multiagente |
-| enterprise | ate 8 | producao, seguranca, LGPD |
-| extreme | ate 15 | auditoria; 60 somente com aprovacao humana explicita |
+| Perfil | Tier de modelo | Orcamento de tokens | Uso |
+|--------|----------------|---------------------|-----|
+| simple | economy | 1200 | pergunta curta, pequena correcao |
+| standard | balanced | 3000 | implementacao comum, ML simples |
+| advanced | balanced | 5000 | RAG, MCP, fluxo hibrido |
+| enterprise | strong | 8000 | producao, seguranca, LGPD |
+| extreme | strong | 16000 | auditoria |
 
-- Fleets (`config/agent_fleets.json`): `project_factory_fleet` (somente no
-  Synapse), `ml_fleet`, `rag_fleet`, `mcp_fleet`, `security_fleet`,
-  `cost_optimization_fleet`, `business_transformation_fleet`.
-- Fleets recomendadas por universo (`config/runtime_manifest.json`):
-
-| Universo | Fleets |
-|----------|--------|
-| ML | ml_fleet, security_fleet |
-| IA | rag_fleet, mcp_fleet, security_fleet |
-| Chatbolt | rag_fleet, mcp_fleet, security_fleet |
-| Hibrido | ml_fleet, rag_fleet, mcp_fleet, cost_optimization_fleet |
-
-- Trust framework de 7 camadas, agent blueprint contract, padroes
-  arquiteturais agentic e improvement loop:
-  `config/agent_trust_framework.json`, `config/agent_blueprint_contract.json`,
-  `config/agentic_architectural_patterns.json`,
-  `config/agent_improvement_loop.json`. Detalhes em
-  `docs/architecture/agentic-mesh-governance.md`.
+- Contratos complementares: `config/agent_blueprint_contract.json` (campos de
+  todo agente da solucao, com `owner_role`),
+  `config/agentic_architectural_patterns.json` e
+  `config/agent_improvement_loop.json`.
+- Projetos gerados recebem `docs/specifications/agent_governance.md`,
+  `docs/checklists/agent_certification.md` e `docs/runbooks/agent_sre.md`.
 
 ## 7. IA agentica para transformacao empresarial
 
@@ -407,8 +401,7 @@ intake -> diagnosis -> process_mapping -> data_readiness -> opportunity_identifi
 
 - **Oito perfis funcionais** (Orchestrator, BusinessTransformation, ProcessMapping,
   DataAnalysis, AutomationArchitect, KPIMonitor, RiskGovernance, HumanApproval),
-  cada um mapeado a um agente existente do catalogo de 60, com a
-  `business_transformation_fleet`.
+  cada um ligado a um papel de `config/roles.json`.
 - **Fonte unica:** `config/business_transformation.json`; workflow e YAML de
   perfis sao espelhos verificados por teste.
 - **Nada e inventado:** owner, processo, baseline/meta dos KPIs
@@ -428,7 +421,8 @@ intake -> diagnosis -> process_mapping -> data_readiness -> opportunity_identifi
   `automation_tool`) rodam simuladas; execucao real exige tool MCP com
   identidade, permissao, idempotencia, auditoria, compensacao e aprovacao.
 - O analisador reconhece pedidos de transformacao (processo, retrabalho, tempo
-  de ciclo, backoffice, KPIs) e adiciona a `business_transformation_fleet`.
+  de ciclo, backoffice, KPIs) e adiciona os papeis empresariais
+  (business-value-analyst, metrics-instrumentation, policy-guardrails-engineer).
 
 ```powershell
 python .\scripts\run_business_transformation.py --brief templates\business\transformation_brief.json
@@ -444,10 +438,10 @@ Todos os universos herdam essa camada, com o teste
 Coloque arquivos brutos em `data/raw/` e peca no chat:
 
 ```text
-trate data/raw/clientes.csv com o swarm economico e especialistas sob demanda
+trate data/raw/clientes.csv
 ```
 
-Ou use `Tasks: Run Task -> Codex: Tratar dados com swarm economico` (valida o
+Ou use `Tasks: Run Task -> Codex: Tratar dados` (valida o
 stack e registra contexto) ou `Dados: Tratar dataset estatistico` (so o script):
 
 ```powershell
@@ -527,10 +521,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterpris
 - `tests/test_project_factory_rollback.py` e
   `tests/test_project_factory_universe.py`: rollback e resolucao de universo.
 - `tests/test_ai_engineering_extensions.py`: vector store, busca hibrida,
-  planner de escala, fine-tuning, harness, coerencia de fleets/perfis e um guarda
+  planner de escala, fine-tuning, harness, ausencia de swarm/fleets e um guarda
   que falha se qualquer config ou documento citar caminho inexistente.
 - `validate_enterprise_stack.ps1`: caminhos obrigatorios, contratos do runtime,
-  60 agentes, coerencia de politicas e gates de retrieval.
+  papeis dos workflows, coerencia de politicas e gates de retrieval.
 
 O CI (`.github/workflows/ci.yml`) executa a validacao e os testes a cada push.
 O analisador de solucao roda apenas com a biblioteca padrao do Python, pois a
@@ -560,7 +554,7 @@ redor do raciocinio probabilistico.
 
 ```text
 config/                 politicas e contratos (fonte de verdade)
-  workflows/synapse/    workflows do swarm (new-ai-project, rag-build, ml-release, ...)
+  workflows/synapse/    workflows por papel (new-ai-project, agent-build, rag-build, ...)
 scripts/
   create_ai_project.ps1 motor da fabrica (+ project_factory/)
   synapse_lib/          analisador, seletor, evals, modelos, RAG, fine-tuning, harness
@@ -570,7 +564,7 @@ docs/
   architecture/         arquitetura do Synapse
   books/                mapa de implementacao dos livros
 evals/                  casos e quality gates
-agents/definitions/     catalogo dos 60 agentes
+agents/definitions/     perfis da transformacao empresarial
 playbooks/ prompts/ guardrails/ llm_ops/ ml_systems/ rag/ rag_pipelines/ vector_db/
 notebooks/foundations/  laboratorio de fundamentos
 memory/                 memoria compartilhada entre canais

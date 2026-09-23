@@ -1,0 +1,125 @@
+{
+  "schema": "synapse-roles.v1",
+  "purpose": "Responsibilities referenced by workflow steps. A role is who owns a step (Claude Code, Codex or a human), not a runtime agent, a swarm member or an activation budget.",
+  "roles": [
+    {
+      "id": "orchestration-manager",
+      "responsibility": "Conducts the dialog, applies the SDD gate, sequences steps and consolidates results."
+    },
+    {
+      "id": "product-strategy",
+      "responsibility": "Turns the conversation into business outcome, success metric and acceptance criteria."
+    },
+    {
+      "id": "business-value-analyst",
+      "responsibility": "Maps processes, bottlenecks and expected value."
+    },
+    {
+      "id": "data-engineering",
+      "responsibility": "Data intake, data contracts, validation and lineage."
+    },
+    {
+      "id": "data-science",
+      "responsibility": "Statistical analysis, hypotheses, bias and feature strategy."
+    },
+    {
+      "id": "machine-learning",
+      "responsibility": "Baselines, training, evaluation and model cards."
+    },
+    {
+      "id": "llm-engineering",
+      "responsibility": "Prompts, tools, guardrails and runtime agent blueprints."
+    },
+    {
+      "id": "rag-engineering",
+      "responsibility": "Ingestion, chunking, embeddings, indexes and retrieval evaluation."
+    },
+    {
+      "id": "integration-automation",
+      "responsibility": "MCP tools, integrations and automation boundaries."
+    },
+    {
+      "id": "security-compliance",
+      "responsibility": "Privacy/LGPD, threat modeling, risk classification and approvals policy."
+    },
+    {
+      "id": "policy-guardrails-engineer",
+      "responsibility": "Human approval gates and guardrail enforcement."
+    },
+    {
+      "id": "metrics-instrumentation",
+      "responsibility": "KPI baselines, targets and monitoring."
+    },
+    {
+      "id": "observability-ops",
+      "responsibility": "Traces, cost/latency metrics and harness audits."
+    },
+    {
+      "id": "devops",
+      "responsibility": "Release, rollback and environment automation."
+    },
+    {
+      "id": "testing-qa",
+      "responsibility": "Tests, eval suites and repeated-trial reliability."
+    },
+    {
+      "id": "documentation",
+      "responsibility": "Specs, runbooks and final reports."
+    }
+  ],
+  "execution_rule": "Single assistant first. Split work across more sessions only when the task spans domains that justify it; the user decides.",
+  "by_universe": {
+    "ml": [
+      "orchestration-manager",
+      "product-strategy",
+      "data-engineering",
+      "testing-qa",
+      "documentation",
+      "data-science",
+      "machine-learning"
+    ],
+    "ia": [
+      "orchestration-manager",
+      "product-strategy",
+      "data-engineering",
+      "testing-qa",
+      "documentation",
+      "llm-engineering",
+      "rag-engineering",
+      "integration-automation",
+      "security-compliance",
+      "observability-ops"
+    ],
+    "chatbolt": [
+      "orchestration-manager",
+      "product-strategy",
+      "data-engineering",
+      "testing-qa",
+      "documentation",
+      "llm-engineering",
+      "rag-engineering",
+      "integration-automation",
+      "security-compliance",
+      "observability-ops"
+    ],
+    "hybrid": [
+      "orchestration-manager",
+      "product-strategy",
+      "data-engineering",
+      "testing-qa",
+      "documentation",
+      "data-science",
+      "machine-learning",
+      "llm-engineering",
+      "rag-engineering",
+      "integration-automation",
+      "security-compliance",
+      "observability-ops"
+    ]
+  },
+  "business_transformation_roles": [
+    "business-value-analyst",
+    "metrics-instrumentation",
+    "policy-guardrails-engineer"
+  ]
+}

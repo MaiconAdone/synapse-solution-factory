@@ -3,14 +3,14 @@
   "description": "Build, evaluate, and publish a RAG knowledge base.",
   "policy": "config/rag_scalability_policy.json",
   "steps": [
-    {"name": "confirm_scale_decisions", "agent": "rag-engineering"},
-    {"name": "ingest_sources", "agent": "data-engineering"},
-    {"name": "validate_documents", "agent": "data-engineering"},
-    {"name": "redact_sensitive_content", "agent": "security-compliance"},
-    {"name": "chunk_documents", "agent": "rag-engineering"},
-    {"name": "generate_embeddings", "agent": "rag-engineering"},
-    {"name": "build_versioned_vector_index", "agent": "rag-engineering"},
-    {"name": "evaluate_retrieval", "agent": "testing-qa"},
-    {"name": "switch_index_alias", "agent": "rag-engineering"}
+    {"name": "confirm_scale_decisions", "role": "rag-engineering"},
+    {"name": "ingest_sources", "role": "data-engineering"},
+    {"name": "validate_documents", "role": "data-engineering"},
+    {"name": "redact_sensitive_content", "role": "security-compliance"},
+    {"name": "chunk_documents", "role": "rag-engineering"},
+    {"name": "generate_embeddings", "role": "rag-engineering"},
+    {"name": "build_versioned_vector_index", "role": "rag-engineering"},
+    {"name": "evaluate_retrieval", "role": "testing-qa"},
+    {"name": "switch_index_alias", "role": "rag-engineering"}
   ]
 }

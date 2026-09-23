@@ -19,18 +19,18 @@
       "intent": "Use one lead orchestrator to route work to the smallest useful specialist set.",
       "use_when": [
         "multiple domains are required",
-        "a fleet lead must synthesize specialist advice",
+        "a lead role must synthesize specialist advice",
         "task complexity exceeds a single agent"
       ],
       "synapse_mapping": {
         "lead": "orchestration-manager",
-        "runtime": "assistant-executed swarm per config/runtime_manifest.json (no standalone runtime service)",
-        "selection": "config/cost_optimization_policy.json + config/agent_trust_framework.json",
+        "runtime": "single assistant following workflow roles in config/roles.json (no standalone runtime service)",
+        "selection": "config/cost_optimization_policy.json + config/harness_engineering_policy.json#governance",
         "default_agent_count": 1
       },
       "guardrails": [
         "do not simulate separate model calls unless they happened",
-        "do not activate all 60 agents by default",
+        "do not split work across agents unless the user asks",
         "record selected agents and decision fingerprint"
       ]
     },
@@ -47,11 +47,10 @@
         "reviewers": [
           "testing-qa",
           "security-compliance",
-          "observability-ops",
-          "model-evaluation-specialist"
+          "observability-ops"
         ],
         "quality_gates": "evals/quality_gates.yaml",
-        "audit": "artifacts/governance/swarm-executions.jsonl"
+        "audit": "artifacts/governance/agent-executions.jsonl"
       },
       "guardrails": [
         "human approval is required for high-risk irreversible actions",
@@ -101,7 +100,7 @@
         "actions need rollback or human approval"
       ],
       "synapse_mapping": {
-        "trust_framework": "config/agent_trust_framework.json"
+        "governance": "config/harness_engineering_policy.json"
       },
       "guardrails": [
         "least privilege by default",
@@ -168,7 +167,7 @@
         "on_execution_completed"
       ],
       "synapse_mapping": {
-        "audit_log": "artifacts/governance/swarm-executions.jsonl",
+        "audit_log": "artifacts/governance/agent-executions.jsonl",
         "llm_audit": "artifacts/llm-routing/audit.jsonl",
         "metrics": "llm_ops/observability.yaml"
       },

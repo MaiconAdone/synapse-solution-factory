@@ -43,7 +43,7 @@
       "success_metric_or_acceptance_criteria",
       "available_data_or_knowledge_sources",
       "risk_level",
-      "human_approval_for_cloud_or_all_60_agents"
+      "human_approval_for_cloud_or_external_actions"
     ],
     "allowed_inference": [
       "requested_universe may be inferred from the user's wording, but must be confirmed when ambiguous",
@@ -66,9 +66,8 @@
     "apply config/harness_engineering_policy.json to every agent: context map, tool boundary, loop budgets, verification, observability and feedback",
     "select universe and solution stack from the analysis",
     "use Codex/OpenAI or Claude Code/Anthropic directly for generation; block sensitive content instead of routing it to a cloud provider",
-    "require explicit human approval only to activate all 60 agents",
-    "start with one orchestrator and scale swarm specialists only when the problem requires additional domains",
-    "never activate all 60 agents by default",
+    "work with a single assistant per task; workflow steps are owned by roles in config/roles.json",
+    "follow the autonomy matrix in config/harness_engineering_policy.json for destructive or external actions",
     "create or update tests and evals according to the selected universe",
     "validate with deterministic tests before reporting completion"
   ],
@@ -89,9 +88,9 @@
     "runtime_manifest": "config/runtime_manifest.json",
     "enterprise_spec": "config/ai_ml_enterprise_spec.json",
     "cost_policy": "config/cost_optimization_policy.json",
-    "agentic_mesh": [
-      "config/agent_trust_framework.json",
-      "config/agent_fleets.json",
+    "agent_governance": [
+      "config/roles.json",
+      "config/harness_engineering_policy.json",
       "config/agent_blueprint_contract.json",
       "config/agentic_architectural_patterns.json",
       "config/agent_improvement_loop.json"

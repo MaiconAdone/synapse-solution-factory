@@ -26,9 +26,9 @@ Autonomia:
 - HIGH: parar e solicitar aprovacao humana.
 - CRITICAL: bloquear ate aprovacao explicita e nao executar acao externa.
 
-Use os 60 agentes do swarm como capacidade governada. Ative todos somente quando
-houver justificativa, aprovacao humana e necessidade real. Nao afirme que houve
-60 chamadas independentes quando o runtime usar consolidacao consultiva.
+Execute os estagios com um unico assistente, seguindo os papeis de
+`config/roles.json`. Rode `scripts/run_business_transformation.py` para aplicar
+as regras de risco e autonomia de forma deterministica.
 
 Entregue objetivo, diagnostico, processo, oportunidades, agentes, plano, riscos,
 aprovacoes, KPIs, impacto esperado e proximos passos.

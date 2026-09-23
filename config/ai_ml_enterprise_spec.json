@@ -5,18 +5,10 @@
     "codex_dialog_required": true,
     "specification_driven_development": true,
     "implementation_requires_clear_spec": true,
-    "ruflo_required_for_project_creation": true,
-    "parallel_agent_count": 15,
-    "max_agent_count": 60,
-    "specialist_agent_count": 45,
-    "activation_policy": "Keep 15 core agents and 45 specialist agents available, activate a cost-aware subset by default, and never broadcast full context to all 60 agents unless an explicit high-complexity workflow justifies it.",
+    "execution": "Single assistant per task following workflow roles in config/roles.json; send only the context each step needs.",
     "cost_aware_orchestration_required": true,
     "cost_optimization_policy_path": "config/cost_optimization_policy.json",
-    "default_active_agent_count": 1,
-    "enterprise_active_agent_count": 8,
-    "activate_all_60_requires_explicit_high_complexity": true,
     "data_treatment_required_for_all_universes": true,
-    "swarm_15_agents_required_for_all_universes": true,
     "token_strategy": "Route only domain-specific context to each specialized agent, reduce cloud model tokens, then consolidate through orchestration-manager before any model or tool call.",
     "required_steps_per_request": [
       "understand_problem",
@@ -119,9 +111,6 @@
     ]
   },
   "multi_agent_systems": {
-    "topology": "hierarchical-mesh",
-    "coordination": "distributed",
-    "consensus": "majority",
     "required_capabilities": [
       "plan_tasks",
       "delegate_work",
@@ -138,7 +127,8 @@
       "context",
       "boundaries",
       "success_criteria"
-    ]
+    ],
+    "default": "single_agent_first"
   },
   "rag_advanced": {
     "required_when_knowledge_retrieval_is_needed": true,
@@ -177,27 +167,17 @@
   },
   "cost_aware_orchestration": {
     "enabled": true,
-    "principle": "Keep the 60-agent swarm available, but activate only the minimum useful agent set for the request complexity, universe, risk, and token budget.",
+    "principle": "Use the cheapest model tier and smallest context that meet quality; escalate model tier only with justification.",
     "required_behaviors": [
-      "classify_request_complexity_before_agent_activation",
       "choose_ml_ia_or_hybrid_solution_path_before_implementation",
       "prefer_local_and_deterministic_processing_before_llm_calls",
       "use_economy_models_for_routing_summarization_and_schema_checks",
       "use_strong_models_only_for_architecture_security_conflict_resolution_and_final_decisions",
       "use_prompt_cache_and_semantic_cache_when_available",
       "compress_and_deduplicate_context_before_llm_calls",
-      "track_cached_uncached_input_and_output_tokens",
-      "never_activate_all_60_agents_without_explicit_high_complexity_justification"
+      "track_cached_uncached_input_and_output_tokens"
     ],
-    "activation_targets_source": "config/cost_optimization_policy.json activation_profiles",
-    "activation_targets": {
-      "simple": 1,
-      "standard": 3,
-      "advanced": 5,
-      "enterprise": 8,
-      "extreme": 15
-    },
-    "all_60_agents": "only with explicit high-complexity justification and human approval"
+    "request_profiles_source": "config/cost_optimization_policy.json request_profiles"
   },
   "vector_databases": {
     "policy_file": "config/rag_scalability_policy.json",
@@ -212,8 +192,18 @@
       "opensearch-elasticsearch"
     ],
     "operational_memory_backend": "ruvector (agent memory, not the RAG corpus index)",
-    "scale_tiers": ["local", "team", "enterprise", "massive"],
-    "index_types": ["flat", "hnsw", "hnsw_quantized", "ivf_pq_or_diskann"],
+    "scale_tiers": [
+      "local",
+      "team",
+      "enterprise",
+      "massive"
+    ],
+    "index_types": [
+      "flat",
+      "hnsw",
+      "hnsw_quantized",
+      "ivf_pq_or_diskann"
+    ],
     "hybrid_retrieval": "bm25_plus_dense_with_reciprocal_rank_fusion",
     "required_design_fields": [
       "chunking_strategy",
@@ -231,13 +221,22 @@
   },
   "fine_tuning": {
     "policy_file": "config/fine_tuning_policy.json",
-    "adaptation_ladder": ["prompt_engineering", "rag", "fine_tuning", "continued_pretraining"],
+    "adaptation_ladder": [
+      "prompt_engineering",
+      "rag",
+      "fine_tuning",
+      "continued_pretraining"
+    ],
     "default_technique_open_weight": "lora",
     "automatic_weight_updates": false
   },
   "harness_engineering": {
     "policy_file": "config/harness_engineering_policy.json",
-    "layers": ["coding_agent_harness", "agent_runtime_harness", "eval_harness"],
+    "layers": [
+      "coding_agent_harness",
+      "agent_runtime_harness",
+      "eval_harness"
+    ],
     "reliability_metric": "pass_hat_k"
   },
   "sdd": {

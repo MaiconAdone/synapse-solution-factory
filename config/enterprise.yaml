@@ -1,16 +1,11 @@
-﻿project:
+project:
   name: synapse-ai
   type: enterprise-ai-ml-saas
   core: codex-claude
-swarm:
-  name: synapse-ai-swarm
-  topology: hierarchical-mesh
-  max_agents: 60
-  core_agent_count: 15
-  specialist_agent_count: 45
-  activation_policy: cost_aware_core_subset_and_route_specialists_on_demand
-  coordination: distributed
-  consensus: majority
+agent_governance:
+  roles: config/roles.json
+  policy: config/harness_engineering_policy.json
+  execution: single_assistant_first
 memory:
   enabled: true
   namespace: synapse-ai

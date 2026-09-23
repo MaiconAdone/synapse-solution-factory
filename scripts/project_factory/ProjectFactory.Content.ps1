@@ -2,7 +2,7 @@
 #
 # Self-contained functions that render inherited configuration/content for a
 # generated solution project. They only read the orchestrator's script-scope
-# variables ($Destino, $NomeProjeto, $TipoProjeto, $ProjectUniverse, $SwarmName,
+# variables ($Destino, $NomeProjeto, $TipoProjeto, $ProjectUniverse,
 # $ProjectSlug) at call time, so dot-sourcing keeps behavior identical while
 # taking ~290 lines of here-strings out of create_ai_project.ps1.
 #
@@ -27,18 +27,12 @@ capabilities:
   ai: $($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant())
   rag: $($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant())
   data_treatment: true
-  swarm_15_agents: true
-  swarm_core_agents: 15
-  swarm_max_agents: 60
-  swarm_specialist_agents: 45
-  cost_aware_orchestration: true
-  default_active_agents: 1
-  enterprise_active_agents: 8
+  cost_aware_model_routing: true
 cloud_llm:
   managed_by: synapse
   codex_provider: openai
   claude_provider: anthropic
-  swarm_access: governed_on_demand
+  model_tiers: config/cost_optimization_policy.json
   sensitive_content_blocked: true
 continual_learning:
   enabled: true
@@ -50,15 +44,10 @@ application_runtime:
   backend_in_project: false
   frontend_in_project: false
   factory_capable: false
-swarm:
-  name: $SwarmName
-  topology: hierarchical-mesh
-  max_agents: 60
-  core_agent_count: 15
-  specialist_agent_count: 45
-  activation_policy: cost_aware_core_subset_and_route_specialists_on_demand
-  coordination: distributed
-  consensus: majority
+agent_governance:
+  roles: config/roles.json
+  policy: config/harness_engineering_policy.json
+  execution: single_assistant_first
 memory:
   enabled: true
   namespace: $NomeProjeto
@@ -105,13 +94,7 @@ workflows:
   - id: solution-lifecycle
     strategy: hybrid
     owner: orchestration-manager
-    parallel_agent_activation: true
-    parallel_groups:
-      - [product-strategy, data-engineering, data-science, machine-learning]
-      - [llm-engineering, rag-engineering, integration-automation, security-compliance]
-      - [integration-automation, security-compliance, observability-ops, devops]
-      - [orchestration-manager, testing-qa, documentation, business-value-analyst]
-    agents:
+    roles:
       - orchestration-manager
       - product-strategy
       - data-engineering
@@ -140,14 +123,12 @@ workflows:
       - define_synapse_integration_contract
       - define_observability
       - initialize_memory
-      - initialize_swarm
-      - optimize_parallel_execution
       - write_project_docs
       - validate_stack
   - id: rag-build
     strategy: adaptive
     owner: rag-engineering
-    agents:
+    roles:
       - data-engineering
       - llm-engineering
       - testing-qa
@@ -161,7 +142,7 @@ workflows:
   - id: business-transformation
     strategy: stateful-governed
     owner: orchestration-manager
-    agents:
+    roles:
       - orchestration-manager
       - product-strategy
       - data-science
@@ -186,7 +167,7 @@ workflows:
   - id: ml-release
     strategy: hierarchical
     owner: machine-learning
-    agents:
+    roles:
       - data-engineering
       - testing-qa
       - devops
@@ -201,7 +182,7 @@ workflows:
   - id: $ProjectSlug-intelligence-release
     strategy: hierarchical
     owner: orchestration-manager
-    agents:
+    roles:
       - data-engineering
       - machine-learning
       - llm-engineering
@@ -230,8 +211,6 @@ PROJECT_MANAGED_BY=Synapse
 PROJECT_FACTORY_CAPABLE=false
 PROJECT_CONTAINS_BACKEND=false
 PROJECT_CONTAINS_FRONTEND=false
-SWARM_TOPOLOGY=hierarchical-mesh
-SWARM_NAME=$SwarmName
 MEMORY_BACKEND=hybrid
 VECTOR_DB_PATH=vector_db
 PROJECT_NAME=$NomeProjeto
@@ -242,14 +221,8 @@ PROJECT_ML_ENABLED=$($ProjectUniverse.ml_enabled.ToString().ToLowerInvariant())
 PROJECT_AI_ENABLED=$($ProjectUniverse.ai_enabled.ToString().ToLowerInvariant())
 PROJECT_RAG_ENABLED=$($ProjectUniverse.rag_enabled.ToString().ToLowerInvariant())
 PROJECT_DATA_TREATMENT_ENABLED=true
-PROJECT_SWARM_15_AGENTS_ENABLED=true
-PROJECT_SWARM_CORE_AGENTS=15
-PROJECT_SWARM_MAX_AGENTS=60
-PROJECT_SWARM_SPECIALIST_AGENTS=45
-PROJECT_COST_AWARE_ORCHESTRATION_ENABLED=true
-PROJECT_DEFAULT_ACTIVE_AGENTS=1
-PROJECT_ENTERPRISE_ACTIVE_AGENTS=8
-PROJECT_ACTIVATE_ALL_60_REQUIRES_EXPLICIT_HIGH_COMPLEXITY=true
+PROJECT_COST_AWARE_MODEL_ROUTING_ENABLED=true
+PROJECT_DEFAULT_MODEL_TIER=economy
 LLM_ROUTING_METRICS_PATH=./artifacts/llm-routing/events.jsonl
 LEARNING_EVENTS_PATH=./memory/synapse_learning_memory.jsonl
 LOCAL_TRAINING_DATASET_PATH=./data/learning/training_examples.jsonl

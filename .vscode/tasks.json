@@ -86,8 +86,8 @@
       }
     },
     {
-      "label": "AI Factory: Criar projeto com Codex + swarm economico + tratamento dados",
-      "detail": "Cria projeto com contexto economico para Codex, mantem pool escalavel ate 60 agentes sob demanda e inclui tratamento de dados.",
+      "label": "AI Factory: Criar projeto com Codex + tratamento dados",
+      "detail": "Cria projeto com contexto economico para Codex e inclui tratamento de dados.",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -103,9 +103,7 @@
         "-ProjectGoal",
         "${input:projectGoal}",
         "-BusinessProblem",
-        "${input:businessProblem}",
-        "-ActiveAgentLimit",
-        "3"
+        "${input:businessProblem}"
       ],
       "group": {
         "kind": "build",
@@ -145,7 +143,7 @@
     },
     {
       "label": "Synapse: Diagnosticar projeto criado",
-      "detail": "Audita um projeto criado pelo Synapse e valida universo, swarm de 60 agents, tratamento de dados, anexos e frameworks IA quando aplicavel.",
+      "detail": "Audita um projeto criado pelo Synapse e valida universo, governanca de agentes, tratamento de dados, anexos e frameworks IA quando aplicavel.",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -221,7 +219,7 @@
       }
     },
     {
-      "label": "Codex: Tratar dados com swarm economico",
+      "label": "Codex: Tratar dados",
       "type": "shell",
       "command": "powershell",
       "args": [
@@ -337,11 +335,11 @@
       "problemMatcher": []
     },
     {
-      "label": "Abrir: Agentes Enterprise",
+      "label": "Abrir: Papeis dos Workflows",
       "type": "shell",
       "command": "code",
       "args": [
-        "${workspaceFolder}\\agents\\definitions\\enterprise_agents.yaml"
+        "${workspaceFolder}\\config\\roles.json"
       ],
       "problemMatcher": []
     },

@@ -17,14 +17,11 @@ Require-Path "config\ai_framework_selection.json"
 Require-Path "config\cost_optimization_policy.json"
 Require-Path "config\model_providers.json"
 Require-Path "config\context_policy.json"
-Require-Path "config\agent_trust_framework.json"
-Require-Path "config\agent_fleets.json"
+Require-Path "config\roles.json"
 Require-Path "config\agent_blueprint_contract.json"
 Require-Path "config\agent_improvement_loop.json"
 Require-Path "docs\radar\README.md"
-Require-Path "docs\architecture\agentic-mesh-governance.md"
 Require-Path "docs\architecture\continual-learning.md"
-Require-Path "agents\definitions\enterprise_agents.yaml"
 Require-Path "rag\README.md"
 Require-Path "vector_db\README.md"
 Require-Path "playbooks\README.md"
@@ -80,7 +77,7 @@ if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha na compilacao Python")
 }
 
-python -c "import json; from pathlib import Path; m=json.loads(Path('config/runtime_manifest.json').read_text(encoding='utf-8-sig')); assert m['swarm']['topology']=='hierarchical-mesh'; assert m['swarm']['max_agents']==60; assert m['swarm']['core_agent_count']==15; assert m['swarm']['specialist_agent_count']==45; assert m['cost_optimization']['enabled'] is True; assert m['cost_optimization']['policy_file']=='config/cost_optimization_policy.json'; assert m['cost_optimization']['activate_all_60_requires_explicit_high_complexity'] is True; assert m['agentic_mesh']['enabled'] is True; assert m['agentic_mesh']['trust_layers']==7; assert m['agentic_mesh']['fleet_count']>=6; assert m['agentic_mesh']['agent_blueprint_contract_file']=='config/agent_blueprint_contract.json'; assert m['agentic_mesh']['improvement_loop_file']=='config/agent_improvement_loop.json'; assert m['agentic_mesh']['human_approval_required_for_all_60_agents'] is True; assert m['memory']['enabled'] is True; assert m['memory']['runtime_file']=='memory/project_memory.runtime.json'; assert len(m['validation']['required_agents'])==15; assert len(m['validation']['specialist_agents'])==45; assert len(m['validation']['required_practice_paths'])>=14; assert m['local_llm']['all_60_agents_model_access']=='governed_on_demand'; c=m['continual_learning']; assert c['enabled'] is True; assert c['automatic_weight_updates'] is False; assert c['promotion_requires_evals_and_human_approval'] is True; print('runtime_manifest_ok')" | Out-Host
+python -c "import json; from pathlib import Path; m=json.loads(Path('config/runtime_manifest.json').read_text(encoding='utf-8-sig')); assert 'swarm' not in m and 'agentic_mesh' not in m and 'generated_project_swarm_strategy' not in m; g=m['agent_governance']; assert g['enabled'] is True; assert g['governance_policy_file']=='config/harness_engineering_policy.json'; assert g['roles_file']=='config/roles.json'; assert g['agent_blueprint_contract_file']=='config/agent_blueprint_contract.json'; assert g['improvement_loop_file']=='config/agent_improvement_loop.json'; assert m['cost_optimization']['enabled'] is True; assert m['cost_optimization']['policy_file']=='config/cost_optimization_policy.json'; assert m['memory']['enabled'] is True; assert m['memory']['runtime_file']=='memory/project_memory.runtime.json'; assert 'required_agents' not in m['validation'] and 'specialist_agents' not in m['validation']; assert len(m['validation']['required_practice_paths'])>=14; c=m['continual_learning']; assert c['enabled'] is True; assert c['automatic_weight_updates'] is False; assert c['promotion_requires_evals_and_human_approval'] is True; print('runtime_manifest_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha no contrato do runtime manifest")
 }
@@ -90,7 +87,7 @@ if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha na validacao dos artefatos inspirados nos livros")
 }
 
-python -c "import json; from pathlib import Path; spec=json.loads(Path('config/ai_ml_enterprise_spec.json').read_text(encoding='utf-8-sig')); assert spec['execution_policy']['ruflo_required_for_project_creation'] is True; assert spec['execution_policy']['swarm_15_agents_required_for_all_universes'] is True; assert spec['execution_policy']['data_treatment_required_for_all_universes'] is True; assert spec['execution_policy']['parallel_agent_count']==15; assert spec['execution_policy']['max_agent_count']==60; assert spec['execution_policy']['specialist_agent_count']==45; assert spec['execution_policy']['cost_aware_orchestration_required'] is True; assert spec['execution_policy']['default_active_agent_count']==1; assert spec['execution_policy']['activate_all_60_requires_explicit_high_complexity'] is True; assert spec['sdd']['required_outputs']; assert 'multi_query_retrieval' in spec['rag_advanced']['strategies']; assert 'drift_monitoring' in spec['ml_systems']['required_design_fields']; assert 'autogen' in spec['ai_framework_selection']['required_frameworks']; print('enterprise_ai_ml_spec_ok')" | Out-Host
+python -c "import json; from pathlib import Path; spec=json.loads(Path('config/ai_ml_enterprise_spec.json').read_text(encoding='utf-8-sig')); e=spec['execution_policy']; assert e['data_treatment_required_for_all_universes'] is True; assert e['cost_aware_orchestration_required'] is True; assert not [k for k in e if 'agent_count' in k or 'swarm' in k or 'ruflo' in k], e; assert spec['multi_agent_systems']['default']=='single_agent_first'; assert spec['sdd']['required_outputs']; assert 'multi_query_retrieval' in spec['rag_advanced']['strategies']; assert 'drift_monitoring' in spec['ml_systems']['required_design_fields']; assert 'autogen' in spec['ai_framework_selection']['required_frameworks']; print('enterprise_ai_ml_spec_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha no contrato enterprise IA/ML")
 }
@@ -100,26 +97,18 @@ if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Falha no contrato de selecao de frameworks IA")
 }
 
-python -m json.tool config\workflows\synapse\new-ai-project.json | Out-Null
-python -m json.tool config\workflows\synapse\rag-build.json | Out-Null
-python -m json.tool config\workflows\synapse\ml-release.json | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Falha na validacao JSON dos workflows do swarm")
+foreach ($WorkflowFile in Get-ChildItem config\workflows\synapse -Filter *.json) {
+    python -m json.tool $WorkflowFile.FullName | Out-Null
+    if ($LASTEXITCODE -ne 0) { $Errors.Add("JSON invalido: $($WorkflowFile.Name)") }
 }
 
-python -c "import json; from pathlib import Path; w=json.loads(Path('config/workflows/synapse/new-ai-project.json').read_text(encoding='utf-8-sig')); assert w['execution']['parallelAgentActivation'] is True; print('new_project_parallel_activation_ok')" | Out-Host
+python -c "import json; from pathlib import Path; roles={r['id'] for r in json.loads(Path('config/roles.json').read_text(encoding='utf-8'))['roles']}; bad={w.name: [s.get('role') for s in json.loads(w.read_text(encoding='utf-8-sig'))['steps'] if s.get('role') not in roles] for w in Path('config/workflows/synapse').glob('*.json')}; bad={k: v for k, v in bad.items() if v}; assert not bad, bad; removed=['config/agent_fleets.json','config/agent_trust_framework.json','agents/definitions/enterprise_agents.yaml']; assert not [p for p in removed if Path(p).exists()], removed; print('workflow_roles_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Workflow new-ai-project nao declara ativacao paralela de agentes")
+    $Errors.Add("Workflows devem usar apenas papeis de config/roles.json, sem swarm/fleets/trust framework")
 }
-
-python -c "import json, re; from pathlib import Path; m=json.loads(Path('config/runtime_manifest.json').read_text(encoding='utf-8-sig')); required=m['validation']['required_agents']; specialists=m['validation']['specialist_agents']; workflow=json.loads(Path('config/workflows/synapse/new-ai-project.json').read_text(encoding='utf-8-sig')); groups=workflow['execution']['parallelGroups']; parallel=[agent for group in groups for agent in group]; steps={step['agent'] for step in workflow['steps']}; yaml_ids=re.findall(r'(?m)^\s*-\s+id:\s*([A-Za-z0-9_-]+)\s*$', Path('agents/definitions/enterprise_agents.yaml').read_text(encoding='utf-8-sig')); assert len(required)==15, required; assert len(specialists)==45, specialists; assert len(yaml_ids)==60 and len(set(yaml_ids))==60, yaml_ids; assert len(parallel)==15 and len(set(parallel))==15, parallel; assert set(parallel)==set(required), {'parallel': parallel, 'required': required}; assert set(required).issubset(steps), {'missing_step_agents': sorted(set(required)-steps)}; assert set(yaml_ids)==set(required+specialists), {'yaml_ids': yaml_ids, 'expected': required+specialists}; print('new_project_60_agent_contract_ok')" | Out-Host
+python -c "import json; from pathlib import Path; load=lambda p: json.loads(Path(p).read_text(encoding='utf-8-sig')); cost=load('config/cost_optimization_policy.json'); assert 'ruflo' not in cost and 'activation_profiles' not in cost; assert not [n for n, p in cost['request_profiles'].items() if 'active_agent_limit' in p], cost['request_profiles']; ft=load('config/fine_tuning_policy.json'); assert ft['provider_rules']['automatic_weight_updates'] is False; assert ft['release_gates']['human_approval_required'] is True; h=load('config/harness_engineering_policy.json'); assert h['eval_harness']['reliability_gate_pass_hat_k_min']>0; assert h['governance']['autonomy_matrix']['requires_human_approval']; missing=[t for tech in load('config/ai_framework_selection.json')['technology_catalog'] for t in tech.get('templates', []) if not Path(t).exists()]; assert not missing, missing; print('ai_engineering_extensions_ok')" | Out-Host
 if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Workflow new-ai-project deve conter 15 core agents em paralelo e YAML deve conter 60 agentes")
-}
-
-python -c "import json; from pathlib import Path; load=lambda p: json.loads(Path(p).read_text(encoding='utf-8-sig')); m=load('config/runtime_manifest.json'); fleets={f['id'] for f in load('config/agent_fleets.json')['fleets']}; rec=m['generated_project_swarm_strategy']['recommended_fleets_by_universe']; bad={u: [f for f in ids if f not in fleets or f=='project_factory_fleet'] for u, ids in rec.items()}; assert not any(bad.values()), bad; cost={k: v['active_agent_limit'] for k, v in load('config/cost_optimization_policy.json')['activation_profiles'].items()}; spec=load('config/ai_ml_enterprise_spec.json')['cost_aware_orchestration']['activation_targets']; assert spec==cost, (spec, cost); ft=load('config/fine_tuning_policy.json'); assert ft['provider_rules']['automatic_weight_updates'] is False; assert ft['release_gates']['human_approval_required'] is True; h=load('config/harness_engineering_policy.json'); assert h['eval_harness']['reliability_gate_pass_hat_k_min']>0; missing=[t for tech in load('config/ai_framework_selection.json')['technology_catalog'] for t in tech.get('templates', []) if not Path(t).exists()]; assert not missing, missing; print('ai_engineering_extensions_ok')" | Out-Host
-if ($LASTEXITCODE -ne 0) {
-    $Errors.Add("Falha na coerencia de fleets, perfis de custo, fine-tuning, harness ou templates")
+    $Errors.Add("Falha na coerencia de custo, fine-tuning, harness ou templates")
 }
 
 python scripts\scaffold_solution_agents.py --validate-only | Out-Host

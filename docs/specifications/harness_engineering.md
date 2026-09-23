@@ -26,7 +26,7 @@ Three layers:
 | Component | Evidence | Universes |
 |-----------|----------|-----------|
 | context_map | AGENTS.md, CLAUDE.md, config/context_policy.json | all |
-| tool_boundary | config/agent_trust_framework.json, guardrails/policy.yaml | all |
+| tool_boundary | config/harness_engineering_policy.json, guardrails/policy.yaml | all |
 | control_loop | config/cost_optimization_policy.json, config/agent_blueprint_contract.json | all |
 | verification | tests/, evals/quality_gates.yaml | all |
 | agent_evals | evals/tool_workflow_cases.jsonl | IA, Chatbolt, Hybrid |
@@ -70,8 +70,8 @@ Rules that matter are enforced by tests, not by prose: structural contract
 tests guard generated-project boundaries, every referenced repository path must
 exist or be declared as generated/runtime, and validation scripts fail loudly.
 
-## Agents And Fleet
+## Roles
 
 `testing-qa` and `observability-ops` own the eval harness and traces;
-`security_fleet` owns tool boundaries; `regression-test-engineer`,
-`qa-adversarial-tester` and `policy-guardrails-engineer` join on demand.
+`security-compliance` and `policy-guardrails-engineer` own tool boundaries and
+the autonomy matrix.

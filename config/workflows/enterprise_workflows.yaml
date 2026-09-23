@@ -3,13 +3,7 @@ workflows:
   - id: new-ai-project
     strategy: hybrid
     owner: orchestration-manager
-    parallel_agent_activation: true
-    parallel_groups:
-      - [product-strategy, data-engineering, data-science, machine-learning]
-      - [llm-engineering, rag-engineering, integration-automation, security-compliance]
-      - [backend-engineering, frontend-engineering, observability-ops, devops]
-      - [orchestration-manager, testing-qa, documentation]
-    agents:
+    roles:
       - orchestration-manager
       - product-strategy
       - data-engineering
@@ -17,8 +11,6 @@ workflows:
       - machine-learning
       - llm-engineering
       - rag-engineering
-      - backend-engineering
-      - frontend-engineering
       - integration-automation
       - security-compliance
       - observability-ops
@@ -37,18 +29,14 @@ workflows:
       - design_rag_pipeline
       - plan_integrations
       - define_security_guardrails
-      - create_no_code_ui
-      - wire_backend_runtime
       - define_observability
       - initialize_memory
-      - initialize_swarm
-      - optimize_parallel_execution
       - write_project_docs
       - validate_stack
   - id: rag-build
     strategy: adaptive
     owner: rag-engineering
-    agents:
+    roles:
       - data-engineering
       - llm-engineering
       - testing-qa
@@ -62,7 +50,7 @@ workflows:
   - id: ml-release
     strategy: hierarchical
     owner: machine-learning
-    agents:
+    roles:
       - data-engineering
       - testing-qa
       - devops
@@ -77,7 +65,7 @@ workflows:
   - id: business-transformation
     strategy: stateful-governed
     owner: orchestration-manager
-    agents:
+    roles:
       - orchestration-manager
       - product-strategy
       - data-science

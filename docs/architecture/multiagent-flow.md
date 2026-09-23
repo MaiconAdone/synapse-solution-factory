@@ -8,6 +8,5 @@
 
 Default topology: hierarchical-mesh.
 
-Default coordination: distributed.
-
-Default consensus mechanism: majority, matching the swarm runtime.
+Default execution: a single assistant following the workflow roles in
+`config/roles.json`.
