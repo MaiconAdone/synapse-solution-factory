@@ -1,0 +1,617 @@
+{
+  "schema": "synapse-book-registry.v1",
+  "purpose": "Single source of truth for the books that ground Synapse and for the engineering decisions Synapse made on its own. Lessons are translated into contracts; no book text is copied.",
+  "rule": "Every book and every own implementation must list where it is applied; tests check the paths exist and that docs/books/implementation_map.md covers every entry.",
+  "paths_relative_to": "the Synapse repository; generated projects receive only the artifacts of their universe",
+  "books": [
+    {
+      "id": "ai-engineering",
+      "title": "AI Engineering",
+      "authors": "Chip Huyen",
+      "domains": [
+        "ia",
+        "evaluation"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "evals before optimization; product metrics; cost/latency tradeoffs; RAG vs fine-tuning; dataset engineering; feedback loops",
+      "applied_in": [
+        "evals/quality_gates.yaml",
+        "playbooks/ai_engineering.md",
+        "config/fine_tuning_policy.json",
+        "config/rag_scalability_policy.json"
+      ]
+    },
+    {
+      "id": "designing-ml-systems",
+      "title": "Designing Machine Learning Systems",
+      "authors": "Chip Huyen",
+      "domains": [
+        "ml"
+      ],
+      "universes": [
+        "ml",
+        "hybrid"
+      ],
+      "lessons": "data contracts, baselines, model cards, monitoring, drift and continual learning",
+      "applied_in": [
+        "ml_systems/data_contract.yaml",
+        "ml_systems/monitoring_plan.yaml",
+        "ml_systems/model_card_template.md",
+        "playbooks/ml_systems.md"
+      ]
+    },
+    {
+      "id": "foundations-of-ml",
+      "title": "Foundations of Machine Learning - Lecture Notes",
+      "authors": "user-provided local PDF",
+      "domains": [
+        "ml",
+        "statistics"
+      ],
+      "universes": [
+        "ml",
+        "hybrid"
+      ],
+      "lessons": "hypothesis spaces, bias/variance, probabilistic modeling, estimation, regularization, kernels, SVMs, feature selection",
+      "applied_in": [
+        "config/ml_foundations_policy.json",
+        "docs/specifications/ml_foundations.md"
+      ]
+    },
+    {
+      "id": "mathematics-for-ml",
+      "title": "Mathematics for Machine Learning",
+      "authors": "Marc Peter Deisenroth, A. Aldo Faisal and Cheng Soon Ong",
+      "domains": [
+        "ml",
+        "statistics"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "linear algebra, probability, optimization, similarity, confidence intervals and hypothesis checks as engineering practice",
+      "applied_in": [
+        "playbooks/math_for_ml.md",
+        "notebooks/foundations/foundations_lab.ipynb",
+        "scripts/treat_dataset.py",
+        "config/data_treatment_policy.json"
+      ]
+    },
+    {
+      "id": "prompt-engineering-for-llms",
+      "title": "Prompt Engineering for LLMs",
+      "authors": "John Berryman and Albert Ziegler",
+      "domains": [
+        "ia"
+      ],
+      "universes": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "prompt contracts, examples, structured outputs and regression cases",
+      "applied_in": [
+        "playbooks/prompt_engineering.md",
+        "prompts/README.md",
+        "evals/prompt_cases.jsonl"
+      ]
+    },
+    {
+      "id": "llm-engineers-handbook",
+      "title": "LLM Engineer's Handbook",
+      "authors": "Paul Iusztin and Maxime Labonne",
+      "domains": [
+        "ia"
+      ],
+      "universes": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "feature/ingestion pipelines into vector databases, SFT, preference alignment, parameter-efficient training, LLMOps",
+      "applied_in": [
+        "config/rag_scalability_policy.json",
+        "config/fine_tuning_policy.json",
+        "playbooks/llm_engineering.md"
+      ]
+    },
+    {
+      "id": "build-llm-from-scratch",
+      "title": "Build a Large Language Model (From Scratch)",
+      "authors": "Sebastian Raschka",
+      "domains": [
+        "ia"
+      ],
+      "universes": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "tokenization, embeddings, attention, fine-tuning for classification and instructions, evaluation",
+      "applied_in": [
+        "notebooks/foundations/foundations_lab.ipynb",
+        "config/fine_tuning_policy.json"
+      ]
+    },
+    {
+      "id": "building-llms-for-production",
+      "title": "Building LLMs for Production",
+      "authors": "Louis-Francois Bouchard and Louie Peters",
+      "domains": [
+        "ia"
+      ],
+      "universes": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "reliability, monitoring, guardrails, fallbacks and release readiness",
+      "applied_in": [
+        "playbooks/production_llms.md",
+        "llm_ops/release_checklist.md",
+        "guardrails/policy.yaml",
+        "config/harness_engineering_policy.json"
+      ]
+    },
+    {
+      "id": "introduction-to-algorithms",
+      "title": "Introduction to Algorithms",
+      "authors": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein",
+      "domains": [
+        "algorithms"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "correctness, complexity, graphs, queues, caches and the search structures behind ANN indexes",
+      "applied_in": [
+        "scripts/synapse_lib/rag_retrieval.py",
+        "scripts/synapse_lib/rag_scalability.py",
+        "config/workflows/synapse/new-ai-project.json"
+      ]
+    },
+    {
+      "id": "winston-artificial-intelligence",
+      "title": "Artificial Intelligence",
+      "authors": "Patrick Henry Winston",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "problem representation, search, planning and explainable decomposition",
+      "applied_in": [
+        "config/agentic_architectural_patterns.json",
+        "config/business_transformation.json"
+      ]
+    },
+    {
+      "id": "society-of-mind",
+      "title": "The Society of Mind",
+      "authors": "Marvin Minsky",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "small specialized processes synthesized by an orchestrator",
+      "applied_in": [
+        "config/roles.json",
+        "config/agentic_architectural_patterns.json"
+      ]
+    },
+    {
+      "id": "emotion-machine",
+      "title": "The Emotion Machine",
+      "authors": "Marvin Minsky",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "operational state signals (confidence, risk, blocked, needs approval) as controls, not emotions",
+      "applied_in": [
+        "scripts/synapse_lib/business_transformation.py",
+        "config/harness_engineering_policy.json"
+      ]
+    },
+    {
+      "id": "cybernetics",
+      "title": "Cybernetics: Or Control and Communication in the Animal and the Machine",
+      "authors": "Norbert Wiener",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "feedback signals, control loops, stability and human intervention thresholds",
+      "applied_in": [
+        "config/harness_engineering_policy.json",
+        "config/agent_improvement_loop.json"
+      ]
+    },
+    {
+      "id": "ai-agents-in-action",
+      "title": "AI Agents in Action",
+      "authors": "Micheal Lanham",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "explicit tools, practical agent roles, planning, execution and traceability",
+      "applied_in": [
+        "config/agent_blueprint_contract.json",
+        "scripts/synapse_lib/solution_agents.py"
+      ]
+    },
+    {
+      "id": "ai-agents-and-applications",
+      "title": "AI Agents and Applications",
+      "authors": "Roberto Infante",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "stateful workflows, graph orchestration and MCP integration boundaries",
+      "applied_in": [
+        "config/workflows/synapse/business-transformation.json",
+        "config/workflows/synapse/agent-build.json"
+      ]
+    },
+    {
+      "id": "building-applications-with-ai-agents",
+      "title": "Building Applications with AI Agents",
+      "authors": "Michael Albada",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "agent design, single vs multi-agent decisions, evaluation and improvement loops",
+      "applied_in": [
+        "config/harness_engineering_policy.json",
+        "scripts/synapse_lib/harness_service.py",
+        "config/agent_blueprint_contract.json"
+      ]
+    },
+    {
+      "id": "agentic-architectural-patterns",
+      "title": "Agentic Architectural Patterns for Building Multi-Agent Systems",
+      "authors": "Ali Arsanjani",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "orchestrator-specialist, critic gates, A2A contracts, tool gateway, model router, lifecycle callbacks",
+      "applied_in": [
+        "config/agentic_architectural_patterns.json",
+        "docs/architecture/agentic-architectural-patterns.md"
+      ]
+    },
+    {
+      "id": "agentic-artificial-intelligence",
+      "title": "Agentic Artificial Intelligence",
+      "authors": "Pascal Bornet and Jochen Wirtz",
+      "domains": [
+        "business",
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "objective-driven agents, controlled autonomy and human-agent collaboration",
+      "applied_in": [
+        "config/business_transformation.json",
+        "scripts/synapse_lib/business_transformation.py"
+      ]
+    },
+    {
+      "id": "competing-in-the-age-of-ai",
+      "title": "Competing in the Age of AI",
+      "authors": "Marco Iansiti and Karim R. Lakhani",
+      "domains": [
+        "business"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "AI as the operational layer connecting data, decisions and scalable processes",
+      "applied_in": [
+        "config/business_transformation.json",
+        "docs/AGENTIC_AI_TRANSFORMATION.md"
+      ]
+    },
+    {
+      "id": "all-in-on-ai",
+      "title": "All-In on AI",
+      "authors": "Thomas H. Davenport and Nitin Mittal",
+      "domains": [
+        "business"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "transformation portfolios, adoption, operating-model change and value measurement",
+      "applied_in": [
+        "config/business_transformation.json",
+        "evals/business_transformation_cases.jsonl"
+      ]
+    },
+    {
+      "id": "agentic-coding-with-claude-code",
+      "title": "Agentic Coding with Claude Code",
+      "authors": "Eden Marco",
+      "domains": [
+        "agents"
+      ],
+      "universes": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "persistent context, MCP, reusable workflows, validation hooks and controlled execution",
+      "applied_in": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "playbooks/agentic_coding.md"
+      ]
+    },
+    {
+      "id": "speech-and-language-processing",
+      "title": "Speech and Language Processing",
+      "authors": "Daniel Jurafsky and James H. Martin",
+      "domains": [
+        "voice"
+      ],
+      "universes": [
+        "hybrid"
+      ],
+      "lessons": "evaluate ASR with word accuracy, domain vocabulary and representative speech cases",
+      "applied_in": [
+        "docs/specifications/voice_agentic_coding.md",
+        "config/voice_agent_quality_gates.json",
+        "evals/voice_agent_cases.jsonl"
+      ]
+    },
+    {
+      "id": "designing-voice-user-interfaces",
+      "title": "Designing Voice User Interfaces",
+      "authors": "Cathy Pearl",
+      "domains": [
+        "voice"
+      ],
+      "universes": [
+        "hybrid"
+      ],
+      "lessons": "separate wake, listening, recognition, confirmation and recovery states",
+      "applied_in": [
+        "docs/specifications/voice_agentic_coding.md",
+        "config/voice_agent_quality_gates.json"
+      ]
+    },
+    {
+      "id": "effective-conversational-ai",
+      "title": "Effective Conversational AI",
+      "authors": "Freed, Jacobs and Rozsa (as recorded in voice_agentic_coding.md)",
+      "domains": [
+        "voice",
+        "ia"
+      ],
+      "universes": [
+        "chatbolt",
+        "hybrid"
+      ],
+      "lessons": "intent success, collect only needed context, improve from observed failures",
+      "applied_in": [
+        "docs/specifications/voice_agentic_coding.md",
+        "evals/agentic_coding_cases.jsonl"
+      ]
+    }
+  ],
+  "own_implementations": [
+    {
+      "id": "project-factory",
+      "decision": "Dialog-first project factory with four universes, briefing gate, rollback and per-universe artifact alignment",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/create_ai_project.ps1",
+        "scripts/project_factory/ProjectFactory.Common.ps1",
+        "scripts/diagnose_project.ps1"
+      ]
+    },
+    {
+      "id": "business-solution-analyzer",
+      "decision": "Keyword-scored archetypes, effective universe with confirmation, ADR in JSON and Markdown",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/synapse_lib/business_solution_analyzer.py",
+        "config/business_solution_catalog.json",
+        "scripts/analyze_business_solution.py"
+      ]
+    },
+    {
+      "id": "technology-selection",
+      "decision": "Scenario-based framework and technology catalog with templates vs scaffold targets",
+      "basis": "market practice (framework landscape)",
+      "applied_in": [
+        "config/ai_framework_selection.json",
+        "scripts/synapse_lib/ai_framework_selector.py",
+        "templates/README.md"
+      ]
+    },
+    {
+      "id": "statistical-data-treatment",
+      "decision": "Deterministic treatment (missing, duplicates, IQR and z-score outlier flags, rare categories) with thresholds in policy",
+      "basis": "standard applied statistics",
+      "applied_in": [
+        "scripts/treat_dataset.py",
+        "config/data_treatment_policy.json",
+        "prompts/master_data_treatment.md"
+      ]
+    },
+    {
+      "id": "local-model-baselines",
+      "decision": "Local regression/classification/forecasting baselines with a JSON model registry",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/synapse_lib/model_service.py",
+        "artifacts/models"
+      ]
+    },
+    {
+      "id": "deterministic-evals",
+      "decision": "LLM-free eval suites: prompt contracts, faithfulness by grounding in the cited source, hybrid retrieval recall/MRR/nDCG",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/synapse_lib/eval_service.py",
+        "scripts/run_evals.py",
+        "evals/quality_gates.yaml"
+      ]
+    },
+    {
+      "id": "context-filter-and-radar",
+      "decision": "Context filter before LLM calls and market radar for tooling signals",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/context_filter.py",
+        "config/context_policy.json",
+        "scripts/market_radar.py"
+      ]
+    },
+    {
+      "id": "peer-messaging",
+      "decision": "Local SQLite MCP mailbox shared by Codex, Claude Code and humans",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/synapse_peers_mcp.py",
+        "scripts/synapse_lib/peer_messaging_service.py",
+        "docs/architecture/peer-messaging.md"
+      ]
+    },
+    {
+      "id": "roles-and-cost-profiles",
+      "decision": "Single assistant per task, workflow roles, request profiles with model tier and token budget",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "config/roles.json",
+        "config/cost_optimization_policy.json"
+      ]
+    },
+    {
+      "id": "scalable-rag-mechanics",
+      "decision": "Scale tiers, vector DB catalog, HNSW/IVF parameters, reciprocal rank fusion (k=60, information-retrieval literature), hashing embedder, blue/green index versions",
+      "basis": "market practice and IR literature",
+      "applied_in": [
+        "config/rag_scalability_policy.json",
+        "scripts/synapse_lib/vector_store.py",
+        "scripts/synapse_lib/rag_retrieval.py",
+        "templates/rag/vector_db_adapter.py"
+      ]
+    },
+    {
+      "id": "fine-tuning-thresholds",
+      "decision": "Pilot/production minimums (50/500), 5% gain over baseline, human score 0.8, leakage-free hash split",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "config/fine_tuning_policy.json",
+        "scripts/synapse_lib/fine_tuning_service.py",
+        "scripts/prepare_fine_tuning_dataset.py"
+      ]
+    },
+    {
+      "id": "harness-engineering",
+      "decision": "Harness components per universe, loop limits, pass@k/pass^k reliability metrics (agent benchmark practice), governance migrated from the former trust framework",
+      "basis": "market practice for coding agents",
+      "applied_in": [
+        "config/harness_engineering_policy.json",
+        "scripts/synapse_lib/harness_service.py",
+        "scripts/audit_harness.py"
+      ]
+    },
+    {
+      "id": "solution-agents",
+      "decision": "Runtime agent blueprints derived from the ADR, owner roles, tools never invented, approval for external actions",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/synapse_lib/solution_agents.py",
+        "scripts/scaffold_solution_agents.py",
+        "config/workflows/synapse/agent-build.json"
+      ]
+    },
+    {
+      "id": "business-transformation-engine",
+      "decision": "14-stage state machine, explicit risk thresholds (100k/1M, regulated = CRITICAL, missing factor = HIGH), prioritization weights",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "scripts/synapse_lib/business_transformation.py",
+        "scripts/run_business_transformation.py",
+        "templates/business/transformation_brief.json"
+      ]
+    },
+    {
+      "id": "mechanical-enforcement",
+      "decision": "Phantom-reference guard, stdlib-only analyzer and engines, validator that blocks swarm/fleet regressions",
+      "basis": "Synapse engineering decision",
+      "applied_in": [
+        "tests/test_ai_engineering_extensions.py",
+        "scripts/validate_enterprise_stack.ps1",
+        "scripts/synapse_lib/text_utils.py"
+      ]
+    }
+  ]
+}

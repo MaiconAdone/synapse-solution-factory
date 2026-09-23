@@ -3,6 +3,62 @@
 This project does not copy book content. It translates broad engineering
 lessons into executable project contracts.
 
+<!-- book-registry:start -->
+## Registro De Livros
+
+Gerado de `config/book_registry.json` por `scripts/sync_book_registry.py`; edite o registro, nao esta tabela.
+
+| Livro | Autores | Dominios | Universos | Aplicado em |
+|-------|---------|----------|-----------|-------------|
+| *AI Engineering* | Chip Huyen | ia, evaluation | ml, ia, chatbolt, hybrid | `evals/quality_gates.yaml`, `playbooks/ai_engineering.md`, `config/fine_tuning_policy.json`, `config/rag_scalability_policy.json` |
+| *Designing Machine Learning Systems* | Chip Huyen | ml | ml, hybrid | `ml_systems/data_contract.yaml`, `ml_systems/monitoring_plan.yaml`, `ml_systems/model_card_template.md`, `playbooks/ml_systems.md` |
+| *Foundations of Machine Learning - Lecture Notes* | user-provided local PDF | ml, statistics | ml, hybrid | `config/ml_foundations_policy.json`, `docs/specifications/ml_foundations.md` |
+| *Mathematics for Machine Learning* | Marc Peter Deisenroth, A. Aldo Faisal and Cheng Soon Ong | ml, statistics | ml, ia, chatbolt, hybrid | `playbooks/math_for_ml.md`, `notebooks/foundations/foundations_lab.ipynb`, `scripts/treat_dataset.py`, `config/data_treatment_policy.json` |
+| *Prompt Engineering for LLMs* | John Berryman and Albert Ziegler | ia | ia, chatbolt, hybrid | `playbooks/prompt_engineering.md`, `prompts/README.md`, `evals/prompt_cases.jsonl` |
+| *LLM Engineer's Handbook* | Paul Iusztin and Maxime Labonne | ia | ia, chatbolt, hybrid | `config/rag_scalability_policy.json`, `config/fine_tuning_policy.json`, `playbooks/llm_engineering.md` |
+| *Build a Large Language Model (From Scratch)* | Sebastian Raschka | ia | ia, chatbolt, hybrid | `notebooks/foundations/foundations_lab.ipynb`, `config/fine_tuning_policy.json` |
+| *Building LLMs for Production* | Louis-Francois Bouchard and Louie Peters | ia | ia, chatbolt, hybrid | `playbooks/production_llms.md`, `llm_ops/release_checklist.md`, `guardrails/policy.yaml`, `config/harness_engineering_policy.json` |
+| *Introduction to Algorithms* | Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein | algorithms | ml, ia, chatbolt, hybrid | `scripts/synapse_lib/rag_retrieval.py`, `scripts/synapse_lib/rag_scalability.py`, `config/workflows/synapse/new-ai-project.json` |
+| *Artificial Intelligence* | Patrick Henry Winston | agents | ml, ia, chatbolt, hybrid | `config/agentic_architectural_patterns.json`, `config/business_transformation.json` |
+| *The Society of Mind* | Marvin Minsky | agents | ml, ia, chatbolt, hybrid | `config/roles.json`, `config/agentic_architectural_patterns.json` |
+| *The Emotion Machine* | Marvin Minsky | agents | ml, ia, chatbolt, hybrid | `scripts/synapse_lib/business_transformation.py`, `config/harness_engineering_policy.json` |
+| *Cybernetics: Or Control and Communication in the Animal and the Machine* | Norbert Wiener | agents | ml, ia, chatbolt, hybrid | `config/harness_engineering_policy.json`, `config/agent_improvement_loop.json` |
+| *AI Agents in Action* | Micheal Lanham | agents | ia, chatbolt, hybrid | `config/agent_blueprint_contract.json`, `scripts/synapse_lib/solution_agents.py` |
+| *AI Agents and Applications* | Roberto Infante | agents | ml, ia, chatbolt, hybrid | `config/workflows/synapse/business-transformation.json`, `config/workflows/synapse/agent-build.json` |
+| *Building Applications with AI Agents* | Michael Albada | agents | ml, ia, chatbolt, hybrid | `config/harness_engineering_policy.json`, `scripts/synapse_lib/harness_service.py`, `config/agent_blueprint_contract.json` |
+| *Agentic Architectural Patterns for Building Multi-Agent Systems* | Ali Arsanjani | agents | ml, ia, chatbolt, hybrid | `config/agentic_architectural_patterns.json`, `docs/architecture/agentic-architectural-patterns.md` |
+| *Agentic Artificial Intelligence* | Pascal Bornet and Jochen Wirtz | business, agents | ml, ia, chatbolt, hybrid | `config/business_transformation.json`, `scripts/synapse_lib/business_transformation.py` |
+| *Competing in the Age of AI* | Marco Iansiti and Karim R. Lakhani | business | ml, ia, chatbolt, hybrid | `config/business_transformation.json`, `docs/AGENTIC_AI_TRANSFORMATION.md` |
+| *All-In on AI* | Thomas H. Davenport and Nitin Mittal | business | ml, ia, chatbolt, hybrid | `config/business_transformation.json`, `evals/business_transformation_cases.jsonl` |
+| *Agentic Coding with Claude Code* | Eden Marco | agents | ml, ia, chatbolt, hybrid | `CLAUDE.md`, `AGENTS.md`, `playbooks/agentic_coding.md` |
+| *Speech and Language Processing* | Daniel Jurafsky and James H. Martin | voice | hybrid | `docs/specifications/voice_agentic_coding.md`, `config/voice_agent_quality_gates.json`, `evals/voice_agent_cases.jsonl` |
+| *Designing Voice User Interfaces* | Cathy Pearl | voice | hybrid | `docs/specifications/voice_agentic_coding.md`, `config/voice_agent_quality_gates.json` |
+| *Effective Conversational AI* | Freed, Jacobs and Rozsa (as recorded in voice_agentic_coding.md) | voice, ia | chatbolt, hybrid | `docs/specifications/voice_agentic_coding.md`, `evals/agentic_coding_cases.jsonl` |
+
+## Implementacao Propria (Fora Dos Livros)
+
+Decisoes de engenharia do Synapse e praticas de mercado que nao vem dos livros acima.
+Os livros dao os principios; estes numeros, regras e mecanismos sao ajustaveis.
+
+| Id | Decisao | Base | Aplicado em |
+|----|---------|------|-------------|
+| `project-factory` | Dialog-first project factory with four universes, briefing gate, rollback and per-universe artifact alignment | Synapse engineering decision | `scripts/create_ai_project.ps1`, `scripts/project_factory/ProjectFactory.Common.ps1`, `scripts/diagnose_project.ps1` |
+| `business-solution-analyzer` | Keyword-scored archetypes, effective universe with confirmation, ADR in JSON and Markdown | Synapse engineering decision | `scripts/synapse_lib/business_solution_analyzer.py`, `config/business_solution_catalog.json`, `scripts/analyze_business_solution.py` |
+| `technology-selection` | Scenario-based framework and technology catalog with templates vs scaffold targets | market practice (framework landscape) | `config/ai_framework_selection.json`, `scripts/synapse_lib/ai_framework_selector.py`, `templates/README.md` |
+| `statistical-data-treatment` | Deterministic treatment (missing, duplicates, IQR and z-score outlier flags, rare categories) with thresholds in policy | standard applied statistics | `scripts/treat_dataset.py`, `config/data_treatment_policy.json`, `prompts/master_data_treatment.md` |
+| `local-model-baselines` | Local regression/classification/forecasting baselines with a JSON model registry | Synapse engineering decision | `scripts/synapse_lib/model_service.py`, `artifacts/models` |
+| `deterministic-evals` | LLM-free eval suites: prompt contracts, faithfulness by grounding in the cited source, hybrid retrieval recall/MRR/nDCG | Synapse engineering decision | `scripts/synapse_lib/eval_service.py`, `scripts/run_evals.py`, `evals/quality_gates.yaml` |
+| `context-filter-and-radar` | Context filter before LLM calls and market radar for tooling signals | Synapse engineering decision | `scripts/context_filter.py`, `config/context_policy.json`, `scripts/market_radar.py` |
+| `peer-messaging` | Local SQLite MCP mailbox shared by Codex, Claude Code and humans | Synapse engineering decision | `scripts/synapse_peers_mcp.py`, `scripts/synapse_lib/peer_messaging_service.py`, `docs/architecture/peer-messaging.md` |
+| `roles-and-cost-profiles` | Single assistant per task, workflow roles, request profiles with model tier and token budget | Synapse engineering decision | `config/roles.json`, `config/cost_optimization_policy.json` |
+| `scalable-rag-mechanics` | Scale tiers, vector DB catalog, HNSW/IVF parameters, reciprocal rank fusion (k=60, information-retrieval literature), hashing embedder, blue/green index versions | market practice and IR literature | `config/rag_scalability_policy.json`, `scripts/synapse_lib/vector_store.py`, `scripts/synapse_lib/rag_retrieval.py`, `templates/rag/vector_db_adapter.py` |
+| `fine-tuning-thresholds` | Pilot/production minimums (50/500), 5% gain over baseline, human score 0.8, leakage-free hash split | Synapse engineering decision | `config/fine_tuning_policy.json`, `scripts/synapse_lib/fine_tuning_service.py`, `scripts/prepare_fine_tuning_dataset.py` |
+| `harness-engineering` | Harness components per universe, loop limits, pass@k/pass^k reliability metrics (agent benchmark practice), governance migrated from the former trust framework | market practice for coding agents | `config/harness_engineering_policy.json`, `scripts/synapse_lib/harness_service.py`, `scripts/audit_harness.py` |
+| `solution-agents` | Runtime agent blueprints derived from the ADR, owner roles, tools never invented, approval for external actions | Synapse engineering decision | `scripts/synapse_lib/solution_agents.py`, `scripts/scaffold_solution_agents.py`, `config/workflows/synapse/agent-build.json` |
+| `business-transformation-engine` | 14-stage state machine, explicit risk thresholds (100k/1M, regulated = CRITICAL, missing factor = HIGH), prioritization weights | Synapse engineering decision | `scripts/synapse_lib/business_transformation.py`, `scripts/run_business_transformation.py`, `templates/business/transformation_brief.json` |
+| `mechanical-enforcement` | Phantom-reference guard, stdlib-only analyzer and engines, validator that blocks swarm/fleet regressions | Synapse engineering decision | `tests/test_ai_engineering_extensions.py`, `scripts/validate_enterprise_stack.ps1`, `scripts/synapse_lib/text_utils.py` |
+<!-- book-registry:end -->
+
 ## AI Engineering
 
 - Evals before optimization.
@@ -25,6 +81,9 @@ SYNAPSE application:
 - Promote prompts, models, agents, or datasets only after eval evidence exists.
 
 ## Prompt Engineering
+
+Conceptual reference without copied text: *Prompt Engineering for LLMs*, by
+John Berryman and Albert Ziegler.
 
 - Prompt registry.
 - Output contracts.
@@ -53,12 +112,18 @@ Conceptual reference without copied text:
 
 ## Production LLMs
 
+Conceptual reference without copied text: *Building LLMs for Production*, by
+Louis-Francois Bouchard and Louie Peters.
+
 - Runtime fallbacks.
 - Release checklists.
 - Safety policies.
 - Trace requirements.
 
 ## Designing ML Systems
+
+Conceptual reference without copied text: *Designing Machine Learning
+Systems*, by Chip Huyen.
 
 - Data contracts.
 - Model cards.
@@ -90,6 +155,11 @@ SYNAPSE application:
 
 ## Mathematics for ML
 
+Conceptual reference without copied text: *Mathematics for Machine Learning*,
+by Marc Peter Deisenroth, A. Aldo Faisal and Cheng Soon Ong. Statistics used by
+Synapse (sampling, confidence intervals, hypothesis checks, outlier rules in
+`scripts/treat_dataset.py`) is grounded here and in the Foundations of ML notes.
+
 - Similarity, probability, optimization, metrics, and confidence intervals as
 engineering practices.
 
@@ -119,8 +189,7 @@ SYNAPSE application:
 - Explicit workflow roles.
 - Persistent memory.
 - Workflow validation.
-- One-agent-first execution, with specialist escalation only when the task
-  requires another domain.
+- Single-assistant execution; workflow steps name the role that owns them.
 
 Conceptual references without copied text:
 
@@ -218,6 +287,25 @@ reasoning. High-risk stages stop for approval, tools remain simulated until
 authorized, and generated projects inherit the operational contracts as
 governance data without inheriting SYNAPSE's own project-factory scripts.
 
+## Voice and Conversational Agents
+
+Conceptual references without copied text:
+
+- *Speech and Language Processing*, by Daniel Jurafsky and James H. Martin:
+  evaluate speech recognition with word accuracy and domain vocabulary.
+- *Designing Voice User Interfaces*, by Cathy Pearl: explicit wake, listen,
+  recognize, confirm and recover states.
+- *Effective Conversational AI*: intent success and improvement from observed
+  failures; also grounds the Chatbolt conversation evals.
+- *Agentic Coding with Claude Code*, by Eden Marco: persistent context, MCP,
+  reusable workflows and validation hooks for coding agents.
+
+SYNAPSE application:
+
+- `docs/specifications/voice_agentic_coding.md`,
+  `config/voice_agent_quality_gates.json` and `evals/voice_agent_cases.jsonl`.
+- `CLAUDE.md`, `AGENTS.md` and `playbooks/agentic_coding.md`.
+
 ## Scalable RAG and Vector Databases
 
 - Size retrieval before building it: corpus volume, QPS, latency budget,
@@ -284,7 +372,7 @@ SYNAPSE application:
 
 Conceptual references without copied text:
 
-- *Production LLMs*, by Bouchard and Peters: reliability, monitoring,
+- *Building LLMs for Production*, by Louis-Francois Bouchard and Louie Peters: reliability, monitoring,
   guardrails and fallbacks around model calls.
 - *Building Applications with AI Agents*, by Michael Albada: agent evaluation
   and improvement loops.

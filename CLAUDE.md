@@ -235,6 +235,13 @@ Use:
   de risco listados em `pending_user_decisions`. HIGH exige aprovacao; CRITICAL
   nunca executa acao externa. Execucao real so via tool MCP autorizada.
 
+## Livros Base e Implementacao Propria
+
+- `config/book_registry.json` e a fonte unica dos livros (titulo, autores,
+  dominios, universos e onde sao aplicados) e das decisoes proprias fora dos
+  livros. Ao mudar algo baseado em livro ou uma decisao propria, atualize o
+  registro e rode `python scripts/sync_book_registry.py`.
+
 ## Memoria e RAG
 
 Antes de chamar LLM:

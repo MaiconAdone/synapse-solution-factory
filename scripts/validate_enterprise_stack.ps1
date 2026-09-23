@@ -71,6 +71,22 @@ Require-Path "scripts\synapse_lib\business_transformation.py"
 Require-Path "scripts\run_business_transformation.py"
 Require-Path "evals\business_transformation_cases.jsonl"
 Require-Path "templates\business\transformation_brief.json"
+Require-Path "config\book_registry.json"
+Require-Path "scripts\sync_book_registry.py"
+Require-Path "config\agentic_architectural_patterns.json"
+Require-Path "config\business_solution_catalog.json"
+Require-Path "config\business_transformation.json"
+Require-Path "config\llm_solution_factory_policy.json"
+Require-Path "config\ml_foundations_policy.json"
+Require-Path "config\voice_agent_quality_gates.json"
+Require-Path "scripts\analyze_business_solution.py"
+Require-Path "scripts\audit_harness.py"
+Require-Path "scripts\prepare_fine_tuning_dataset.py"
+Require-Path "scripts\run_evals.py"
+Require-Path "scripts\synapse_peers_mcp.py"
+Require-Path "scripts\synapse_lib\model_service.py"
+Require-Path "scripts\synapse_lib\ai_framework_selector.py"
+Require-Path "scripts\synapse_lib\text_utils.py"
 
 python -m compileall scripts tests | Out-Host
 if ($LASTEXITCODE -ne 0) {
@@ -119,6 +135,11 @@ if ($LASTEXITCODE -ne 0) {
 python scripts\run_business_transformation.py --cases evals\business_transformation_cases.jsonl | Out-Null
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Casos de transformacao empresarial (risco, autonomia, aprovacao) nao passaram")
+}
+
+python scripts\sync_book_registry.py --check | Out-Host
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Registro de livros fora de sincronia: rode python scripts/sync_book_registry.py")
 }
 
 python scripts\run_evals.py retrieval | Out-Null

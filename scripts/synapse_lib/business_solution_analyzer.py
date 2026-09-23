@@ -61,6 +61,8 @@ class BusinessSolutionAnalyzer:
         stack = self._solution_stack(effective, ml_match, ai_match)
         technology_selection = self.technology_selector.select(text, universe=effective)
         technology_layer = technology_selection.get("technology_layer", {})
+        if effective not in AI_UNIVERSES:
+            technology_layer = self._strip_ai_templates(technology_layer)
 
         has_business_problem = bool((business_problem or "").strip())
         return {
@@ -92,7 +94,7 @@ class BusinessSolutionAnalyzer:
             "ml_foundations": self._ml_foundations(effective, ml_match),
             "architecture_blueprint": technology_selection.get("architecture_blueprint", {}),
             "pipeline_blueprints": technology_selection.get("pipeline_blueprints", []),
-            "solution_templates": technology_selection.get("solution_templates", []),
+            "solution_templates": self._templates_for_universe(effective, technology_selection.get("solution_templates", [])),
             "solution_scaffold_targets": technology_selection.get("solution_scaffold_targets", []),
             "rag_scalability": self._rag_scalability(effective, text),
             "model_adaptation": self._model_adaptation(effective, text),
@@ -278,8 +280,8 @@ class BusinessSolutionAnalyzer:
         guidance = self.ml_foundations_policy.get("algorithm_guidance", {}).get(ml_id, {})
         return {
             "active": active,
-            "policy_path": "config/ml_foundations_policy.json" if self.ml_foundations_policy else "",
-            "spec_path": "docs/specifications/ml_foundations.md" if self.ml_foundations_policy else "",
+            "policy_path": "config/ml_foundations_policy.json" if active else "",
+            "spec_path": "docs/specifications/ml_foundations.md" if active else "",
             "reason": (
                 "Use foundational ML gates before model selection, training, evaluation, or release."
                 if active
@@ -397,6 +399,23 @@ class BusinessSolutionAnalyzer:
             "rule": "Collect owner, process map, KPI baselines/targets, opportunity scores and risk factors from the user; execution stays simulated until MCP tools are authorized.",
         }
 
+    def _strip_ai_templates(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: self._strip_ai_templates(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [
+                self._strip_ai_templates(item)
+                for item in value
+                if not (isinstance(item, str) and item.startswith(("templates/rag/", "templates/fine_tuning/")))
+            ]
+        return value
+
+    def _templates_for_universe(self, universe: str, templates: list[str]) -> list[str]:
+        # RAG and fine-tuning templates are removed from ML projects by the factory.
+        if universe in AI_UNIVERSES:
+            return templates
+        return [item for item in templates if not item.startswith(("templates/rag/", "templates/fine_tuning/"))]
+
     def _solution_agents(self, universe: str, stack: list[str]) -> dict[str, Any]:
         if universe not in AI_UNIVERSES:
             return {"active": False, "reason": "ML universe ships models, not runtime agents."}
@@ -496,7 +515,8 @@ class BusinessSolutionAnalyzer:
 
     def _required_artifacts(self, universe: str, ml_match: dict[str, Any], ai_match: dict[str, Any]) -> list[str]:
         artifacts = ["docs/briefings/business_solution_analysis.md", "config/business_solution_analysis.json"]
-        artifacts.append("config/ai_framework_selection.json")
+        if universe in AI_UNIVERSES:
+            artifacts.append("config/ai_framework_selection.json")
         if universe in {"ml", "hybrid"}:
             artifacts.extend(["config/ml_foundations_policy.json", "docs/specifications/ml_foundations.md"])
             artifacts.extend(ml_match["item"].get("required_artifacts", []))
@@ -528,13 +548,13 @@ class BusinessSolutionAnalyzer:
             "Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.",
             "LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.",
             "Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.",
-            "Harness engineering (Production LLMs, Building Applications with AI Agents, Cybernetics): budgets, stop conditions, repeated-trial evals and feedback loops around every agent.",
+            "Harness engineering (Building LLMs for Production, Building Applications with AI Agents, Cybernetics): budgets, stop conditions, repeated-trial evals and feedback loops around every agent.",
         ]
         if universe in AI_UNIVERSES:
             alignment.extend(
                 [
                     "Scalable RAG (LLM Engineer's Handbook, AI Engineering, Introduction to Algorithms): sized vector indexes, hybrid retrieval with rank fusion, versioned reindexing and retrieval gates.",
-                    "Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model From Scratch): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data.",
+                    "Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model (From Scratch)): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data.",
                 ]
             )
         if ml_match["item"].get("id") == "speech_recognition":

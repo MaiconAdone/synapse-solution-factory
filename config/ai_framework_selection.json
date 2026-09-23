@@ -29,9 +29,9 @@
     "The Emotion Machine - Marvin Minsky: operational state signals such as uncertainty, confidence, urgency, risk, and blocked execution.",
     "Introduction to Algorithms - CLRS: correctness, complexity, graph workflows, queues, caches, scheduling, and routing tradeoffs.",
     "Prompt Engineering for LLMs - Ziegler and Berryman: prompt contracts, examples, structured outputs, and regression cases.",
-    "The LLM Engineer's Handbook - Iusztin and Labonne: LLMOps, RAG, fine-tuning decisions, observability, and production pipelines.",
-    "Build a Large Language Model From Scratch - Sebastian Raschka: tokenization, embeddings, attention, model limits, and architectural intuition.",
-    "Production LLMs - Bouchard and Peters: reliability, monitoring, guardrails, fallbacks, deployment readiness, and cost control.",
+    "LLM Engineer's Handbook - Iusztin and Labonne: LLMOps, RAG, fine-tuning decisions, observability, and production pipelines.",
+    "Build a Large Language Model (From Scratch) - Sebastian Raschka: tokenization, embeddings, attention, model limits, and architectural intuition.",
+    "Building LLMs for Production - Bouchard and Peters: reliability, monitoring, guardrails, fallbacks, deployment readiness, and cost control.",
     "AI Agents in Action - Micheal Lanham: explicit tools, practical agent roles, planning, execution, and traceability.",
     "Agentic Artificial Intelligence - Pascal Bornet and Jochen Wirtz: objective-driven agents, controlled autonomy, and human-agent collaboration.",
     "Building Applications with AI Agents - Michael Albada: agent design, framework tradeoffs, single-agent versus multiagent decisions, and improvement loops."

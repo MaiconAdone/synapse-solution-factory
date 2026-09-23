@@ -96,7 +96,8 @@
       "config/agent_improvement_loop.json"
     ],
     "test_layer": "tests",
-    "eval_layer": "evals"
+    "eval_layer": "evals",
+    "book_registry": "config/book_registry.json"
   },
   "architecture_rules": {
     "ml": [
@@ -159,7 +160,8 @@
       "docs/specifications/fine_tuning.md",
       "docs/specifications/harness_engineering.md",
       "AGENTS.md",
-      "CLAUDE.md"
+      "CLAUDE.md",
+      "config/book_registry.json"
     ],
     "project_required_paths": [
       "config/business_solution_analysis.json",

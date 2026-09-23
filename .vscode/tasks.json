@@ -378,6 +378,56 @@
         "${workspaceFolder}\\config\\workflows\\enterprise_workflows.yaml"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "Evals: Rodar retrieval hibrido (recall@k, MRR, nDCG)",
+      "detail": "Indexa o corpus local com busca hibrida e aplica os gates de retrieval.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_evals.py",
+        "retrieval"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Synapse: Auditar harness engineering",
+      "detail": "Verifica os componentes de harness para cada universo.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/audit_harness.py",
+        "--universe",
+        "hybrid"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Synapse: Casos de transformacao empresarial",
+      "detail": "Roda os casos de risco, autonomia e aprovacao do motor empresarial.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_business_transformation.py",
+        "--cases",
+        "evals/business_transformation_cases.jsonl"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Synapse: Checar registro de livros",
+      "detail": "Confere se implementation_map e a spec enterprise estao sincronizados com config/book_registry.json.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/sync_book_registry.py",
+        "--check"
+      ],
+      "group": "test",
+      "problemMatcher": []
     }
   ]
 }

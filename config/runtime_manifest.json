@@ -199,7 +199,8 @@
     "rag_pipelines_path": "rag_pipelines",
     "guardrails_path": "guardrails",
     "foundations_notebooks_path": "notebooks/foundations",
-    "book_map": "docs/books/implementation_map.md"
+    "book_map": "docs/books/implementation_map.md",
+    "book_registry": "config/book_registry.json"
   },
   "validation": {
     "required_workflows": [
@@ -254,6 +255,7 @@
       "ml_systems/data_contract.yaml",
       "rag_pipelines/pipeline.yaml",
       "guardrails/policy.yaml",
+      "config/book_registry.json",
       "docs/books/implementation_map.md",
       "scripts/context_filter.py",
       "scripts/market_radar.py",

@@ -10,6 +10,53 @@ from scripts.synapse_lib.ai_framework_selector import AiFrameworkSelector
 from scripts.synapse_lib.eval_service import EvalService
 from scripts.synapse_lib.model_service import ModelService
 from scripts.synapse_lib.schemas.models import ModelPredictionRequest, ModelTrainingRequest
+
+
+PROJECT_PATH_PATTERN = __import__("re").compile(
+    r"(?<![\w/.-])((?:config|docs|scripts|templates|prompts|evals|playbooks|rag_pipelines|rag|vector_db|llm_ops|"
+    r"ml_systems|guardrails|agents|notebooks|memory|tests)/[\w./-]*\w)"
+)
+# Synapse-wide contracts, catalogs and library code are copied unchanged into
+# every project and describe all universes by design.
+UNIVERSAL_PROJECT_FILES = {
+    "config/llm_solution_factory_policy.json", "config/ai_ml_enterprise_spec.json", "config/business_solution_catalog.json",
+    "config/harness_engineering_policy.json", "config/agentic_architectural_patterns.json", "config/agent_blueprint_contract.json",
+    "config/fine_tuning_policy.json", "config/agent_improvement_loop.json", "config/book_registry.json",
+    "docs/books/implementation_map.md", "docs/specifications/harness_engineering.md", "docs/specifications/fine_tuning.md",
+    "docs/specifications/llm_solution_factory_governance.md", "playbooks/prompt_engineering.md", "playbooks/llm_engineering.md",
+    "templates/README.md", "tests/test_project_contract.py",
+}
+RUNTIME_CREATED_PATHS = {
+    "memory/approved_agent_blueprints.jsonl", "memory/approved_architecture_patterns.jsonl",
+    "evals/teacher_review_cases.jsonl", "memory/synapse_learning_memory.jsonl", "docs/radar/YYYY-MM-DD.md",
+}
+
+
+def _missing_project_references(project):
+    """Paths cited by project-specific files that do not exist in the project."""
+    missing = {}
+    for source in project.rglob("*"):
+        relative = source.relative_to(project).as_posix()
+        if (
+            not source.is_file()
+            or source.suffix not in {".md", ".json", ".yaml", ".yml", ".jsonl"}
+            or any(part in {".venv", "__pycache__"} for part in source.parts)
+            or relative in UNIVERSAL_PROJECT_FILES
+        ):
+            continue
+        for line in source.read_text(encoding="utf-8-sig", errors="replace").replace("\\", "/").splitlines():
+            if "created_by" in line or '"source"' in line:
+                continue
+            for target in PROJECT_PATH_PATTERN.findall(line):
+                if (
+                    target in RUNTIME_CREATED_PATHS
+                    or target.startswith("templates/backend/")
+                    or "YYYY" in target
+                    or (project / target).exists()
+                ):
+                    continue
+                missing.setdefault(target, []).append(relative)
+    return missing
 from scripts.synapse_lib.peer_messaging_service import PeerMessagingError, PeerMessagingService
 from scripts.synapse_lib.config import Settings
 from scripts.treat_dataset import treat_dataset
@@ -968,7 +1015,16 @@ def test_generated_solution_project_matches_selected_universe(
     ]
     assert "chats autorizados antes de usar tasks" in runtime["assistant_inheritance"]["content_collection_rule"]
     assert runtime["assistant_inheritance"]["shared_solution_factory_access"]["policy"] == "config/llm_solution_factory_policy.json"
-    assert runtime["assistant_inheritance"]["shared_solution_factory_access"]["technology_catalog"] == "config/ai_framework_selection.json"
+    shared_access = runtime["assistant_inheritance"]["shared_solution_factory_access"]
+    if expected_capabilities["ai"]:
+        assert shared_access["technology_catalog"] == "config/ai_framework_selection.json"
+    else:
+        # ML projects do not receive the AI technology catalog, so they must not point to it.
+        assert "technology_catalog" not in shared_access
+        assert runtime["rag"]["ready"] is False and runtime["fine_tuning"]["enabled"] is False
+    if not expected_capabilities["ml"]:
+        assert "ml_foundations_policy" not in shared_access
+    assert runtime["mcp"]["peer_messaging_script"] == "scripts/synapse_solution_peers_mcp.py"
     assert runtime["assistant_inheritance"]["peer_messaging"]["script"] == "scripts/synapse_solution_peers_mcp.py"
     assert "config/business_solution_analysis.json" in runtime["validation"]["required_practice_paths"]
     assert "config/llm_solution_factory_policy.json" in runtime["validation"]["required_practice_paths"]
@@ -988,6 +1044,11 @@ def test_generated_solution_project_matches_selected_universe(
     assert (project / "tests" / "test_harness_contract.py").exists()
     assert (project / "config" / "harness_engineering_policy.json").exists()
     assert "tests/test_harness_contract.py" in runtime["validation"]["required_practice_paths"]
+    registry = json.loads((project / "config" / "book_registry.json").read_text(encoding="utf-8-sig"))
+    universe_id = analysis["effective_universe"]
+    for book in registry["books"]:
+        if universe_id in book["universes"] and book["domains"] != ["voice"]:
+            assert any((project / path).exists() for path in book["applied_in"]), (universe_id, book["id"])
     roles = {role["id"] for role in json.loads((project / "config" / "roles.json").read_text(encoding="utf-8-sig"))["roles"]}
     assert set(analysis["execution_strategy"]["roles"]) <= roles
     assert "swarm_strategy" not in analysis
@@ -1039,6 +1100,17 @@ def test_generated_solution_project_matches_selected_universe(
         assert (project / "evals" / "chatbot_cases.jsonl").exists()
         assert (project / "config" / "chatbot_config.yaml").exists()
         assert (project / "tests" / "test_chatbot_contract.py").exists()
+
+    # Scaffold targets are files the project is expected to create, so they may not exist yet.
+    scaffold_targets = set(analysis.get("solution_scaffold_targets", []))
+    scaffold_targets |= set(analysis.get("technology_layer", {}).get("scaffold_targets", []))
+    if (project / "config" / "ai_framework_selection.json").exists():
+        catalog = json.loads((project / "config" / "ai_framework_selection.json").read_text(encoding="utf-8-sig"))
+        scaffold_targets |= {t for tech in catalog["technology_catalog"] for t in tech.get("scaffold_targets", [])}
+    dangling = {k: v for k, v in _missing_project_references(project).items() if k not in scaffold_targets}
+    assert not dangling, dangling
+    readme = (project / "README.md").read_text(encoding="utf-8-sig")
+    assert "$(" not in readme and "$TipoProjeto" not in readme, "README must render interpolated values"
 
     test_run = subprocess.run(
         [sys.executable, "-m", "pytest", "tests"],

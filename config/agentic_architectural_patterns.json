@@ -5,8 +5,8 @@
   "source_note": "Inspired by public agentic architecture practices and enterprise multi-agent system design. This file defines Synapse-specific contracts and does not copy book content.",
   "default_policy": {
     "single_agent_first": true,
-    "activate_specialists_on_demand": true,
-    "activate_all_agents_requires_human_approval": true,
+    "split_work_only_when_user_asks": true,
+    "external_actions_require_human_approval": true,
     "llm_calls_must_pass_gateway": true,
     "cloud_requires_explicit_user_request_and_human_approval": true,
     "sensitive_content_local_only": true,

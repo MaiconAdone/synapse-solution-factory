@@ -156,6 +156,10 @@ Principais contratos do Synapse:
 | `config/runtime_manifest.json` | Runtime, governanca de agentes, memoria, RAG, fine-tuning, harness |
 | `config/cost_optimization_policy.json` | Tier de modelo, orcamento de tokens e custo |
 | `config/ai_ml_enterprise_spec.json` | Especificacao enterprise IA/ML |
+| `config/model_providers.json` | Provedores (OpenAI/Anthropic), bloqueio de conteudo sensivel |
+| `config/roles.json` | Papeis que respondem pelas etapas dos workflows |
+| `config/book_registry.json` | Livros base e implementacoes proprias, com onde cada um e aplicado |
+| `config/voice_agent_quality_gates.json` | Gates do arquetipo de agente de voz |
 
 Memoria: hibrida (working, episodic, semantic), compartilhada entre canais pelo
 MCP `synapse-peers` (`scripts/synapse_peers_mcp.py`) e pelo handoff curto em
@@ -533,16 +537,23 @@ fabrica o chama com o `python` do PATH.
 ## 12. Base de livros
 
 O Synapse traduz licoes de livros em contratos executaveis, sem copiar texto.
-Mapa completo em `docs/books/implementation_map.md`.
+A fonte unica e `config/book_registry.json`: 24 livros (titulo, autores,
+dominios, universos e onde cada um e aplicado) e as implementacoes proprias
+fora dos livros. `python scripts/sync_book_registry.py` gera a partir dele as
+tabelas de `docs/books/implementation_map.md` e as `inspiration_sources` da spec
+enterprise; um teste falha se estiverem fora de sincronia ou se algum caminho
+nao existir.
 
 | Tema | Referencias | Onde vira codigo/contrato |
 |------|-------------|---------------------------|
 | AI engineering, evals, feedback | AI Engineering (Chip Huyen) | `evals/`, analisador |
 | RAG escalavel e vector DB | LLM Engineer's Handbook, AI Engineering, CLRS | `config/rag_scalability_policy.json` |
 | Fine-tuning | AI Engineering, LLM Engineer's Handbook, Build a LLM From Scratch | `config/fine_tuning_policy.json` |
-| Harness engineering | Production LLMs, Building Applications with AI Agents, Cybernetics | `config/harness_engineering_policy.json` |
-| ML foundations | Foundations of ML (lecture notes), Designing ML Systems | `config/ml_foundations_policy.json` |
-| Agentes e orquestracao | AI Agents in Action, Society of Mind, Agentic Architectural Patterns | `config/agentic_architectural_patterns.json` |
+| Harness engineering | Building LLMs for Production, Building Applications with AI Agents, Cybernetics | `config/harness_engineering_policy.json` |
+| ML foundations e estatistica | Foundations of ML (lecture notes), Designing Machine Learning Systems, Mathematics for Machine Learning | `config/ml_foundations_policy.json`, `scripts/treat_dataset.py` |
+| Prompts e LLM em producao | Prompt Engineering for LLMs, Building LLMs for Production | `playbooks/`, `llm_ops/`, `guardrails/` |
+| Voz e conversacao | Speech and Language Processing, Designing Voice User Interfaces, Effective Conversational AI, Agentic Coding with Claude Code | `docs/specifications/voice_agentic_coding.md` |
+| Agentes e orquestracao | AI Agents in Action, AI Agents and Applications, Artificial Intelligence (Winston), Society of Mind, Emotion Machine, Agentic Architectural Patterns | `config/agentic_architectural_patterns.json`, `config/roles.json` |
 | Transformacao empresarial | Agentic AI, Competing in the Age of AI, All-In on AI | `config/business_transformation.json` |
 
 Principios aplicados: evals antes de otimizar; prompts, ferramentas, retrieval e
@@ -589,6 +600,12 @@ tests/                  testes do Synapse
 | Tratar dados | `python .\scripts\treat_dataset.py --input .\data\raw\arquivo.csv` |
 | Filtrar contexto para LLM | `python .\scripts\context_filter.py --input ... --output ... --max-chars 12000` |
 | Market radar | `python .\scripts\market_radar.py` |
+| Menu interativo da fabrica | `.\scripts\ai_factory_menu.ps1` |
+| Instalar dependencias (bootstrap) | `.\scripts\bootstrap_enterprise_stack.ps1 -InstallPythonDeps` |
+| Tratar dados pelo dialogo do Codex | `.\scripts\codex_data_treatment_dialog.ps1 -InputPath data\raw\arquivo.csv` |
+| Anexar foto/arquivo a um projeto | `.\scripts\import_project_file.ps1 -ProjectName ... -InputPath ...` |
+| Evals por wrapper PowerShell | `.\scripts\run_ml_evals.ps1`, `.\scripts\run_ai_evals.ps1`, `.\scripts\run_rag_evals.ps1` |
+| Checar/gerar registro de livros | `python .\scripts\sync_book_registry.py --check` |
 
 Mais detalhes: `docs/vscode-workflow.md`, `docs/architecture/project-factory.md`
 e `docs/architecture/no-code-ai-factory.md`.

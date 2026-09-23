@@ -72,3 +72,9 @@ Objetivo: remover claude-flow de .claude/ e completar o briefing na task e no me
 Arquivos tocados: .claude/ (comandos claude-flow, sparc e analysis e agentes com hooks npx claude-flow removidos; permissao /swarm removida do settings.json), `.vscode/tasks.json`, `scripts/ai_factory_menu.ps1`, README, AGENTS.md, copilot-instructions, teste de contrato.
 Decisoes: ficaram so as definicoes de agentes sem claude-flow; task e menu pedem objetivo, problema, metrica, fontes e risco (risco sem valor padrao) e o menu nao cria projeto com campo vazio.
 Proximo passo: nenhum pendente desta frente.
+
+Data: 2026-09-23
+Objetivo: checagem completa da fabrica (universos, livros base e implementacoes proprias).
+Arquivos tocados: `config/book_registry.json` + `scripts/sync_book_registry.py` (fonte unica de livros e decisoes proprias), fabrica (Align-UniverseArtifacts, crases do markdown gerado, runbooks), analisador (artefatos por universo), workflows YAML sincronizados com os JSON, prompts, validador, tasks VS Code, README, CLAUDE.md, testes.
+Decisoes: projeto gerado nao pode citar caminho inexistente (teste permanente por universo); contratos universais (politicas, catalogos, registro) podem citar todos os universos; titulo correto "Building LLMs for Production".
+Proximo passo: ao adicionar livro ou decisao propria, atualizar config/book_registry.json e rodar python scripts/sync_book_registry.py.

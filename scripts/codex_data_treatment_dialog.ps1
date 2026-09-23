@@ -52,12 +52,9 @@ $DialogContext = @{
     master_prompt = "prompts/master_data_treatment.md"
     data_treatment_policy = "config/data_treatment_policy.json"
     workflow = "new-ai-project"
-    # Economic subset curated for this task (statistical data treatment of a
-    # single dataset), not the full 15-agent core roster: activating
-    # backend/frontend/RAG/LLM engineering here would contradict the
-    # cost-aware "route by complexity" policy for a task that is just
-    # cleaning and profiling a CSV.
-    required_agents = @(
+    # Roles (config/roles.json) a single assistant takes on for this task;
+    # cleaning and profiling one dataset needs no RAG/LLM roles.
+    roles = @(
         "orchestration-manager",
         "data-engineering",
         "data-science",

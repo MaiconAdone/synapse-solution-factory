@@ -52,7 +52,7 @@ Test-RelativePath "runtime_manifest" "config\runtime_manifest.json" "Runtime man
 Test-RelativePath "project_universe" "config\project_universe.json" "Universo do projeto existe"
 Test-RelativePath "solution_contract" "config\synapse_solution_contract.json" "Contrato de solucao gerenciada pelo Synapse existe"
 Test-RelativePath "enterprise_spec" "config\ai_ml_enterprise_spec.json" "Especificacao enterprise IA/ML existe"
-Test-RelativePath "cost_optimization_policy" "config\cost_optimization_policy.json" "Politica de orquestracao economica existe"
+Test-RelativePath "cost_optimization_policy" "config\cost_optimization_policy.json" "Politica de custo e roteamento de modelos existe"
 Test-RelativePath "context_policy" "config\context_policy.json" "Politica central de contexto LLM existe"
 Test-RelativePath "roles" "config\roles.json" "Papeis dos workflows existem"
 Test-RelativePath "agent_blueprint_contract" "config\agent_blueprint_contract.json" "Contrato de agent blueprint existe"

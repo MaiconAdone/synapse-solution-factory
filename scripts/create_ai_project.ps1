@@ -413,37 +413,37 @@ function Create-AssistantInheritanceArtifacts {
 # Synapse Solution Project
 
 - Use OpenAI/Codex diretamente para triagem, resumo, classificacao, planejamento inicial e revisao de codigo.
-- Trabalhe com um unico assistente por tarefa; escolha o tier de modelo conforme `config/cost_optimization_policy.json`.
-- Acoes destrutivas ou externas seguem a matriz de autonomia de `config/harness_engineering_policy.json`.
+- Trabalhe com um unico assistente por tarefa; escolha o tier de modelo conforme ``config/cost_optimization_policy.json``.
+- Acoes destrutivas ou externas seguem a matriz de autonomia de ``config/harness_engineering_policy.json``.
 - Envie apenas arquivos e trechos relevantes. Comprima contexto grande antes do modelo.
 - Limite respostas normalmente a 512 tokens de saida.
-- Use `synapse-peers` para trocar resumos curtos entre Codex e Claude antes de repetir contexto.
-- Este projeto pertence ao universo `$($ProjectUniverse.universe)` e herda somente os artefatos de solucao aplicaveis.
-- Antes de criar ou implementar qualquer funcionalidade, siga `config/business_solution_analysis.json` e `docs/briefings/business_solution_analysis.md`.
-- Se o problema de negocio mudar, atualize a analise com `scripts/analyze_business_solution.py` no Synapse antes de alterar arquitetura, testes ou evals.
+- Use ``synapse-peers`` para trocar resumos curtos entre Codex e Claude antes de repetir contexto.
+- Este projeto pertence ao universo ``$($ProjectUniverse.universe)`` e herda somente os artefatos de solucao aplicaveis.
+- Antes de criar ou implementar qualquer funcionalidade, siga ``config/business_solution_analysis.json`` e ``docs/briefings/business_solution_analysis.md``.
+- Se o problema de negocio mudar, atualize a analise com ``scripts/analyze_business_solution.py`` no Synapse antes de alterar arquitetura, testes ou evals.
 - A caixa de dialogo e o fluxo principal; tasks sao atalhos opcionais, nao requisito.
 - Codex, Claude Code e VS Code Chat devem conduzir briefing e implementacao pela conversa local, sem exigir navegador.
 - Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
+- Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, ``config/llm_solution_factory_policy.json``, ``config/ai_framework_selection.json``, analise de solucao, governanca, testes e evals.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou nivel de risco, pergunte ao usuario antes de implementar. Nao invente essas informacoes.
-- Todo agente segue `config/harness_engineering_policy.json` (mapa de contexto, limites do loop, verificacao, observabilidade); audite com `python scripts/audit_harness.py`.
-- Com RAG, siga `config/rag_scalability_policy.json` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; fine-tuning so com `config/fine_tuning_policy.json` (baseline medido, dataset curado e aprovacao humana).
+- Todo agente segue ``config/harness_engineering_policy.json`` (mapa de contexto, limites do loop, verificacao, observabilidade); audite com ``python scripts/audit_harness.py``.
+- Com RAG, siga ``config/rag_scalability_policy.json`` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; fine-tuning so com ``config/fine_tuning_policy.json`` (baseline medido, dataset curado e aprovacao humana).
 "@
     Write-TextFile -Path (Join-Path $Destino "AGENTS.md") -Content $CodexInstructions
 
     $ClaudeInstructions = @"
 # Claude Instructions
 
-Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse.universe)`.
+Este e um projeto de solucao criado pelo Synapse no universo ``$($ProjectUniverse.universe)``.
 
 ## Politica De Provedores
 
 - Use Anthropic/Claude diretamente para resumo, classificacao, planejamento, revisao e tarefas de baixo risco.
-- Acoes destrutivas ou externas seguem a matriz de autonomia de `config/harness_engineering_policy.json`.
-- Leia `config/synapse_solution_contract.json`, `config/project_universe.json` e `config/cost_optimization_policy.json` antes de escolher o tier de modelo.
-- Leia `config/business_solution_analysis.json` antes de decidir arquitetura, agentes, RAG, ML, testes ou evals.
-- Comece com um unico assistente; papeis de workflow ficam em `config/roles.json`.
-- Use o MCP `synapse-peers` para coordenar com Codex por resumos curtos, sem secrets e sem colar arquivos grandes.
+- Acoes destrutivas ou externas seguem a matriz de autonomia de ``config/harness_engineering_policy.json``.
+- Leia ``config/synapse_solution_contract.json``, ``config/project_universe.json`` e ``config/cost_optimization_policy.json`` antes de escolher o tier de modelo.
+- Leia ``config/business_solution_analysis.json`` antes de decidir arquitetura, agentes, RAG, ML, testes ou evals.
+- Comece com um unico assistente; papeis de workflow ficam em ``config/roles.json``.
+- Use o MCP ``synapse-peers`` para coordenar com Codex por resumos curtos, sem secrets e sem colar arquivos grandes.
 - Ao concluir ou bloquear uma tarefa de chat, registre resumo curto na memoria compartilhada.
 
 ## Escopo
@@ -454,17 +454,17 @@ Este e um projeto de solucao criado pelo Synapse no universo `$($ProjectUniverse
 - A conversa e o caminho principal para pedir mudancas; tasks locais sao apenas atalhos auxiliares.
 - Claude Code deve perguntar pelo proprio chat quando faltar briefing; nao envie o usuario para navegador nem dependa de task do VS Code.
 - Canais autorizados para conteudo solicitado pelo usuario: VS Code Chat, Claude Code e Codex. Objetivos, restricoes, arquivos, decisoes, aprovacoes e lacunas de briefing devem ser coletados ou confirmados por esses chats antes de usar tasks, scripts, navegador ou ferramentas.
-- Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, `config/llm_solution_factory_policy.json`, `config/ai_framework_selection.json`, analise de solucao, governanca, testes e evals.
+- Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, ``config/llm_solution_factory_policy.json``, ``config/ai_framework_selection.json``, analise de solucao, governanca, testes e evals.
 - Se faltar contexto essencial, pergunte ao usuario no chat antes de implementar.
-- Todo agente segue `config/harness_engineering_policy.json`; audite com `python scripts/audit_harness.py`.
-- Com RAG, siga `config/rag_scalability_policy.json` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); fine-tuning so com `config/fine_tuning_policy.json` e aprovacao humana.
+- Todo agente segue ``config/harness_engineering_policy.json``; audite com ``python scripts/audit_harness.py``.
+- Com RAG, siga ``config/rag_scalability_policy.json`` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); fine-tuning so com ``config/fine_tuning_policy.json`` e aprovacao humana.
 "@
     Write-TextFile -Path (Join-Path $Destino "CLAUDE.md") -Content $ClaudeInstructions
 
     $PeerRunbook = @"
 # Peer Messaging Local
 
-O MCP `synapse-peers` permite que Codex, Claude e operadores humanos compartilhem resumos curtos em SQLite local.
+O MCP ``synapse-peers`` permite que Codex, Claude e operadores humanos compartilhem resumos curtos em SQLite local.
 
 Use para reduzir custo por tokens:
 
@@ -473,7 +473,7 @@ Use para reduzir custo por tokens:
 - envie mensagens pequenas, sem secrets e sem arquivos completos;
 - solicite contexto detalhado apenas quando o resumo nao for suficiente.
 
-Banco local: `./artifacts/peers/synapse-peers.db`.
+Banco local: ``./artifacts/peers/synapse-peers.db``.
 Limite padrao: 1200 caracteres por mensagem e 360 por resumo.
 "@
     Write-TextFile -Path (Join-Path $Destino "docs\runbooks\peer_messaging.md") -Content $PeerRunbook
@@ -1016,13 +1016,13 @@ observability.
 
 ## Data
 
-- Store conversation logs in `data/conversations`.
-- Store session metadata in `data/session_logs`.
-- Use `docs/checklists/chatbot_quality_checklist.md` to validate output quality.
+- Store conversation logs in ``data/conversations``.
+- Store session metadata in ``data/session_logs``.
+- Use ``docs/checklists/chatbot_quality_checklist.md`` to validate output quality.
 
 ## Safety and Governance
 
-- Route sensitive requests through the security-compliance review defined in `config/harness_engineering_policy.json`.
+- Route sensitive requests through the security-compliance review defined in ``config/harness_engineering_policy.json``.
 - Enforce tool access via MCP and explicit approval for destructive actions.
 - Log every fallback and uncertainty response.
 "@
@@ -1058,7 +1058,7 @@ chatbot:
 - [ ] The chatbot cites sources when using retrieved information.
 - [ ] The chatbot provides safe fallback messages for unknown input.
 - [ ] The chatbot avoids revealing sensitive or private data.
-- [ ] The chatbot logs conversation metadata to `data/session_logs`.
+- [ ] The chatbot logs conversation metadata to ``data/session_logs``.
 - [ ] The chatbot uses attachments and documents only when relevant.
 - [ ] The chatbot maintains a consistent persona and tone.
 - [ ] The chatbot is governed by the project agent governance (config/harness_engineering_policy.json) and compliance rules.
@@ -1100,7 +1100,7 @@ chatbot:
     $ExecutionSpec = @"
 # Especificacao de Execucao IA/ML - $NomeProjeto
 
-Este projeto segue `config/ai_ml_enterprise_spec.json` como contrato principal.
+Este projeto segue ``config/ai_ml_enterprise_spec.json`` como contrato principal.
 
 ## Universo
 
@@ -1133,10 +1133,10 @@ Nenhuma implementacao deve comecar sem:
 
 ## Execucao no Codex + Claude Code
 
-- Comece com um unico assistente (Codex ou Claude Code); papeis de workflow ficam em `config/roles.json`.
-- Identidade, permissoes, explicabilidade, lifecycle e matriz de autonomia seguem a secao `governance` de `config/harness_engineering_policy.json`.
-- Solicitacoes usam o provedor cloud configurado (OpenAI/Anthropic) com o tier de modelo de `config/cost_optimization_policy.json`.
-- Todo objetivo empresarial deve passar pelo workflow `business-transformation`
+- Comece com um unico assistente (Codex ou Claude Code); papeis de workflow ficam em ``config/roles.json``.
+- Identidade, permissoes, explicabilidade, lifecycle e matriz de autonomia seguem a secao ``governance`` de ``config/harness_engineering_policy.json``.
+- Solicitacoes usam o provedor cloud configurado (OpenAI/Anthropic) com o tier de modelo de ``config/cost_optimization_policy.json``.
+- Todo objetivo empresarial deve passar pelo workflow ``business-transformation``
   antes de escalar automacoes ou integracoes.
 - Riscos HIGH e CRITICAL exigem aprovacao humana registrada.
 - Experiencias aprovadas entram na memoria do projeto; pesos do modelo nunca mudam automaticamente.
@@ -1166,10 +1166,10 @@ Nenhuma implementacao deve comecar sem:
 
 ## Transformacao Empresarial
 
-- Configuracao: `config/business_transformation.json`.
-- Prompt: `prompts/business_transformation.md`.
-- Workflow: `config/workflows/synapse/business-transformation.json`.
-- Perfis: `agents/definitions/business_transformation_agents.yaml`.
+- Configuracao: ``config/business_transformation.json``.
+- Prompt: ``prompts/business_transformation.md``.
+- Workflow: ``config/workflows/synapse/business-transformation.json``.
+- Perfis: ``agents/definitions/business_transformation_agents.yaml``.
 - Operar em simulacao antes de conectar tools MCP reais.
 - Medir baseline, tempo de ciclo, retrabalho, custo por caso, adocao e resultado principal.
 "@
@@ -1179,7 +1179,7 @@ Nenhuma implementacao deve comecar sem:
         $FrameworkSpec = @"
 # Selecao de Frameworks IA - $NomeProjeto
 
-Este projeto usa `config/ai_framework_selection.json` para orientar Codex + Claude Code
+Este projeto usa ``config/ai_framework_selection.json`` para orientar Codex + Claude Code
 antes de criar agentes, RAG, LLM, MCP ou workflows no-code.
 
 ## Politica
@@ -1229,7 +1229,7 @@ antes de criar agentes, RAG, LLM, MCP ou workflows no-code.
         $TechnologyLayerSpec = @"
 # Camada de Tecnologia - $NomeProjeto
 
-Este projeto usa `config/ai_framework_selection.json` como catalogo governado
+Este projeto usa ``config/ai_framework_selection.json`` como catalogo governado
 para selecionar tecnologias, arquiteturas, frameworks, agentes, pipelines e
 templates a partir do problema de negocio.
 
@@ -1254,12 +1254,12 @@ templates a partir do problema de negocio.
 
 ## Saidas Obrigatorias
 
-- `technology_layer`: tecnologias, capacidades, categorias e templates recomendados.
-- `architecture_blueprint`: componentes locais-first e limites de ferramenta.
-- `pipeline_blueprints`: descoberta, RAG, agentes, automacao, ingestao ou MLOps.
-- `solution_templates`: templates a adaptar antes da implementacao.
-- `evaluation_plan`: testes e evals antes de release.
-- `production_risks`: riscos a tratar no desenho e na revisao.
+- ``technology_layer``: tecnologias, capacidades, categorias e templates recomendados.
+- ``architecture_blueprint``: componentes locais-first e limites de ferramenta.
+- ``pipeline_blueprints``: descoberta, RAG, agentes, automacao, ingestao ou MLOps.
+- ``solution_templates``: templates a adaptar antes da implementacao.
+- ``evaluation_plan``: testes e evals antes de release.
+- ``production_risks``: riscos a tratar no desenho e na revisao.
 
 ## Regras
 
@@ -1331,14 +1331,14 @@ evals, observabilidade e status de certificacao.
 
 Este projeto herda do Synapse um catalogo leve de padroes para sistemas
 multiagente empresariais. O catalogo executavel fica em
-`config/agentic_architectural_patterns.json`.
+``config/agentic_architectural_patterns.json``.
 
 ## Padroes Herdados
 
 - Orchestrator Specialist: um orquestrador delega a especialistas apenas quando o dominio exige.
 - Critic Reviewer Gate: risco alto passa por revisao, evals e aprovacao.
 - A2A Message Contract: Codex, Claude e humanos trocam resumos
-  curtos por `synapse-peers`.
+  curtos por ``synapse-peers``.
 - Tool Gateway: ferramentas operam com menor privilegio e auditoria.
 - Model Router: agentes nao chamam LLM direto; passam pelo gateway.
 - Shared Memory Retrieval: recuperar contexto aprovado antes de gastar tokens.
@@ -1834,7 +1834,8 @@ function Create-Runbooks {
         "Para revalidar manualmente:",
         "",
         "~~~powershell",
-        "powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterprise_stack.ps1",
+        "python -m pytest tests",
+        "python scripts/audit_harness.py",
         "~~~",
         "",
         "## Arquivos principais",
@@ -1928,9 +1929,9 @@ function Create-Runbooks {
         "## Validacao",
         "",
         "~~~powershell",
-        "pytest -q",
-        "powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\validate_enterprise_stack.ps1",
-        "powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\diagnose_project.ps1 -ProjectName $NomeProjeto",
+        "python -m pytest tests",
+        "python scripts/audit_harness.py",
+        "# no Synapse: .\scripts\diagnose_project.ps1 -ProjectName $NomeProjeto",
         "~~~"
     ) -join $NewLine
     Write-TextFile -Path (Join-Path $Destino "docs\runbooks\agent_sre.md") -Content $AgentSre
@@ -2049,7 +2050,7 @@ function Create-Runbooks {
 ## Manutencao
 
 - Atualize a persona do chatbot conforme o publico do projeto.
-- Aporte novas fontes de documentos em `docs/` e `data/` quando relevantes.
+- Aporte novas fontes de documentos em ``docs/`` e ``data/`` quando relevantes.
 - Teste o fluxo com casos de uso reais antes de colocar em producao.
 "@
         Write-TextFile -Path (Join-Path $Destino "docs\runbooks\chatbot_operations.md") -Content $ChatbotOperations
@@ -2082,21 +2083,21 @@ function Personalize-Readme {
     $Readme = @"
 # $NomeProjeto
 
-Tipo: `$TipoProjeto`
+Tipo: ``$TipoProjeto``
 
-Universo: `$($ProjectUniverse.label)`
+Universo: ``$($ProjectUniverse.label)``
 
 Capacidades ativas:
 
-- ML: `$($ProjectUniverse.ml_enabled)`
-- IA: `$($ProjectUniverse.ai_enabled)`
-- RAG: `$($ProjectUniverse.rag_enabled)`
-- Transformacao empresarial agentica: `True`
-- Tratamento de dados: `True`
-- Governanca de modelos: `True`
-- Aprendizagem por memoria: `True`
-- Testes automatizados: `True`
-- Evals de qualidade: `True`
+- ML: ``$($ProjectUniverse.ml_enabled)``
+- IA: ``$($ProjectUniverse.ai_enabled)``
+- RAG: ``$($ProjectUniverse.rag_enabled)``
+- Transformacao empresarial agentica: ``True``
+- Tratamento de dados: ``True``
+- Governanca de modelos: ``True``
+- Aprendizagem por memoria: ``True``
+- Testes automatizados: ``True``
+- Evals de qualidade: ``True``
 
 Projeto de solucao gerenciado pelo Synapse, baseado em Engenharia de IA,
 Machine Learning, Estatistica, Governanca e Tratamento de Dados.
@@ -2110,28 +2111,28 @@ Machine Learning, Estatistica, Governanca e Tratamento de Dados.
 
 ## Configuracao Principal
 
-- `config/runtime_manifest.json`
-- `config/ai_ml_enterprise_spec.json`
-- `config/ai_framework_selection.json`
-- `config/project_universe.json`
-- `config/business_solution_analysis.json`
-- `config/enterprise.yaml`
-- `config/workflows/enterprise_workflows.yaml`
-- `config/business_transformation.json`
-- `config/workflows/synapse/business-transformation.json`
+- ``config/runtime_manifest.json``
+- ``config/ai_ml_enterprise_spec.json``
+- ``config/ai_framework_selection.json``
+- ``config/project_universe.json``
+- ``config/business_solution_analysis.json``
+- ``config/enterprise.yaml``
+- ``config/workflows/enterprise_workflows.yaml``
+- ``config/business_transformation.json``
+- ``config/workflows/synapse/business-transformation.json``
 
 ## Camada de Praticas
 
-- `playbooks/`
-- `prompts/`
-- `tests/`
-- `evals/`
-- `docs/briefings/business_solution_analysis.md`
-- `llm_ops/`
-- `ml_systems/`
-- `rag_pipelines/`
-- `guardrails/`
-- `docs/books/implementation_map.md`
+- ``playbooks/``
+- ``prompts/``
+- ``tests/``
+- ``evals/``
+- ``docs/briefings/business_solution_analysis.md``
+- ``llm_ops/``
+- ``ml_systems/``
+- ``rag_pipelines/``
+- ``guardrails/``
+- ``docs/books/implementation_map.md``
 
 ## Primeiros Passos
 
@@ -2167,8 +2168,8 @@ function Create-CreationReport {
 - Enterprise YAML configured
 - Synapse solution contract configured
 - Workflow YAML configured
-- `.env.example` and `.env` created
-- Python `.venv` created and `requirements.txt` installed (skip with -SkipActivation)
+- ``.env.example`` and ``.env`` created
+- Python ``.venv`` created and ``requirements.txt`` installed (skip with -SkipActivation)
 - Data, experiments, artifacts, docs, and output folders created
 - Upload folders and Codex attachment manifest created
 - Project model card, data contract, prompts, evals, runbooks, and checklist created
@@ -2234,6 +2235,8 @@ function Finalize-SynapseSolutionProject {
             "templates\fine_tuning",
             "config\rag_scalability_policy.json",
             "config\fine_tuning_policy.json",
+            "config\workflows\synapse\rag-build.json",
+            "docs\specifications\technology_layer.md",
             "docs\specifications\scalable_rag_vector_db.md",
             "docs\specifications\fine_tuning.md",
             "scripts\prepare_fine_tuning_dataset.py",
@@ -2260,6 +2263,8 @@ function Finalize-SynapseSolutionProject {
             "notebooks\foundations\math_for_ml_plan.md",
             "config\ml_foundations_policy.json",
             "docs\specifications\ml_foundations.md",
+            "config\workflows\synapse\ml-release.json",
+            "prompts\ml_experiment_planner.md",
             "scripts\run_ml_evals.ps1"
         )) {
             $Path = Join-Path $Destino $RelativePath
@@ -2325,6 +2330,94 @@ function Finalize-SynapseSolutionProject {
         }
     }
     Write-TextFile -Path (Join-Path $Destino "config\synapse_solution_contract.json") -Content ($SolutionContract | ConvertTo-Json -Depth 10)
+}
+
+function Align-UniverseArtifacts {
+    # Everything a generated project cites must exist in that project: drop
+    # references to capabilities its universe does not receive.
+    $RuntimePath = Join-Path $Destino "config\runtime_manifest.json"
+    if (Test-Path $RuntimePath) {
+        $Runtime = Get-Content $RuntimePath -Raw | ConvertFrom-Json
+        $Runtime.mcp.peer_messaging_script = "scripts/synapse_solution_peers_mcp.py"
+        foreach ($Section in @("assistant_channels", "assistant_inheritance")) {
+            $Access = $Runtime.$Section.shared_solution_factory_access
+            if ($null -eq $Access) { continue }
+            if (!$ProjectUniverse.ai_enabled) {
+                $Access.PSObject.Properties.Remove("technology_catalog")
+                $Access.PSObject.Properties.Remove("technology_layer")
+            }
+            if (!$ProjectUniverse.ml_enabled) {
+                $Access.PSObject.Properties.Remove("ml_foundations_policy")
+                $Access.PSObject.Properties.Remove("ml_foundations_spec")
+            }
+        }
+        if (!$ProjectUniverse.ai_enabled) {
+            $Runtime.rag = [ordered]@{ ready = $false; reason = "ML universe has no retrieval layer" }
+            $Runtime.fine_tuning = [ordered]@{ enabled = $false; reason = "LLM fine-tuning does not apply to the ML universe" }
+        }
+        Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
+    }
+
+    foreach ($PromptName in @("codex_data_treatment_dialog.md", "system_orchestration_manager.md")) {
+        $PromptPath = Join-Path $Destino "prompts\$PromptName"
+        if (Test-Path $PromptPath) {
+            $Prompt = Get-Content $PromptPath -Raw
+            $Prompt = $Prompt.Replace('`scripts/codex_data_treatment_dialog.ps1`', '`python scripts/treat_dataset.py --input <arquivo>`')
+            $Prompt = $Prompt.Replace('2. Rodar `Enterprise: Validar stack` quando a validacao ainda nao foi feita.', '2. Rodar `python -m pytest tests` quando a validacao ainda nao foi feita.')
+            $Prompt = $Prompt.Replace('validate the stack, execute', 'run the project tests, execute')
+            if (!$ProjectUniverse.ai_enabled) {
+                $Prompt = $Prompt -replace 'eval_dataset: evals/prompt_cases\.jsonl', 'eval_dataset: evals/project_cases.jsonl'
+            }
+            Write-TextFile -Path $PromptPath -Content $Prompt
+        }
+    }
+    if (!$ProjectUniverse.ai_enabled) {
+        $AssistantPrompt = Join-Path $Destino "prompts\project_assistant.md"
+        if (Test-Path $AssistantPrompt) {
+            $Prompt = (Get-Content $AssistantPrompt -Raw) -replace 'eval_dataset: evals/prompt_cases\.jsonl', 'eval_dataset: evals/project_cases.jsonl'
+            Write-TextFile -Path $AssistantPrompt -Content $Prompt
+        }
+        foreach ($DocName in @("AGENTS.md", "CLAUDE.md")) {
+            $DocPath = Join-Path $Destino $DocName
+            if (Test-Path $DocPath) {
+                $Doc = Get-Content $DocPath -Raw
+                $Doc = $Doc.Replace(', `config/ai_framework_selection.json`', '')
+                $Doc = $Doc -replace '(?m)^- Com RAG, siga .*(\r?\n|$)', ''
+                Write-TextFile -Path $DocPath -Content $Doc
+            }
+        }
+        $ReadmePath = Join-Path $Destino "README.md"
+        if (Test-Path $ReadmePath) {
+            $Readme = (Get-Content $ReadmePath -Raw) -replace '(?m)^- `config/ai_framework_selection\.json`\r?\n', ''
+            Write-TextFile -Path $ReadmePath -Content $Readme
+        }
+        $SetupPath = Join-Path $Destino "docs\checklists\first_project_setup.md"
+        if (Test-Path $SetupPath) {
+            $Setup = (Get-Content $SetupPath -Raw) -replace '(?m)^- \[x\] (Catalogo de frameworks IA|Projetos IA/Hibridos/Chatbolt recebem).*\r?\n', ''
+            Write-TextFile -Path $SetupPath -Content $Setup
+        }
+    }
+    if (!$ProjectUniverse.ai_enabled) {
+        foreach ($GovernanceDoc in @("docs\specifications\agent_governance.md", "docs\checklists\agent_certification.md", "docs\runbooks\agent_sre.md")) {
+            $DocPath = Join-Path $Destino $GovernanceDoc
+            if (Test-Path $DocPath) {
+                $Doc = (Get-Content $DocPath -Raw).Replace("config/solution_agents.json", "config/workflows/synapse/ (o universo ML nao tem agentes de runtime)")
+                Write-TextFile -Path $DocPath -Content $Doc
+            }
+        }
+    }
+    $WorkflowsYamlPath = Join-Path $Destino "config\workflows\enterprise_workflows.yaml"
+    if (Test-Path $WorkflowsYamlPath) {
+        $WorkflowsYaml = Get-Content $WorkflowsYamlPath -Raw
+        if (!$ProjectUniverse.ai_enabled) {
+            foreach ($AiWorkflow in @("rag-build", "agent-build")) {
+                $WorkflowsYaml = $WorkflowsYaml -replace "(?ms)^  - id: $AiWorkflow\r?\n.*?(?=^  - id: |\z)", ''
+            }
+        }
+        if (!$ProjectUniverse.ml_enabled) { $WorkflowsYaml = $WorkflowsYaml -replace '(?ms)^  - id: ml-release\r?\n.*?(?=^  - id: |\z)', '' }
+        Write-TextFile -Path $WorkflowsYamlPath -Content $WorkflowsYaml
+    }
+    Write-Host "Artefatos alinhados ao universo $($ProjectUniverse.label)." -ForegroundColor Green
 }
 
 function Run-ProjectValidation {
@@ -2577,6 +2670,7 @@ try {
     Personalize-Readme
     Create-CreationReport
     Finalize-SynapseSolutionProject
+    Align-UniverseArtifacts
     Configure-SolutionVsCodeTasks
     Run-ProjectValidation
     Activate-GeneratedProject

@@ -7,8 +7,8 @@ technology mix needed to solve it: architecture components, frameworks, agent
 patterns, pipelines, templates, evals, and production risks.
 
 It is not an installer and does not add dependencies blindly. It is a governed
-selection layer used before SDD, implementation, project generation, or role
-specialist routing.
+selection layer used before SDD, implementation, project generation, or
+workflow routing.
 
 ## Source Of Truth
 

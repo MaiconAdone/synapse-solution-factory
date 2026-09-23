@@ -132,6 +132,6 @@ Create a hybrid project combining MLOps with RAG/agents so predictive intelligen
 - Designing ML Systems/MLOps: use data contracts, baselines, experiment tracking, monitoring, and drift checks.
 - LLM engineering: version prompts and context, keep provider boundaries explicit, and monitor production outcomes.
 - Agent architecture: use bounded tools, persistent context, human approval, tests, and rollback for coding actions.
-- Harness engineering (Production LLMs, Building Applications with AI Agents, Cybernetics): budgets, stop conditions, repeated-trial evals and feedback loops around every agent.
+- Harness engineering (Building LLMs for Production, Building Applications with AI Agents, Cybernetics): budgets, stop conditions, repeated-trial evals and feedback loops around every agent.
 - Scalable RAG (LLM Engineer's Handbook, AI Engineering, Introduction to Algorithms): sized vector indexes, hybrid retrieval with rank fusion, versioned reindexing and retrieval gates.
-- Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model From Scratch): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data.
+- Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model (From Scratch)): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data.

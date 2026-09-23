@@ -129,28 +129,54 @@ workflows:
     strategy: adaptive
     owner: rag-engineering
     roles:
+      - rag-engineering
       - data-engineering
-      - llm-engineering
+      - security-compliance
       - testing-qa
     steps:
+      - confirm_scale_decisions
       - ingest_sources
       - validate_documents
+      - redact_sensitive_content
       - chunk_documents
       - generate_embeddings
-      - build_vector_index
+      - build_versioned_vector_index
       - evaluate_retrieval
+      - switch_index_alias
+  - id: agent-build
+    strategy: governed
+    owner: llm-engineering
+    roles:
+      - orchestration-manager
+      - llm-engineering
+      - product-strategy
+      - integration-automation
+      - security-compliance
+      - rag-engineering
+      - testing-qa
+      - observability-ops
+    steps:
+      - decide_single_or_multiagent
+      - draft_agent_blueprints
+      - confirm_tool_inventory_with_user
+      - define_tool_contracts_and_mcp_boundaries
+      - threat_model_tools_and_approval_matrix
+      - wire_retrieval_for_knowledge_agents
+      - build_agent_eval_cases
+      - run_repeated_trials_pass_hat_k
+      - audit_harness_and_traces
+      - human_approval_for_external_actions
   - id: business-transformation
     strategy: stateful-governed
     owner: orchestration-manager
     roles:
       - orchestration-manager
       - product-strategy
+      - business-value-analyst
       - data-science
       - integration-automation
-      - security-compliance
-      - testing-qa
-      - business-value-analyst
       - metrics-instrumentation
+      - security-compliance
       - policy-guardrails-engineer
     steps:
       - intake
@@ -159,16 +185,19 @@ workflows:
       - data_readiness
       - opportunity_identification
       - prioritization
+      - automation_architecture
+      - kpi_design
       - execution_planning
       - risk_governance
       - human_approval
       - simulation
       - impact_evaluation
+      - final_report
   - id: ml-release
     strategy: hierarchical
     owner: machine-learning
     roles:
-      - data-engineering
+      - machine-learning
       - testing-qa
       - devops
       - documentation
