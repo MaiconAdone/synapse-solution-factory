@@ -50,9 +50,17 @@
   dados/fontes disponiveis ou nivel de risco, pergunte ao usuario pela conversa
   antes de implementar. Nao invente essas informacoes.
 - RAG escalavel e vector DB seguem `config/rag_scalability_policy.json`;
+  RAG vs Knowledge Graph/GraphRAG segue `config/knowledge_graph_policy.json`
+  (RAG por padrao; grafo so com sinais de relacionamento, gate
+  `python scripts/run_evals.py graph`);
   fine-tuning segue `config/fine_tuning_policy.json` (prompt -> RAG ->
   fine-tuning, baseline medido e aprovacao humana); todo agente segue
-  `config/harness_engineering_policy.json` (`python scripts/audit_harness.py`).
+  `config/harness_engineering_policy.json` (`python scripts/audit_harness.py`);
+  agentes de runtime passam pelo `AgentRunGuard` de
+  `scripts/synapse_lib/agent_harness.py` com `config/tool_registry.json`
+  (gate `python scripts/run_evals.py agent`); ferramentas externas das
+  solucoes so via MCP pelo gateway `templates/mcp/server.py`; fine-tuning so
+  vai a rollout com `python scripts/fine_tuning_release.py` aprovado.
 - Agentes da solucao (runtime) ficam em `config/solution_agents.json`,
   validados contra `config/agent_blueprint_contract.json` e construidos pelo
   workflow `agent-build`; ferramentas sao confirmadas com o usuario.

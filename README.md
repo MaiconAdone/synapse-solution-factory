@@ -25,6 +25,7 @@ governado para um de quatro universos: **ML**, **IA**, **Chatbolt** ou
    - [Harness engineering](#53-harness-engineering)
    - [Selecao de tecnologias e templates](#54-selecao-de-tecnologias-e-templates)
    - [Agentes da solucao (runtime)](#55-agentes-da-solucao-runtime)
+   - [RAG vs Knowledge Graph (GraphRAG)](#56-rag-vs-knowledge-graph-graphrag)
 6. [Governanca de agentes e custo](#6-governanca-de-agentes-e-custo)
 7. [IA agentica para transformacao empresarial](#7-ia-agentica-para-transformacao-empresarial)
 8. [Tratamento estatistico de dados](#8-tratamento-estatistico-de-dados)
@@ -273,7 +274,20 @@ python .\scripts\prepare_fine_tuning_dataset.py --input data\learning\training_e
 ```
 
 Saidas em `artifacts/fine_tuning/`: `train.jsonl`, `validation.jsonl` e
-`readiness_report.json`. O `AdaptationAdvisor`
+`readiness_report.json`.
+
+Depois do treino (fora do Synapse, com provedor confirmado), o **gate de
+release** compara o candidato com o baseline prompt + RAG no mesmo eval set e
+so aprova rollout shadow/canary quando todas as regras passam; `--register`
+grava o modelo aprovado em `artifacts/models/registry.jsonl` com o alvo de
+rollback:
+
+```powershell
+python .\scripts\fine_tuning_release.py --candidate templates\fine_tuning\release_candidate.json
+python .\scripts\run_evals.py fine_tuning
+```
+
+ O `AdaptationAdvisor`
 (`scripts/synapse_lib/fine_tuning_service.py`) recomenda o degrau da escada no
 analisador.
 
@@ -297,7 +311,18 @@ dos agentes da solucao e harness de avaliacao.
 | agent_blueprints | `config/solution_agents.json`, `config/workflows/synapse/agent-build.json` | IA, Chatbolt, Hibrido |
 | observability | `llm_ops/observability.yaml` | IA, Chatbolt, Hibrido |
 | feedback_loop | `config/agent_improvement_loop.json` | todos |
+| runtime_guard | `scripts/synapse_lib/agent_harness.py`, `config/tool_registry.json` | IA, Chatbolt, Hibrido |
+| mcp_gateway | `scripts/synapse_lib/mcp_gateway.py`, `templates/mcp/server.py` | IA, Chatbolt, Hibrido |
+| knowledge_verification | `config/rag_scalability_policy.json`, `evals/retrieval_cases.jsonl`, `config/knowledge_graph_policy.json`, `evals/graph_cases.jsonl` | IA, Chatbolt, Hibrido |
 | safe_execution | `config/business_transformation.json` | todos |
+
+**Runtime executavel.** O `AgentRunGuard` envolve cada execucao de agente da
+solucao e decide, fora do modelo: `allowed`, `needs_simulation`,
+`needs_approval`, `refused` ou `stopped`. Ele bloqueia entradas de injecao,
+ferramentas fora do blueprint ou do `config/tool_registry.json`, argumentos
+faltando, efeitos colaterais sem chave de idempotencia, acoes irreversiveis sem
+simulacao/aprovacao, chamadas repetidas em loop e estouro de passos, chamadas
+ou tempo; cada decisao vira trace redigido (e-mail, segredo, CPF).
 
 Limites padrao do loop: 25 passos, 40 chamadas de ferramenta, 2 retries por
 ferramenta, deteccao de loop apos 3 repeticoes e 600 s de timeout. Casos de
@@ -307,6 +332,8 @@ confiabilidade (gate de release: pass^k >= 0.8).
 ```powershell
 python .\scripts\audit_harness.py            # universo lido de config/project_universe.json
 python .\scripts\audit_harness.py --universe ia
+python .\scripts\run_evals.py agent                                # pass^k com o runner de referencia
+python .\scripts\run_evals.py agent --runner meu_pacote.agente:propor # agente real
 ```
 
 ### 5.4 Selecao de tecnologias e templates
@@ -322,6 +349,14 @@ instala tudo.
 - `solution_templates`: arquivos que existem em `templates/` para copiar/adaptar.
 - `solution_scaffold_targets`: arquivos que o projeto gerado deve criar quando
   nao ha template pronto no Synapse.
+
+**MCP nas solucoes.** `templates/mcp/server.py` e o gateway MCP das
+ferramentas da solucao: expoe so ferramentas do `config/tool_registry.json`
+permitidas ao agente e com handler, passa cada chamada pelo `AgentRunGuard`,
+executa simulacao real (dry-run) antes de efeito irreversivel, recebe aprovacao
+humana fora do agente e devolve o resultado guardado ao repetir a mesma chave de
+idempotencia. Ativacao no `.mcp.json` so apos confirmar o inventario
+(`templates/mcp/mcp.example.json`).
 
 Veja `docs/specifications/technology_layer.md` e `templates/README.md`.
 
@@ -361,6 +396,33 @@ O universo escolhido pelo usuario e o que a fabrica gera (`effective_universe`).
 Se o analisador sugerir outro (`recommended_universe`), o ADR registra
 `universe_confirmation` para o assistente confirmar no chat, e todos os
 artefatos, testes e papeis seguem o universo efetivo.
+
+### 5.6 RAG vs Knowledge Graph (GraphRAG)
+
+- Politica: `config/knowledge_graph_policy.json`
+- Especificacao: `docs/specifications/knowledge_graph_graphrag.md`
+
+| | RAG | Knowledge Graph | GraphRAG |
+|---|---|---|---|
+| Natureza | dinamico, textual | estatico, estruturado | hibrido |
+| Recupera | trechos por busca semantica/lexical | entidades e relacoes por caminhos | trechos re-ranqueados pelo grafo |
+| Usar quando | documentos soltos | dominio com entidades, auditoria | perguntas multi-hop sobre documentos |
+
+RAG continua o padrao. O analisador grava `knowledge_strategy` no ADR e so
+planeja `knowledge_graph` ou `graph_rag` com 2+ grupos de sinais
+(relacionamento, multi-hop, entidades, auditoria) ou pedido explicito. Com
+grafo, pergunta ao usuario: dono da ontologia, tipos de entidade/relacao,
+fontes oficiais, frequencia de atualizacao, volume e hospedagem.
+
+| Arquivo | Papel |
+|---------|-------|
+| `scripts/synapse_lib/knowledge_strategy.py` | `KnowledgeStrategyPlanner` (rag/knowledge_graph/graph_rag, graph store) e `QueryRouter` por pergunta |
+| `scripts/synapse_lib/knowledge_graph.py` | `GraphStore`, `InMemoryGraphStore` (resolucao de entidades, ACL, proveniencia), caminhos e `GraphRagRetriever` sobre o `HybridRetriever` |
+| `templates/knowledge_graph/` | schema da ontologia, adaptadores Neo4j/Memgraph/Kuzu e grafo de exemplo |
+
+```powershell
+python .\scripts\run_evals.py graph
+```
 
 ## 6. Governanca de agentes e custo
 
@@ -506,6 +568,9 @@ python .\scripts\run_evals.py ml
 python .\scripts\run_evals.py ai
 python .\scripts\run_evals.py rag
 python .\scripts\run_evals.py retrieval
+python .\scripts\run_evals.py graph
+python .\scripts\run_evals.py agent
+python .\scripts\run_evals.py fine_tuning
 ```
 
 No VS Code: `Evals: Rodar testes ML`, `Evals: Rodar testes IA`,
@@ -548,6 +613,7 @@ nao existir.
 |------|-------------|---------------------------|
 | AI engineering, evals, feedback | AI Engineering (Chip Huyen) | `evals/`, analisador |
 | RAG escalavel e vector DB | LLM Engineer's Handbook, AI Engineering, CLRS | `config/rag_scalability_policy.json` |
+| RAG vs Knowledge Graph | Artificial Intelligence (Winston), CLRS | `config/knowledge_graph_policy.json` |
 | Fine-tuning | AI Engineering, LLM Engineer's Handbook, Build a LLM From Scratch | `config/fine_tuning_policy.json` |
 | Harness engineering | Building LLMs for Production, Building Applications with AI Agents, Cybernetics | `config/harness_engineering_policy.json` |
 | ML foundations e estatistica | Foundations of ML (lecture notes), Designing Machine Learning Systems, Mathematics for Machine Learning | `config/ml_foundations_policy.json`, `scripts/treat_dataset.py` |
@@ -591,7 +657,7 @@ tests/                  testes do Synapse
 | Analisar solucao (sem gravar) | `python .\scripts\analyze_business_solution.py --project-name x --universe IA --business-problem "..." --print-recommendation` |
 | Testes | `.\.venv\Scripts\python -m pytest tests -q` |
 | Validar stack | `.\scripts\validate_enterprise_stack.ps1` |
-| Evals | `python .\scripts\run_evals.py ml\|ai\|rag\|retrieval` |
+| Evals | `python .\scripts\run_evals.py ml\|ai\|rag\|retrieval\|graph\|agent\|fine_tuning` |
 | Pipeline RAG local | `python .\templates\rag\rag_pipeline.py --query "..."` |
 | Dataset de fine-tuning | `python .\scripts\prepare_fine_tuning_dataset.py --input ...` |
 | Auditar harness | `python .\scripts\audit_harness.py` |

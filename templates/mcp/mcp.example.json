@@ -1,0 +1,14 @@
+{
+  "_comment": "Example only. Copy the solution-tools entry into .mcp.json after the tool inventory, permissions and approval matrix are confirmed with the user. Handlers module is project code.",
+  "mcpServers": {
+    "solution-tools": {
+      "command": "python",
+      "args": ["templates/mcp/server.py"],
+      "env": {
+        "SYNAPSE_AGENT_ID": "solution-orchestrator",
+        "SYNAPSE_TOOL_HANDLERS": "<pacote.modulo_com_HANDLERS>",
+        "SYNAPSE_TRACE_PATH": "artifacts/traces/mcp_gateway.jsonl"
+      }
+    }
+  }
+}

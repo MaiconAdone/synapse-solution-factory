@@ -69,6 +69,22 @@ Outputs `artifacts/fine_tuning/train.jsonl`, `validation.jsonl` and
 - `automatic_weight_updates` stays `false`: continual learning improves memory
   and evals; weights change only through this gated process.
 
+The gates are executable. `FineTuningReleaseGate`
+(`scripts/synapse_lib/fine_tuning_release.py`) reads a candidate shaped like
+`templates/fine_tuning/release_candidate.json` (baseline and candidate metrics
+with the same `eval_set_hash`, budget, approver, rollout, rollback target,
+dataset hash) and returns `approved_for_rollout` or `blocked` with the failing
+checks. It never trains, deploys or switches traffic.
+
+```powershell
+python .\scripts\fine_tuning_release.py --candidate <release_candidate.json>             # decision only
+python .\scripts\fine_tuning_release.py --candidate <release_candidate.json> --register  # approved -> registry
+python .\scripts\run_evals.py fine_tuning                                             # gate self-test
+```
+
+`ModelRegistry` appends approved releases to `artifacts/models/registry.jsonl`
+with the policy `record_fields`; blocked candidates cannot be registered.
+
 ## Roles
 
 `machine-learning` owns training discipline and evaluation, with

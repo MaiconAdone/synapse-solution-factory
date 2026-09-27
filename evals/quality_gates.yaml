@@ -30,3 +30,8 @@ agent_harness:
   pass_hat_k_min: 0.80
   max_steps: 25
   max_tool_calls: 40
+knowledge_graph:
+  routing_accuracy_min: 0.90
+  entity_recall_min: 0.90
+  path_found_rate_min: 0.90
+  relation_citation_rate_min: 1.0

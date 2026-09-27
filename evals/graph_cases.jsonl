@@ -1,0 +1,6 @@
+{"id":"kg-001","query":"Quem aprovou o contrato da Acme Insumos?","expected_strategy":"graph_rag","expected_entities":["org-acme"],"expected_path":["org-acme","pes-ana"],"expected_predicates":["APROVOU"],"tags":["multi_hop"]}
+{"id":"kg-002","query":"Qual a relacao entre Ana Souza e Racao Premium?","expected_strategy":"graph_rag","expected_entities":["pes-ana","prd-racao"],"expected_path":["pes-ana","prd-racao"],"tags":["path"]}
+{"id":"kg-003","query":"Quais produtos a Beta Logistica fornece?","expected_strategy":"graph_rag","expected_entities":["org-beta"],"expected_predicates":["FORNECE"],"tags":["relationship"]}
+{"id":"kg-004","query":"Qual e o prazo padrao de pagamento descrito nas politicas internas?","expected_strategy":"rag","expected_entities":[],"tags":["routing","text_only"]}
+{"id":"kg-005","query":"Quem aprovou o contrato da Beta Logistica?","expected_strategy":"graph_rag","expected_entities":["org-beta"],"expected_path":["org-beta","pes-bruno"],"hidden_entities":["pes-carla"],"principals":[],"tags":["acl"]}
+{"id":"kg-006","query":"Quem aprovou o contrato da Beta Logistica?","expected_strategy":"graph_rag","expected_entities":["org-beta"],"expected_path":["org-beta","pes-carla"],"principals":["diretoria"],"tags":["acl"]}

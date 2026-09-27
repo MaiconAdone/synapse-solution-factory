@@ -35,7 +35,11 @@
     "peer_messaging_server": "synapse-peers",
     "peer_messaging_script": "scripts/synapse_peers_mcp.py",
     "peer_messaging_transport": "stdio",
-    "peer_messaging_autostart": false
+    "peer_messaging_autostart": false,
+    "tool_gateway": "scripts/synapse_lib/mcp_gateway.py",
+    "tool_gateway_server_template": "templates/mcp/server.py",
+    "tool_gateway_config_example": "templates/mcp/mcp.example.json",
+    "tool_gateway_autostart": false
   },
   "cost_optimization": {
     "enabled": true,
@@ -70,6 +74,8 @@
     "policy_file": "config/fine_tuning_policy.json",
     "spec_file": "docs/specifications/fine_tuning.md",
     "dataset_cli": "scripts/prepare_fine_tuning_dataset.py",
+    "release_cli": "scripts/fine_tuning_release.py",
+    "release_eval_command": "python scripts/run_evals.py fine_tuning",
     "automatic_weight_updates": false,
     "requires_baseline_evals_and_human_approval": true
   },
@@ -78,7 +84,21 @@
     "policy_file": "config/harness_engineering_policy.json",
     "spec_file": "docs/specifications/harness_engineering.md",
     "audit_cli": "scripts/audit_harness.py",
-    "reliability_metric": "pass_hat_k"
+    "reliability_metric": "pass_hat_k",
+    "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+    "tool_registry": "config/tool_registry.json",
+    "agent_eval_command": "python scripts/run_evals.py agent"
+  },
+  "knowledge_graph": {
+    "enabled": true,
+    "default_strategy": "rag",
+    "policy_file": "config/knowledge_graph_policy.json",
+    "spec_file": "docs/specifications/knowledge_graph_graphrag.md",
+    "reference_modules": [
+      "scripts/synapse_lib/knowledge_strategy.py",
+      "scripts/synapse_lib/knowledge_graph.py"
+    ],
+    "graph_eval_command": "python scripts/run_evals.py graph"
   },
   "business_transformation": {
     "enabled": true,
@@ -167,7 +187,7 @@
     "limitations": [
       "the local hashing embedder is lexical, intended for bootstrap, offline evaluation and contract tests",
       "production vector stores plug in through the VectorStore protocol (templates/rag/vector_db_adapter.py)",
-      "GraphRAG remains a governed advanced strategy, not the default retrieval path"
+      "GraphRAG remains a governed advanced strategy, not the default retrieval path (config/knowledge_graph_policy.json)"
     ],
     "advanced_strategies": [
       "multi_query_retrieval",
@@ -227,11 +247,16 @@
       "config/rag_scalability_policy.json",
       "config/fine_tuning_policy.json",
       "config/harness_engineering_policy.json",
+      "config/knowledge_graph_policy.json",
+      "config/tool_registry.json",
       "docs/specifications/scalable_rag_vector_db.md",
       "docs/specifications/fine_tuning.md",
       "docs/specifications/harness_engineering.md",
       "evals/retrieval_cases.jsonl",
       "evals/tool_workflow_cases.jsonl",
+      "evals/graph_cases.jsonl",
+      "evals/fine_tuning_cases.jsonl",
+      "docs/specifications/knowledge_graph_graphrag.md",
       "docs/specifications/llm_solution_factory_governance.md",
       "docs/specifications/technology_layer.md",
       "docs/specifications/ml_foundations.md",

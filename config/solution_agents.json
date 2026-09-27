@@ -39,7 +39,9 @@
           "unapproved_external_actions",
           "cross_tenant_data"
         ],
-        "loop_limits": "config/harness_engineering_policy.json#control_loop"
+        "loop_limits": "config/harness_engineering_policy.json#control_loop",
+        "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+        "tool_registry": "config/tool_registry.json"
       },
       "success_criteria": "Projetos gerados passam diagnose_project e testes proprios em todos os universos",
       "owner_role": "llm-engineering",
@@ -96,7 +98,9 @@
           "unapproved_external_actions",
           "cross_tenant_data"
         ],
-        "loop_limits": "config/harness_engineering_policy.json#control_loop"
+        "loop_limits": "config/harness_engineering_policy.json#control_loop",
+        "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+        "tool_registry": "config/tool_registry.json"
       },
       "success_criteria": "retrieval and faithfulness gates in evals/quality_gates.yaml",
       "owner_role": "rag-engineering",
@@ -152,7 +156,9 @@
           "unapproved_external_actions",
           "cross_tenant_data"
         ],
-        "loop_limits": "config/harness_engineering_policy.json#control_loop"
+        "loop_limits": "config/harness_engineering_policy.json#control_loop",
+        "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+        "tool_registry": "config/tool_registry.json"
       },
       "success_criteria": "pending_user_confirmation",
       "owner_role": "integration-automation",

@@ -12,7 +12,12 @@
   "reference_implementation": {
     "service": "scripts/synapse_lib/harness_service.py",
     "cli": "scripts/audit_harness.py",
-    "spec_template": "templates/harness/agent_harness_spec.md"
+    "spec_template": "templates/harness/agent_harness_spec.md",
+    "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+    "tool_registry": "config/tool_registry.json",
+    "agent_eval_command": "python scripts/run_evals.py agent",
+    "mcp_gateway": "scripts/synapse_lib/mcp_gateway.py",
+    "mcp_server_template": "templates/mcp/server.py"
   },
   "harness_layers": {
     "coding_agent_harness": "How Claude Code and Codex operate this repository: instruction maps, permissions, hooks, validation commands and shared memory.",
@@ -136,6 +141,47 @@
       ]
     },
     {
+      "id": "runtime_guard",
+      "goal": "Every agent run goes through an executable guard: input screening, least-privilege tools from the registry, idempotency, simulation and approval gates, loop limits and redacted traces.",
+      "evidence_all": [
+        "scripts/synapse_lib/agent_harness.py",
+        "config/tool_registry.json"
+      ],
+      "applies_to": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
+      "id": "mcp_gateway",
+      "goal": "External tools reach agents only through an MCP gateway that applies the runtime guard, real simulation, out-of-band human approval and idempotent replay.",
+      "evidence_all": [
+        "scripts/synapse_lib/mcp_gateway.py",
+        "templates/mcp/server.py"
+      ],
+      "applies_to": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
+      "id": "knowledge_verification",
+      "goal": "The knowledge layer is gated like code: hybrid retrieval gates and, when a graph is used, knowledge graph gates (routing, paths, provenance, ACL).",
+      "evidence_all": [
+        "config/rag_scalability_policy.json",
+        "evals/retrieval_cases.jsonl",
+        "config/knowledge_graph_policy.json",
+        "evals/graph_cases.jsonl"
+      ],
+      "applies_to": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
       "id": "safe_execution",
       "goal": "Side effects are simulated first, idempotent, reversible or approval-gated.",
       "evidence_all": [
@@ -150,6 +196,38 @@
       ]
     }
   ],
+  "runtime_guard": {
+    "implementation": "scripts/synapse_lib/agent_harness.py",
+    "decisions": ["allowed", "needs_simulation", "needs_approval", "refused", "stopped"],
+    "check_order": [
+      "stopped_or_timeout",
+      "max_tool_calls",
+      "tool_in_registry",
+      "least_privilege_blueprint_tools",
+      "required_args",
+      "idempotency_key_for_side_effects",
+      "repeated_identical_call_loop",
+      "simulation_first",
+      "human_approval"
+    ],
+    "input_block_patterns": [
+      "ignore previous",
+      "ignore all previous",
+      "ignore as instrucoes",
+      "system prompt",
+      "developer message",
+      "export all",
+      "exportar todos",
+      "dump all",
+      "reveal secrets",
+      "revele a senha"
+    ],
+    "trace": {
+      "fields": ["agent_id", "event", "tool", "status", "reason", "payload", "step", "tool_calls", "elapsed_ms"],
+      "redaction": ["email", "api_secret", "bearer_token", "cpf"],
+      "contract": "llm_ops/observability.yaml"
+    }
+  },
   "eval_harness": {
     "case_fields": [
       "id",
@@ -166,6 +244,8 @@
     ],
     "grader_rule": "Use the cheapest grader that can decide; model-graded checks need a written rubric and periodic human agreement checks.",
     "trials_per_agent_case": 3,
+    "agent_cases": "evals/tool_workflow_cases.jsonl",
+    "reference_runner": "proposes the labeled tool to prove the runtime guard; plug the real agent with --runner module:function",
     "metrics": {
       "pass_at_k": "probability that at least one of k trials succeeds (capability)",
       "pass_hat_k": "probability that all k trials succeed (reliability)"

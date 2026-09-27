@@ -48,6 +48,8 @@ def _base_blueprint(
         "boundaries": {
             "forbidden": ["secrets_in_prompts", "unapproved_external_actions", "cross_tenant_data"],
             "loop_limits": "config/harness_engineering_policy.json#control_loop",
+            "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+            "tool_registry": "config/tool_registry.json",
         },
         "success_criteria": PENDING,
         "owner_role": owner_role,
@@ -91,18 +93,25 @@ def build_solution_agents(analysis: dict[str, Any], root: Path) -> dict[str, Any
     agents = [orchestrator]
     multiagent = "rag" in stack and "agents" in stack
     if multiagent:
+        # GraphRAG joins the retriever only when the knowledge strategy planned a graph.
+        uses_graph = bool(analysis.get("knowledge_strategy", {}).get("plan", {}).get("uses_graph"))
         retriever = _base_blueprint(
             "knowledge-retriever",
             "Answer only from retrieved, permission-filtered sources and return citations.",
             "advisory",
             "economy",
-            ["hybrid_retrieve"],
+            ["hybrid_retrieve", "graph_retrieve"] if uses_graph else ["hybrid_retrieve"],
             "rag-engineering",
-            ["evals/retrieval_cases.jsonl", "evals/rag_cases.jsonl"],
+            ["evals/retrieval_cases.jsonl", "evals/rag_cases.jsonl"]
+            + (["evals/graph_cases.jsonl"] if uses_graph else []),
             risk,
             budget,
         )
-        retriever["success_criteria"] = "retrieval and faithfulness gates in evals/quality_gates.yaml"
+        retriever["success_criteria"] = (
+            "retrieval, faithfulness and knowledge graph gates in evals/quality_gates.yaml"
+            if uses_graph
+            else "retrieval and faithfulness gates in evals/quality_gates.yaml"
+        )
         executor = _base_blueprint(
             "action-executor",
             "Execute approved business actions through the tool gateway with idempotency keys.",
@@ -134,6 +143,7 @@ def validate_solution_agents(document: dict[str, Any], root: Path) -> list[str]:
     contract = _load(root, "config/agent_blueprint_contract.json")
     roles = {role["id"] for role in _load(root, "config/roles.json").get("roles", [])}
     authority_levels = set(contract.get("agent_role_contract", {}).get("authority_levels", []))
+    registry = {tool["name"] for tool in _load(root, "config/tool_registry.json").get("tools", [])}
     required = contract.get("required_fields", [])
     problems: list[str] = []
     agents = document.get("agents", [])
@@ -156,6 +166,12 @@ def validate_solution_agents(document: dict[str, Any], root: Path) -> list[str]:
         problems.extend(
             f"{name}: eval file missing {path}" for path in agent.get("evals", []) if not (root / path).exists()
         )
+        if registry:
+            problems.extend(
+                f"{name}: tool {tool} not in config/tool_registry.json"
+                for tool in agent.get("tools", [])
+                if tool not in registry
+            )
     if document.get("architecture") == "single_agent" and len(agents) != 1:
         problems.append("single_agent architecture must define exactly one agent")
     return problems

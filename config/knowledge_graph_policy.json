@@ -1,0 +1,137 @@
+{
+  "schema": "synapse-knowledge-graph-policy.v1",
+  "owner": "ai_architect",
+  "purpose": "Decide per project and per question between vector RAG, a Knowledge Graph and hybrid GraphRAG, and govern graph schema, entity resolution, graph stores and graph retrieval gates.",
+  "applies_to_universes": ["ia", "chatbolt", "hybrid"],
+  "spec_path": "docs/specifications/knowledge_graph_graphrag.md",
+  "reference_implementation": {
+    "strategy_planner": "scripts/synapse_lib/knowledge_strategy.py",
+    "graph_store_and_retriever": "scripts/synapse_lib/knowledge_graph.py",
+    "graph_schema_template": "templates/knowledge_graph/graph_schema.yaml",
+    "graph_store_adapters": "templates/knowledge_graph/graph_store_adapter.py",
+    "example_graph": "templates/knowledge_graph/example_graph.json"
+  },
+  "default_strategy": "rag",
+  "strategies": {
+    "rag": {
+      "summary": "Dynamic, textual: retrieve unstructured chunks at query time (existing hybrid retriever).",
+      "use_when": ["unstructured documents", "semantic search", "questions answered by one passage"],
+      "limits": ["loose information without explicit links", "multi-hop questions depend on retrieval luck"]
+    },
+    "knowledge_graph": {
+      "summary": "Static, structured: explicit entities and typed relationships navigated by paths.",
+      "use_when": ["entity-heavy domains", "relationship and dependency questions", "auditability of each answer hop"],
+      "limits": ["schema/ontology ownership required", "entity resolution errors propagate", "unstructured nuance is lost"]
+    },
+    "graph_rag": {
+      "summary": "Hybrid: hybrid text retrieval plus entity linking and bounded graph expansion, fused with RRF.",
+      "use_when": ["relationship questions over documents", "multi-hop reasoning with citations", "both text and entities matter"],
+      "limits": ["higher ingestion cost (entity/relation extraction)", "requires graph evals besides retrieval evals"]
+    }
+  },
+  "signals": {
+    "relationship": [
+      "relacionamento", "relacionamentos", "relacao entre", "relacoes", "relationship", "relationships",
+      "conexao", "conexoes", "depende de", "dependencia", "dependencias", "dependency", "hierarquia",
+      "hierarchy", "vinculo", "vinculado", "linked", "ligado a"
+    ],
+    "multi_hop": [
+      "multi-hop", "multihop", "caminho", "caminhos", "path", "paths", "cadeia", "chain", "rastreabilidade",
+      "traceability", "linhagem", "lineage", "impacto indireto", "cascata", "upstream", "downstream"
+    ],
+    "entity_heavy": [
+      "entidades", "entidade", "entity", "entities", "ontologia", "ontology", "taxonomia", "taxonomy",
+      "knowledge graph", "grafo de conhecimento", "grafo", "graph", "kag", "cadastro", "catalogo de dados",
+      "fornecedores", "clientes e contratos", "organograma"
+    ],
+    "auditability": [
+      "auditoria", "auditavel", "audit", "auditability", "compliance", "explicabilidade", "explainability",
+      "fraude", "fraud", "kyc", "aml", "regulatorio"
+    ],
+    "unstructured_text": [
+      "documentos", "documento", "documents", "pdf", "pdfs", "manuais", "manual", "contratos", "politicas",
+      "base de conhecimento", "knowledge base", "faq", "artigos", "textos", "rag"
+    ]
+  },
+  "decision_rules": {
+    "graph_signal_groups": ["relationship", "multi_hop", "entity_heavy", "auditability"],
+    "min_graph_signal_groups": 2,
+    "text_signal_group": "unstructured_text",
+    "explicit_graph_terms_force_graph": ["knowledge graph", "grafo de conhecimento", "graphrag", "graph rag", "kag"],
+    "rules": [
+      "graph groups >= min and text signals present -> graph_rag",
+      "graph groups >= min and no text signals -> knowledge_graph",
+      "explicit graph term and text signals -> graph_rag; explicit graph term alone -> knowledge_graph",
+      "otherwise -> rag (default, cheapest)"
+    ]
+  },
+  "query_routing": {
+    "purpose": "Per-question router inside graph_rag projects: graph expansion only for relationship questions (cost policy graph_rag_only_when_relationship_queries).",
+    "relationship_cues": [
+      "relacao entre", "relacionado", "relacionada", "relacionados", "ligado", "ligada", "conectado", "conectada",
+      "depende", "dependem", "quem aprovou", "quem e responsavel", "responsavel por", "subordinado", "pertence",
+      "fornece", "impacta", "afeta", "caminho entre", "entre", "related", "connected", "depends", "who approved",
+      "responsible for", "reports to", "belongs to", "supplies", "impacts", "affects", "path between", "between"
+    ],
+    "min_linked_entities_for_graph": 1
+  },
+  "required_user_decisions": [
+    "ontology_owner",
+    "entity_and_relation_types",
+    "entity_sources_of_truth",
+    "graph_update_frequency",
+    "expected_entities_in_12_months",
+    "graph_store_hosting_self_hosted_or_managed"
+  ],
+  "graph_store_catalog": {
+    "synapse-local-graph": {"kind": "in_memory", "max_entities": 100000, "managed": false, "notes": "reference implementation for tests and bootstrap"},
+    "kuzu": {"kind": "embedded", "max_entities": 10000000, "managed": false, "notes": "embedded property graph, Cypher, no server"},
+    "postgres-age": {"kind": "postgres_extension", "max_entities": 10000000, "managed": false, "notes": "Apache AGE: reuse an existing Postgres"},
+    "neo4j": {"kind": "server", "max_entities": null, "managed": false, "notes": "property graph, Cypher, cluster in enterprise edition"},
+    "memgraph": {"kind": "server", "max_entities": null, "managed": false, "notes": "in-memory Cypher server for low latency"},
+    "amazon-neptune": {"kind": "managed", "max_entities": null, "managed": true, "notes": "managed graph; excluded for self-hosted or restricted data"}
+  },
+  "store_tiers": [
+    {"id": "local", "max_entities": 100000, "store_candidates": ["synapse-local-graph", "kuzu"]},
+    {"id": "team", "max_entities": 10000000, "store_candidates": ["kuzu", "neo4j", "postgres-age", "memgraph"]},
+    {"id": "enterprise", "max_entities": null, "store_candidates": ["neo4j", "memgraph", "amazon-neptune"]}
+  ],
+  "store_selection_rules": [
+    "existing Postgres and tier local/team -> prefer postgres-age",
+    "self-hosted or confidential/restricted data -> exclude managed stores",
+    "unknown volume -> tier stays provisional and volume is a pending user decision"
+  ],
+  "graph_schema": {
+    "template": "templates/knowledge_graph/graph_schema.yaml",
+    "required_entity_fields": ["id", "type", "name", "aliases", "source_ids", "permissions"],
+    "required_relation_fields": ["source", "target", "type", "source_ids", "confidence", "permissions"],
+    "provenance_required": true
+  },
+  "entity_resolution": {
+    "strategy": "normalized_name_plus_aliases",
+    "auto_merge_min_confidence": 0.9,
+    "below_threshold": "queue for human review; never merge silently",
+    "relation_min_confidence": 0.6
+  },
+  "graph_retrieval": {
+    "max_hops": 2,
+    "max_expanded_entities": 25,
+    "fusion": "reciprocal_rank_fusion",
+    "rrf_k": 60,
+    "acl_enforced_in_graph_layer": true,
+    "cite_relation_sources": true
+  },
+  "evaluation": {
+    "cases_path": "evals/graph_cases.jsonl",
+    "seed_graph": "templates/knowledge_graph/example_graph.json",
+    "metrics": ["routing_accuracy", "path_found_rate", "entity_recall", "relation_source_citation_rate"],
+    "run_command": "python scripts/run_evals.py graph",
+    "release_rule": "A graph schema or extraction change is promoted only when knowledge_graph gates in evals/quality_gates.yaml pass."
+  },
+  "observability": [
+    "strategy chosen per query (rag or graph_rag)",
+    "linked entities and hops expanded",
+    "entity resolution merges and review queue size",
+    "graph freshness lag against sources of truth"
+  ]
+}

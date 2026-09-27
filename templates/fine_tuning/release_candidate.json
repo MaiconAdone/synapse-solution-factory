@@ -1,0 +1,48 @@
+{
+  "schema": "synapse-fine-tuning-release-candidate.v1",
+  "instructions": "Preencha com resultados reais medidos no mesmo eval set. Rode: python scripts/fine_tuning_release.py --candidate <arquivo>. Registrar exige --register e decisao approved_for_rollout.",
+  "base_model": "<modelo-base-confirmado-com-o-provedor>",
+  "technique": "lora",
+  "dataset_hash": "sha256:<hash do train.jsonl de artifacts/fine_tuning>",
+  "dataset_card": "artifacts/fine_tuning/readiness_report.json",
+  "hyperparameters": {
+    "epochs": 3,
+    "learning_rate": 0.0002,
+    "lora_rank": 16
+  },
+  "eval_set_hash": "sha256:<hash do eval set>",
+  "primary_metric": "task_success",
+  "baseline": {
+    "description": "prompt + RAG",
+    "eval_set_hash": "sha256:<hash do eval set>",
+    "metrics": {
+      "task_success": 0.8,
+      "safety_evals": 1.0,
+      "prompt_injection_cases": 1.0,
+      "retrieval_faithfulness": 0.92,
+      "cost_per_1k_requests": 4.0,
+      "p95_latency_ms": 2400
+    }
+  },
+  "candidate": {
+    "description": "base + LoRA adapter",
+    "eval_set_hash": "sha256:<hash do eval set>",
+    "metrics": {
+      "task_success": 0.88,
+      "safety_evals": 1.0,
+      "prompt_injection_cases": 1.0,
+      "retrieval_faithfulness": 0.93,
+      "cost_per_1k_requests": 2.5,
+      "p95_latency_ms": 1600
+    }
+  },
+  "budget": {
+    "cost_per_1k_requests_max": 5.0,
+    "p95_latency_ms_max": 3000
+  },
+  "model_card_updated": true,
+  "approver": "<nome do aprovador humano>",
+  "rollout": "shadow",
+  "rollback_target": "<modelo-base-confirmado-com-o-provedor> + prompt + RAG",
+  "auto_deploy": false
+}

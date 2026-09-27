@@ -33,6 +33,9 @@ Three layers:
 | agent_blueprints | config/solution_agents.json, config/workflows/synapse/agent-build.json | IA, Chatbolt, Hybrid |
 | observability | llm_ops/observability.yaml | IA, Chatbolt, Hybrid |
 | feedback_loop | config/agent_improvement_loop.json | all |
+| runtime_guard | scripts/synapse_lib/agent_harness.py, config/tool_registry.json | IA, Chatbolt, Hybrid |
+| mcp_gateway | scripts/synapse_lib/mcp_gateway.py, templates/mcp/server.py | IA, Chatbolt, Hybrid |
+| knowledge_verification | config/rag_scalability_policy.json, evals/retrieval_cases.jsonl, config/knowledge_graph_policy.json, evals/graph_cases.jsonl | IA, Chatbolt, Hybrid |
 | safe_execution | config/business_transformation.json | all |
 
 Audit a project:
@@ -48,6 +51,38 @@ loop detection after the same tool+arguments repeats 3 times, 600s wall clock.
 Side-effecting tools need idempotency keys, simulation first, and human approval
 when irreversible.
 
+## Runtime Guard
+
+`AgentRunGuard` (`scripts/synapse_lib/agent_harness.py`) is the executable
+agent runtime harness. Build it with `AgentRunGuard.from_policy(agent_id)`: the
+allowed tools come from the agent blueprint in `config/solution_agents.json`,
+the tool rules from `config/tool_registry.json` and the limits from this policy.
+Every call returns one decision:
+
+| Decision | When |
+|----------|------|
+| allowed | tool registered, in the blueprint, arguments complete, gates satisfied |
+| needs_simulation | irreversible side effect not simulated yet |
+| needs_approval | approval-required tool without human approval |
+| refused | blocked input, unknown tool, least privilege, missing args, side effect without idempotency key |
+| stopped | loop detected, max steps/tool calls, retries exhausted or wall clock exceeded (stop and escalate) |
+
+Each decision is appended to a trace with PII and secrets redacted
+(`llm_ops/observability.yaml`); `export_trace` writes JSONL. Tools with status
+`example` in the registry only exercise the eval cases and must be replaced by
+the inventory the user confirms.
+
+## MCP Tool Gateway
+
+`templates/mcp/server.py` exposes solution tools over MCP through
+`ToolGateway` (`scripts/synapse_lib/mcp_gateway.py`), which wraps the runtime
+guard and adds what only an execution boundary can guarantee: simulation runs
+the handler in dry-run mode and only that exact call is unlocked; human
+approval is out-of-band (`ToolGateway.approve` is never an MCP tool; agents only
+call `request_human_approval`); replaying an idempotency key returns the stored
+result without executing again; tools without a handler are refused. Traces go
+to `artifacts/traces/mcp_gateway.jsonl`.
+
 ## Eval Harness
 
 - Case fields: `id`, `input`, `expected`, `grader`, `tags`.
@@ -62,7 +97,12 @@ when irreversible.
 - Deterministic suites run on every change (CI); model-backed suites run before release.
 
 `scripts/synapse_lib/harness_service.py` implements `pass_at_k`, `pass_hat_k`,
-`summarize_trials` and `HarnessAuditor`.
+`summarize_trials` and `HarnessAuditor`. `python scripts/run_evals.py agent`
+runs `evals/tool_workflow_cases.jsonl` through the runtime guard for
+`trials_per_agent_case` trials and gates pass^k (`agent_harness` in
+`evals/quality_gates.yaml`). The reference runner proposes the labeled tool to
+prove the guard; `--runner module:function` plugs the real agent (a function
+that receives a case and the registry and returns the proposed tool calls).
 
 ## Mechanical Enforcement
 

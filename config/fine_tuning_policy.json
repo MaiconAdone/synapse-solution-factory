@@ -8,7 +8,12 @@
   "reference_implementation": {
     "service": "scripts/synapse_lib/fine_tuning_service.py",
     "cli": "scripts/prepare_fine_tuning_dataset.py",
-    "card_template": "templates/fine_tuning/model_adaptation_card.md"
+    "card_template": "templates/fine_tuning/model_adaptation_card.md",
+    "release_gate": "scripts/synapse_lib/fine_tuning_release.py",
+    "release_cli": "scripts/fine_tuning_release.py",
+    "release_candidate_template": "templates/fine_tuning/release_candidate.json",
+    "release_eval_cases": "evals/fine_tuning_cases.jsonl",
+    "release_eval_command": "python scripts/run_evals.py fine_tuning"
   },
   "adaptation_ladder": [
     {

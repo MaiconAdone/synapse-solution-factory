@@ -3,6 +3,10 @@ import math
 from pathlib import Path
 from typing import Any
 
+from scripts.synapse_lib.agent_harness import run_agent_eval as run_agent_trials
+from scripts.synapse_lib.fine_tuning_release import run_release_cases
+from scripts.synapse_lib.knowledge_graph import InMemoryGraphStore, expand, link_entities, load_graph, shortest_path
+from scripts.synapse_lib.knowledge_strategy import QueryRouter
 from scripts.synapse_lib.schemas.evals import EvalCaseResult
 from scripts.synapse_lib.schemas.models import ModelPredictionRequest
 from scripts.synapse_lib.model_service import ModelService
@@ -140,6 +144,133 @@ class EvalService:
             and metrics["ndcg_at_k"] >= float(gates.get("ndcg_at_k_min", 0.5))
         )
         return self._response("retrieval", passed, metrics, gates, results)
+
+    def run_agent_eval(self, cases_path: str = "evals/tool_workflow_cases.jsonl", runner: Any = None) -> dict[str, Any]:
+        """Repeated trials of tool-workflow cases through the runtime guard, gated by pass^k."""
+        cases = self._load_jsonl(cases_path)
+        gates = self._load_quality_gates().get("agent_harness", {})
+        report = run_agent_trials(self.root, cases, runner=runner, trials=int(gates.get("trials_per_agent_case", 3)))
+        per_case = report["summary"]["cases"]
+        results = [
+            EvalCaseResult(
+                id=case_id,
+                passed=stats["pass_hat_k"] == 1.0,
+                checks=report["checks"].get(case_id, {}),
+                metrics={key: float(stats[key]) for key in ("trials", "successes", "pass_at_k", "pass_hat_k")},
+                notes=[] if stats["pass_hat_k"] == 1.0 else [f"{stats['successes']}/{stats['trials']} trials passed"],
+            )
+            for case_id, stats in per_case.items()
+        ]
+        metrics = self._aggregate_results(results)
+        metrics["pass_at_k"] = float(report["summary"]["pass_at_k"])
+        metrics["pass_hat_k"] = float(report["summary"]["pass_hat_k"])
+        metrics["trials"] = float(report["trials"])
+        threshold = float(gates.get("pass_hat_k_min", report["reliability_gate_pass_hat_k_min"]))
+        passed = bool(results) and metrics["pass_hat_k"] >= threshold
+        response = self._response("agent_harness", passed, metrics, gates, results)
+        response["runner"] = report["runner"]
+        return response
+
+    def run_fine_tuning_eval(self, cases_path: str = "evals/fine_tuning_cases.jsonl") -> dict[str, Any]:
+        """Prove the release gate approves only complete, improving, approved candidates."""
+        policy_path = self.root / "config" / "fine_tuning_policy.json"
+        if not policy_path.exists():
+            raise EvalServiceError("config/fine_tuning_policy.json is required for fine-tuning evals")
+        cases = self._load_jsonl(cases_path)
+        gates = self._load_quality_gates().get("fine_tuning", {})
+        outcomes = run_release_cases(self.root, cases)
+        results = [
+            EvalCaseResult(
+                id=str(item["id"]),
+                passed=item["passed"],
+                checks={"decision_matches_expected": item["passed"]},
+                notes=[] if item["passed"] else [f"decision={item['decision']} failed={item['failed_checks']}"],
+            )
+            for item in outcomes
+        ]
+        metrics = self._aggregate_results(results)
+        decisions = {item["decision"] for item in outcomes}
+        passed = self._passed(results) and {"approved_for_rollout", "blocked"} <= decisions
+        return self._response("fine_tuning", passed, metrics, gates, results)
+
+    def run_graph_eval(self, cases_path: str = "evals/graph_cases.jsonl") -> dict[str, Any]:
+        """Load the seed graph and gate query routing, entity linking, paths, ACL and provenance."""
+        policy_path = self.root / "config" / "knowledge_graph_policy.json"
+        if not policy_path.exists():
+            raise EvalServiceError("config/knowledge_graph_policy.json is required for graph evals")
+        policy = json.loads(policy_path.read_text(encoding="utf-8-sig"))
+        cases = self._load_jsonl(cases_path)
+        gates = self._load_quality_gates().get("knowledge_graph", {})
+        resolution = policy["entity_resolution"]
+        graph = InMemoryGraphStore(
+            float(resolution["auto_merge_min_confidence"]), float(resolution["relation_min_confidence"])
+        )
+        load_graph(graph, self._resolve_project_path(policy["evaluation"]["seed_graph"]))
+        router = QueryRouter(policy)
+        max_hops = int(policy["graph_retrieval"]["max_hops"])
+        max_entities = int(policy["graph_retrieval"]["max_expanded_entities"])
+
+        results = []
+        for case in cases:
+            principals = set(case.get("principals", []))
+            query = str(case.get("query", ""))
+            linked = link_entities(graph, query, principals)
+            route = router.route(query, len(linked))
+            expected_entities = set(case.get("expected_entities", []))
+            _, relations = expand(graph, linked, max_hops, max_entities, principals)
+            touched = {entity_id for relation in relations for entity_id in (relation.source, relation.target)}
+            path = None
+            if case.get("expected_path"):
+                start, goal = case["expected_path"][0], case["expected_path"][-1]
+                path = shortest_path(graph, start, goal, max_hops + 1, principals)
+            cited = [relation for relation in relations + (path or []) if relation.source_ids]
+            metrics = {
+                "routing_correct": float(route["strategy"] == case.get("expected_strategy")),
+                "entity_recall": (
+                    len(expected_entities & set(linked)) / len(expected_entities) if expected_entities else 1.0
+                ),
+                "path_found": float(path is not None) if case.get("expected_path") else 1.0,
+                "relation_citation_rate": len(cited) / len(relations + (path or [])) if relations or path else 1.0,
+            }
+            predicates = {relation.type for relation in relations}
+            checks = {
+                "case_has_id": bool(case.get("id")),
+                "routing_correct": metrics["routing_correct"] == 1.0,
+                "entities_linked": metrics["entity_recall"] == 1.0,
+                "path_found": metrics["path_found"] == 1.0,
+                "expected_predicates_traversed": set(case.get("expected_predicates", [])) <= predicates,
+                "hidden_entities_not_leaked": not (set(case.get("hidden_entities", [])) & touched),
+                "relations_cite_sources": metrics["relation_citation_rate"] == 1.0,
+            }
+            notes = [f"route={route['strategy']} linked={linked}"] if not all(checks.values()) else []
+            results.append(
+                EvalCaseResult(
+                    id=str(case.get("id", "unknown")),
+                    passed=all(checks.values()),
+                    checks=checks,
+                    metrics=metrics,
+                    notes=notes,
+                )
+            )
+
+        metrics = self._aggregate_results(results)
+        for name, key in (
+            ("routing_accuracy", "routing_correct"),
+            ("entity_recall", "entity_recall"),
+            ("path_found_rate", "path_found"),
+            ("relation_citation_rate", "relation_citation_rate"),
+        ):
+            values = [result.metrics[key] for result in results]
+            metrics[name] = float(sum(values) / len(values)) if values else 0.0
+        passed = (
+            bool(results)
+            and all(result.checks["hidden_entities_not_leaked"] for result in results)
+            and metrics["routing_accuracy"] >= float(gates.get("routing_accuracy_min", 0.9))
+            and metrics["entity_recall"] >= float(gates.get("entity_recall_min", 0.9))
+            and metrics["path_found_rate"] >= float(gates.get("path_found_rate_min", 0.9))
+            and metrics["relation_citation_rate"] >= float(gates.get("relation_citation_rate_min", 1.0))
+        )
+        return self._response("knowledge_graph", passed, metrics, gates, results)
 
     def _evaluate_rag_case(self, case: dict[str, Any], gates: dict[str, Any]) -> EvalCaseResult:
         # Deterministic, LLM-free proxy for faithfulness: instead of asking a

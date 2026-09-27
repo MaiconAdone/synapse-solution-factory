@@ -1,0 +1,41 @@
+# Knowledge Graph schema template (config/knowledge_graph_policy.json).
+# Copy into the generated project and replace the example types with the
+# ontology confirmed by the ontology owner in chat. Never invent types.
+version: 1
+ontology_owner: "<confirmar no chat>"
+update_frequency: "<confirmar no chat: realtime | daily | weekly>"
+sources_of_truth:
+  - "<sistema ou base oficial de cada tipo de entidade>"
+
+entity_types:
+  Organizacao:
+    required: [id, type, name, aliases, source_ids, permissions]
+    properties: {cnpj: string, segmento: string}
+  Pessoa:
+    required: [id, type, name, aliases, source_ids, permissions]
+    properties: {cargo: string}
+  Contrato:
+    required: [id, type, name, aliases, source_ids, permissions]
+    properties: {vigencia_inicio: date, vigencia_fim: date, valor: number}
+  Produto:
+    required: [id, type, name, aliases, source_ids, permissions]
+    properties: {categoria: string}
+
+relation_types:
+  FORNECE:        {from: Organizacao, to: Produto}
+  ASSINOU:        {from: Organizacao, to: Contrato}
+  APROVOU:        {from: Pessoa, to: Contrato}
+  TRABALHA_EM:    {from: Pessoa, to: Organizacao}
+  COBRE:          {from: Contrato, to: Produto}
+
+relation_required_fields: [source, target, type, source_ids, confidence, permissions]
+
+entity_resolution:
+  strategy: normalized_name_plus_aliases
+  auto_merge_min_confidence: 0.9   # abaixo disso: fila de revisao humana
+  relation_min_confidence: 0.6
+
+governance:
+  provenance_required: true        # toda relacao cita a fonte (source_ids)
+  acl_enforced_in_graph_layer: true
+  pii_fields: [cargo]              # tratar conforme config/data_treatment_policy.json

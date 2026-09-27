@@ -49,16 +49,28 @@ Require-Path "config\workflows\synapse\new-ai-project.json"
 Require-Path "config\workflows\synapse\rag-build.json"
 Require-Path "config\workflows\synapse\ml-release.json"
 Require-Path "config\rag_scalability_policy.json"
+Require-Path "config\knowledge_graph_policy.json"
 Require-Path "config\fine_tuning_policy.json"
 Require-Path "config\harness_engineering_policy.json"
 Require-Path "docs\specifications\scalable_rag_vector_db.md"
+Require-Path "docs\specifications\knowledge_graph_graphrag.md"
 Require-Path "docs\specifications\fine_tuning.md"
 Require-Path "docs\specifications\harness_engineering.md"
 Require-Path "scripts\synapse_lib\vector_store.py"
 Require-Path "scripts\synapse_lib\rag_retrieval.py"
 Require-Path "scripts\synapse_lib\rag_scalability.py"
+Require-Path "scripts\synapse_lib\knowledge_strategy.py"
+Require-Path "scripts\synapse_lib\knowledge_graph.py"
+Require-Path "evals\graph_cases.jsonl"
+Require-Path "templates\knowledge_graph\graph_schema.yaml"
 Require-Path "scripts\synapse_lib\fine_tuning_service.py"
+Require-Path "scripts\synapse_lib\fine_tuning_release.py"
+Require-Path "scripts\synapse_lib\mcp_gateway.py"
+Require-Path "templates\mcp\server.py"
+Require-Path "evals\fine_tuning_cases.jsonl"
 Require-Path "scripts\synapse_lib\harness_service.py"
+Require-Path "scripts\synapse_lib\agent_harness.py"
+Require-Path "config\tool_registry.json"
 Require-Path "evals\retrieval_cases.jsonl"
 Require-Path "evals\tool_workflow_cases.jsonl"
 Require-Path "templates\rag\rag_pipeline.py"
@@ -145,6 +157,21 @@ if ($LASTEXITCODE -ne 0) {
 python scripts\run_evals.py retrieval | Out-Null
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Gates de retrieval hibrido (evals/retrieval_cases.jsonl) nao passaram")
+}
+
+python scripts\run_evals.py graph | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Gates de knowledge graph (evals/graph_cases.jsonl) nao passaram")
+}
+
+python scripts\run_evals.py agent | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Gate pass^k do harness de agentes (evals/tool_workflow_cases.jsonl) nao passou")
+}
+
+python scripts\run_evals.py fine_tuning | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Gate de release de fine-tuning (evals/fine_tuning_cases.jsonl) nao passou")
 }
 
 if ($Errors.Count -gt 0) {

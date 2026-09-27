@@ -1,0 +1,29 @@
+{
+  "schema": "synapse-knowledge-graph-example.v1",
+  "purpose": "Seed graph for graph evals and contract tests. Fictional supplier/contract domain.",
+  "entities": [
+    {"id": "org-acme", "type": "Organizacao", "name": "Acme Insumos", "aliases": ["Acme"], "source_ids": ["kb:cadastro-fornecedores"]},
+    {"id": "org-beta", "type": "Organizacao", "name": "Beta Logistica", "aliases": ["Beta"], "source_ids": ["kb:cadastro-fornecedores"]},
+    {"id": "org-synapse", "type": "Organizacao", "name": "Empresa Cliente", "aliases": ["nossa empresa"], "source_ids": ["kb:cadastro-interno"]},
+    {"id": "pes-ana", "type": "Pessoa", "name": "Ana Souza", "aliases": ["Ana"], "source_ids": ["kb:organograma"]},
+    {"id": "pes-bruno", "type": "Pessoa", "name": "Bruno Lima", "aliases": ["Bruno"], "source_ids": ["kb:organograma"]},
+    {"id": "pes-carla", "type": "Pessoa", "name": "Carla Dias", "aliases": ["Carla"], "source_ids": ["kb:organograma"], "permissions": ["diretoria"]},
+    {"id": "ctr-001", "type": "Contrato", "name": "Contrato 001", "aliases": ["contrato de racao"], "source_ids": ["kb:contrato-001"]},
+    {"id": "ctr-002", "type": "Contrato", "name": "Contrato 002", "aliases": ["contrato de frete"], "source_ids": ["kb:contrato-002"]},
+    {"id": "prd-racao", "type": "Produto", "name": "Racao Premium", "aliases": ["racao"], "source_ids": ["kb:catalogo-produtos"]},
+    {"id": "prd-frete", "type": "Produto", "name": "Frete Refrigerado", "aliases": ["frete"], "source_ids": ["kb:catalogo-produtos"]}
+  ],
+  "relations": [
+    {"source": "org-acme", "target": "prd-racao", "type": "FORNECE", "source_ids": ["kb:contrato-001"], "confidence": 0.98},
+    {"source": "org-beta", "target": "prd-frete", "type": "FORNECE", "source_ids": ["kb:contrato-002"], "confidence": 0.97},
+    {"source": "org-acme", "target": "ctr-001", "type": "ASSINOU", "source_ids": ["kb:contrato-001"], "confidence": 1.0},
+    {"source": "org-beta", "target": "ctr-002", "type": "ASSINOU", "source_ids": ["kb:contrato-002"], "confidence": 1.0},
+    {"source": "ctr-001", "target": "prd-racao", "type": "COBRE", "source_ids": ["kb:contrato-001"], "confidence": 1.0},
+    {"source": "ctr-002", "target": "prd-frete", "type": "COBRE", "source_ids": ["kb:contrato-002"], "confidence": 1.0},
+    {"source": "pes-ana", "target": "ctr-001", "type": "APROVOU", "source_ids": ["kb:ata-aprovacao-001"], "confidence": 0.95},
+    {"source": "pes-bruno", "target": "ctr-002", "type": "APROVOU", "source_ids": ["kb:ata-aprovacao-002"], "confidence": 0.93},
+    {"source": "pes-ana", "target": "org-synapse", "type": "TRABALHA_EM", "source_ids": ["kb:organograma"], "confidence": 1.0},
+    {"source": "pes-bruno", "target": "org-synapse", "type": "TRABALHA_EM", "source_ids": ["kb:organograma"], "confidence": 1.0},
+    {"source": "pes-carla", "target": "ctr-002", "type": "APROVOU", "source_ids": ["kb:ata-diretoria"], "confidence": 0.9, "permissions": ["diretoria"]}
+  ]
+}

@@ -25,7 +25,8 @@ workflow routing.
 - Agentic coding and business agents: CrewAI, Swarms, LangChain, LangGraph.
 - Visual and no-code builders: LangFlow, Flowise, Dify.
 - Automation and ingestion: n8n, Firecrawl, Deep Research, Awesome Lists.
-- Knowledge and retrieval: Vector DBs, RAG frameworks, KAG / Knowledge Graph.
+- Knowledge and retrieval: Vector DBs, RAG frameworks, KAG / Knowledge Graph
+  (strategy RAG vs graph vs GraphRAG in `docs/specifications/knowledge_graph_graphrag.md`).
 - MLOps and serving: FastAPI.
 - Tool boundaries: MCP servers.
 - Model adaptation: Fine-tuning / PEFT (`config/fine_tuning_policy.json`).

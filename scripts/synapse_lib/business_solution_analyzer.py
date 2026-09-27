@@ -6,9 +6,11 @@ from typing import Any
 
 from scripts.synapse_lib.ai_framework_selector import AiFrameworkSelector
 from scripts.synapse_lib.fine_tuning_service import AdaptationAdvisor
+from scripts.synapse_lib.knowledge_strategy import KnowledgeGraphRequirements, KnowledgeStrategyPlanner
 from scripts.synapse_lib.rag_scalability import RagScalabilityPlanner, RagScaleRequirements
 
 AI_UNIVERSES = {"ia", "chatbolt", "hybrid"}
+AI_TEMPLATE_PREFIXES = ("templates/rag/", "templates/fine_tuning/", "templates/knowledge_graph/", "templates/mcp/")
 
 
 class BusinessSolutionAnalyzer:
@@ -97,6 +99,7 @@ class BusinessSolutionAnalyzer:
             "solution_templates": self._templates_for_universe(effective, technology_selection.get("solution_templates", [])),
             "solution_scaffold_targets": technology_selection.get("solution_scaffold_targets", []),
             "rag_scalability": self._rag_scalability(effective, text),
+            "knowledge_strategy": self._knowledge_strategy(effective, text),
             "model_adaptation": self._model_adaptation(effective, text),
             "harness_engineering": self._harness_engineering(effective),
             "solution_agents": self._solution_agents(effective, stack),
@@ -133,6 +136,8 @@ class BusinessSolutionAnalyzer:
         rag_scale = analysis.get("rag_scalability", {})
         rag_plan = rag_scale.get("plan", {})
         adaptation = analysis.get("model_adaptation", {})
+        knowledge = analysis.get("knowledge_strategy", {})
+        knowledge_plan = knowledge.get("plan", {})
         harness = analysis.get("harness_engineering", {})
         return "\n".join(
             [
@@ -174,11 +179,21 @@ class BusinessSolutionAnalyzer:
                 f"- Vector store candidates: {', '.join(rag_plan.get('vector_store_candidates', []))}",
                 f"- Pending user decisions: {', '.join(rag_plan.get('pending_user_decisions', [])) or 'none'}",
                 "",
+                "## Knowledge Strategy (RAG vs Knowledge Graph)",
+                "",
+                f"- Active: {knowledge.get('active', False)}",
+                f"- Policy: {knowledge.get('policy_path', '')}",
+                f"- Strategy: {knowledge_plan.get('strategy', 'n/a')} ({knowledge_plan.get('status', 'n/a')})",
+                f"- Graph store candidates: {', '.join(knowledge_plan.get('graph_store_candidates', [])) or 'none'}",
+                f"- Pending user decisions: {', '.join(knowledge_plan.get('pending_user_decisions', [])) or 'none'}",
+                f"- Reasons: {'; '.join(knowledge_plan.get('reasons', [])) or knowledge.get('reason', '')}",
+                "",
                 "## Model Adaptation (Fine-Tuning)",
                 "",
                 f"- Active: {adaptation.get('active', False)}",
                 f"- Recommended stage: {adaptation.get('recommended_stage', 'n/a')}",
                 f"- Fine-tuning blockers: {', '.join(adaptation.get('fine_tuning_blockers', [])) or 'none'}",
+                f"- Release gate: {adaptation.get('release_gate_command', 'n/a')}",
                 f"- Reason: {adaptation.get('reason', '')}",
                 "",
                 "## Solution Agents",
@@ -198,6 +213,9 @@ class BusinessSolutionAnalyzer:
                 f"- Policy: {harness.get('policy_path', '')}",
                 f"- Components: {', '.join(harness.get('components', []))}",
                 f"- Audit: {harness.get('audit_command', '')}",
+                f"- Runtime guard: {harness.get('runtime_guard', 'n/a (no runtime agents)')}",
+                f"- Agent eval: {harness.get('agent_eval_command', 'n/a')}",
+                f"- MCP gateway: {harness.get('mcp_gateway', 'n/a')}",
                 "",
                 "## ML Foundations",
                 "",
@@ -406,15 +424,15 @@ class BusinessSolutionAnalyzer:
             return [
                 self._strip_ai_templates(item)
                 for item in value
-                if not (isinstance(item, str) and item.startswith(("templates/rag/", "templates/fine_tuning/")))
+                if not (isinstance(item, str) and item.startswith(AI_TEMPLATE_PREFIXES))
             ]
         return value
 
     def _templates_for_universe(self, universe: str, templates: list[str]) -> list[str]:
-        # RAG and fine-tuning templates are removed from ML projects by the factory.
+        # RAG, knowledge graph and fine-tuning templates are removed from ML projects by the factory.
         if universe in AI_UNIVERSES:
             return templates
-        return [item for item in templates if not item.startswith(("templates/rag/", "templates/fine_tuning/"))]
+        return [item for item in templates if not item.startswith(AI_TEMPLATE_PREFIXES)]
 
     def _solution_agents(self, universe: str, stack: list[str]) -> dict[str, Any]:
         if universe not in AI_UNIVERSES:
@@ -472,6 +490,30 @@ class BusinessSolutionAnalyzer:
             "rule": "Ask the user every pending decision before choosing the production vector store.",
         }
 
+    def _knowledge_strategy(self, universe: str, text: str) -> dict[str, Any]:
+        if universe not in AI_UNIVERSES:
+            return {"active": False, "reason": "No retrieval or knowledge graph layer in the ML universe."}
+        # RAG stays the default; a graph is planned only on explicit relationship/entity signals.
+        requirements = KnowledgeGraphRequirements(
+            existing_database=self._first_signal(text, {"postgresql": "postgres", "postgres": "postgres"}),
+            hosting=self._first_signal(
+                text,
+                {"self-hosted": "self_hosted", "on-premise": "self_hosted", "on premise": "self_hosted", "gerenciado": "managed"},
+            ),
+            data_sensitivity=self._first_signal(
+                text,
+                {"restrito": "restricted", "restricted": "restricted", "confidencial": "confidential", "lgpd": "confidential"},
+            ),
+        )
+        return {
+            "active": True,
+            "policy_path": "config/knowledge_graph_policy.json",
+            "spec_path": "docs/specifications/knowledge_graph_graphrag.md",
+            "plan": KnowledgeStrategyPlanner(root=self.root).plan(text, requirements),
+            "eval_command": "python scripts/run_evals.py graph",
+            "rule": "Confirm the strategy in chat; when a graph is planned, ask every pending decision before choosing the graph store.",
+        }
+
     def _model_adaptation(self, universe: str, text: str) -> dict[str, Any]:
         if universe not in AI_UNIVERSES:
             return {
@@ -482,6 +524,7 @@ class BusinessSolutionAnalyzer:
         advice = AdaptationAdvisor().recommend(text, universe)
         advice["policy_path"] = "config/fine_tuning_policy.json"
         advice["spec_path"] = "docs/specifications/fine_tuning.md"
+        advice["release_gate_command"] = "python scripts/fine_tuning_release.py --candidate <release_candidate.json>"
         return advice
 
     def _harness_engineering(self, universe: str) -> dict[str, Any]:
@@ -491,6 +534,14 @@ class BusinessSolutionAnalyzer:
             if universe in component.get("applies_to", [])
         ]
         eval_harness = self.harness_policy.get("eval_harness", {})
+        runtime = {}
+        if universe in AI_UNIVERSES:
+            runtime = {
+                "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+                "tool_registry": "config/tool_registry.json",
+                "agent_eval_command": "python scripts/run_evals.py agent",
+                "mcp_gateway": "templates/mcp/server.py",
+            }
         return {
             "active": bool(self.harness_policy),
             "policy_path": "config/harness_engineering_policy.json",
@@ -499,6 +550,7 @@ class BusinessSolutionAnalyzer:
             "trials_per_agent_case": eval_harness.get("trials_per_agent_case", 3),
             "reliability_gate_pass_hat_k_min": eval_harness.get("reliability_gate_pass_hat_k_min", 0.8),
             "audit_command": "python scripts/audit_harness.py",
+            **runtime,
         }
 
     def _first_signal(self, text: str, mapping: dict[str, Any]) -> Any:
@@ -533,6 +585,9 @@ class BusinessSolutionAnalyzer:
                     "config/rag_scalability_policy.json",
                     "docs/specifications/scalable_rag_vector_db.md",
                     "evals/retrieval_cases.jsonl",
+                    "config/knowledge_graph_policy.json",
+                    "docs/specifications/knowledge_graph_graphrag.md",
+                    "evals/graph_cases.jsonl",
                     "config/fine_tuning_policy.json",
                     "docs/specifications/fine_tuning.md",
                     "evals/tool_workflow_cases.jsonl",
@@ -554,6 +609,7 @@ class BusinessSolutionAnalyzer:
             alignment.extend(
                 [
                     "Scalable RAG (LLM Engineer's Handbook, AI Engineering, Introduction to Algorithms): sized vector indexes, hybrid retrieval with rank fusion, versioned reindexing and retrieval gates.",
+                    "Knowledge strategy (Artificial Intelligence, Introduction to Algorithms): vector RAG by default, knowledge graph or GraphRAG only for relationship and multi-hop questions, with bounded graph traversal, provenance and graph evals.",
                     "Model adaptation (AI Engineering, LLM Engineer's Handbook, Build a Large Language Model (From Scratch)): prompt first, then RAG, then parameter-efficient fine-tuning only with a measured baseline and curated data.",
                 ]
             )

@@ -735,8 +735,9 @@
         "entities",
         "ontology"
       ],
-      "scaffold_targets": [
-        "templates/knowledge_graph/graph_schema.yaml"
+      "templates": [
+        "templates/knowledge_graph/graph_schema.yaml",
+        "templates/knowledge_graph/graph_store_adapter.py"
       ]
     },
     {
@@ -788,8 +789,9 @@
         "context",
         "server"
       ],
-      "scaffold_targets": [
-        "templates/mcp/server.py"
+      "templates": [
+        "templates/mcp/server.py",
+        "templates/mcp/mcp.example.json"
       ]
     },
     {

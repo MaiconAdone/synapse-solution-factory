@@ -7,7 +7,7 @@ Policy: `config/harness_engineering_policy.json`. Spec: `docs/specifications/har
 
 - Agent id and owner role (`config/roles.json`):
 - Objective and success criteria:
-- Model tier (economy / standard / strong) and why:
+- Model tier (economy / balanced / strong) and why:
 
 ## Context
 
@@ -17,9 +17,14 @@ Policy: `config/harness_engineering_policy.json`. Spec: `docs/specifications/har
 
 ## Tools
 
-| Tool | Allowed | Needs approval | Forbidden | Idempotency key | Side effect |
-|------|---------|----------------|-----------|-----------------|-------------|
-|      |         |                |           |                 |             |
+Every tool must be registered in the tool registry named by
+`reference_implementation.tool_registry` in `config/harness_engineering_policy.json`
+(IA, Chatbolt and Hybrid); the runtime guard (`scripts/synapse_lib/agent_harness.py`)
+refuses anything else.
+
+| Tool | Allowed | Needs approval | Simulation first | Idempotency key | Side effect |
+|------|---------|----------------|------------------|-----------------|-------------|
+|      |         |                |                  |                 |             |
 
 ## Control Loop
 
@@ -32,7 +37,7 @@ Policy: `config/harness_engineering_policy.json`. Spec: `docs/specifications/har
 
 - Deterministic tests:
 - Eval cases (path) and graders:
-- Trials per case (k) and pass^k gate:
+- Trials per case (k) and pass^k gate (`python scripts/run_evals.py agent --runner <module:function>`):
 
 ## Observability
 

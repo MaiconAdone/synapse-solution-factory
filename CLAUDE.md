@@ -58,6 +58,15 @@ O `.mcp.json` do projeto nao declara servidores; o Claude Code abre sem
 dependencias externas. Coordenacao entre sessoes locais (opcional) usa
 `scripts/synapse_peers_mcp.py`, que requer `pip install -r requirements.txt`.
 
+Para as solucoes criadas, ferramentas externas chegam aos agentes so por MCP
+atraves do gateway `templates/mcp/server.py` (nucleo em
+`scripts/synapse_lib/mcp_gateway.py`): expoe apenas ferramentas do
+`config/tool_registry.json` com handler, passa tudo pelo `AgentRunGuard`,
+simula de verdade antes de efeitos irreversiveis, aprovacao humana fora do
+agente (nunca como ferramenta MCP) e replay idempotente. O servidor so entra
+no `.mcp.json` do projeto (exemplo em `templates/mcp/mcp.example.json`) depois
+de confirmar inventario de ferramentas, permissoes e matriz de aprovacao.
+
 Referencias oficiais:
 
 - https://docs.claude.com/en/docs/build-with-claude/prompt-caching
@@ -217,11 +226,30 @@ Use:
 - Fine-tuning: `config/fine_tuning_policy.json`. Ordem prompt -> RAG ->
   fine-tuning; exige baseline medido, dataset curado
   (`scripts/prepare_fine_tuning_dataset.py`) e aprovacao humana. Pesos nunca
-  mudam automaticamente.
+  mudam automaticamente. Rollout so com o gate de release
+  (`python scripts/fine_tuning_release.py --candidate <arquivo>`, modelo em
+  `templates/fine_tuning/release_candidate.json`): ganho >= 5% no mesmo eval
+  set, sem regressao, custo/latencia no orcamento, aprovador nomeado,
+  shadow/canary e rollback; `--register` grava em `artifacts/models`. Gate:
+  `python scripts/run_evals.py fine_tuning`.
 - Harness engineering: `config/harness_engineering_policy.json`. Todo agente
   tem mapa de contexto, fronteira de ferramentas, limites do loop, verificacao,
   observabilidade e feedback; audite com `python scripts/audit_harness.py`.
+  O runtime e executavel: `AgentRunGuard` (`scripts/synapse_lib/agent_harness.py`)
+  aplica ferramentas de `config/tool_registry.json` (menor privilegio,
+  idempotencia, simulacao, aprovacao), limites do loop e trace redigido. Gate
+  de agentes: `python scripts/run_evals.py agent` (pass^k em tentativas
+  repetidas; `--runner modulo:funcao` pluga o agente real). Ferramentas
+  `example` do registry nunca vao para producao sem confirmacao do usuario.
 - Gate de retrieval: `python scripts/run_evals.py retrieval` (recall@k, MRR, nDCG).
+- RAG vs Knowledge Graph: `config/knowledge_graph_policy.json` e
+  `docs/specifications/knowledge_graph_graphrag.md`. RAG e o padrao; o
+  analisador so planeja `knowledge_graph` ou `graph_rag` com sinais de
+  relacionamento/multi-hop/entidades (`knowledge_strategy` no ADR). Quando
+  houver grafo, pergunte dono da ontologia, tipos de entidade/relacao, fontes
+  oficiais, frequencia, volume e hospedagem (`pending_user_decisions`). Toda
+  relacao cita fonte; merge de entidade abaixo de 0.9 vai para revisao humana.
+  Gate: `python scripts/run_evals.py graph`.
 - Agentes da solucao (runtime) ficam em `config/solution_agents.json`, gerados
   do ADR e validados contra `config/agent_blueprint_contract.json`
   (`python scripts/scaffold_solution_agents.py --validate-only`); siga o
@@ -252,7 +280,8 @@ Antes de chamar LLM:
 - comprima contexto
 - recupere apenas trechos necessarios
 - use reranking somente quando confianca estiver baixa
-- use GraphRAG apenas quando relacoes forem essenciais
+- use GraphRAG apenas quando relacoes forem essenciais (roteado por
+  `QueryRouter` em `scripts/synapse_lib/knowledge_strategy.py`)
 
 ## Build e Validacao
 

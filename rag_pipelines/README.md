@@ -8,7 +8,8 @@ rather than an executable service. It defines chunking, local indexing,
 retrieval, simple reranking and citation packaging without calling a cloud
 model; a generated project implements this pattern in its own stack when the
 universe requires RAG. Production vector stores, external rerankers and
-advanced GraphRAG remain adapter-driven extensions.
+advanced GraphRAG remain adapter-driven extensions (GraphRAG: see
+`docs/specifications/knowledge_graph_graphrag.md`).
 
 ## Required Artifacts
 

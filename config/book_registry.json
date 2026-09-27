@@ -178,6 +178,7 @@
       "applied_in": [
         "scripts/synapse_lib/rag_retrieval.py",
         "scripts/synapse_lib/rag_scalability.py",
+        "scripts/synapse_lib/knowledge_graph.py",
         "config/workflows/synapse/new-ai-project.json"
       ]
     },
@@ -194,10 +195,11 @@
         "chatbolt",
         "hybrid"
       ],
-      "lessons": "problem representation, search, planning and explainable decomposition",
+      "lessons": "problem representation (semantic nets), search, planning and explainable decomposition",
       "applied_in": [
         "config/agentic_architectural_patterns.json",
-        "config/business_transformation.json"
+        "config/business_transformation.json",
+        "config/knowledge_graph_policy.json"
       ]
     },
     {
@@ -311,6 +313,7 @@
       "applied_in": [
         "config/harness_engineering_policy.json",
         "scripts/synapse_lib/harness_service.py",
+        "scripts/synapse_lib/agent_harness.py",
         "config/agent_blueprint_contract.json"
       ]
     },
@@ -565,22 +568,26 @@
     },
     {
       "id": "fine-tuning-thresholds",
-      "decision": "Pilot/production minimums (50/500), 5% gain over baseline, human score 0.8, leakage-free hash split",
+      "decision": "Pilot/production minimums (50/500), 5% gain over baseline on the same eval set, no regression, budget, named approver, shadow/canary and rollback enforced by the release gate, human score 0.8, leakage-free hash split",
       "basis": "Synapse engineering decision",
       "applied_in": [
         "config/fine_tuning_policy.json",
         "scripts/synapse_lib/fine_tuning_service.py",
-        "scripts/prepare_fine_tuning_dataset.py"
+        "scripts/prepare_fine_tuning_dataset.py",
+        "scripts/synapse_lib/fine_tuning_release.py",
+        "evals/fine_tuning_cases.jsonl"
       ]
     },
     {
       "id": "harness-engineering",
-      "decision": "Harness components per universe, loop limits, pass@k/pass^k reliability metrics (agent benchmark practice), governance migrated from the former trust framework",
+      "decision": "Harness components per universe, loop limits enforced by an executable runtime guard (tool registry, idempotency, simulation/approval gates, redacted traces), pass@k/pass^k reliability metrics over repeated tool-workflow trials, governance migrated from the former trust framework",
       "basis": "market practice for coding agents",
       "applied_in": [
         "config/harness_engineering_policy.json",
         "scripts/synapse_lib/harness_service.py",
-        "scripts/audit_harness.py"
+        "scripts/audit_harness.py",
+        "scripts/synapse_lib/agent_harness.py",
+        "config/tool_registry.json"
       ]
     },
     {
@@ -611,6 +618,28 @@
         "tests/test_ai_engineering_extensions.py",
         "scripts/validate_enterprise_stack.ps1",
         "scripts/synapse_lib/text_utils.py"
+      ]
+    },
+    {
+      "id": "knowledge-graph-strategy",
+      "decision": "RAG by default; knowledge graph or GraphRAG only with >= 2 graph signal groups or an explicit request, per-question routing, 2-hop/25-entity expansion fused with RRF, auto-merge >= 0.9, relations with provenance",
+      "basis": "Synapse engineering decision (market practice: GraphRAG, KAG, property graphs)",
+      "applied_in": [
+        "config/knowledge_graph_policy.json",
+        "scripts/synapse_lib/knowledge_strategy.py",
+        "scripts/synapse_lib/knowledge_graph.py",
+        "templates/knowledge_graph/graph_schema.yaml",
+        "evals/graph_cases.jsonl"
+      ]
+    },
+    {
+      "id": "mcp-tool-gateway",
+      "decision": "Solution tools reach agents only through an MCP gateway over the tool registry and runtime guard: real dry-run simulation, out-of-band human approval (never an MCP tool), idempotent replay, handler-backed tools only",
+      "basis": "Synapse engineering decision (Model Context Protocol as the standard tool boundary)",
+      "applied_in": [
+        "scripts/synapse_lib/mcp_gateway.py",
+        "templates/mcp/server.py",
+        "templates/mcp/mcp.example.json"
       ]
     }
   ]

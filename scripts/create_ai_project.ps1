@@ -427,7 +427,8 @@ function Create-AssistantInheritanceArtifacts {
 - Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, ``config/llm_solution_factory_policy.json``, ``config/ai_framework_selection.json``, analise de solucao, governanca, testes e evals.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou nivel de risco, pergunte ao usuario antes de implementar. Nao invente essas informacoes.
 - Todo agente segue ``config/harness_engineering_policy.json`` (mapa de contexto, limites do loop, verificacao, observabilidade); audite com ``python scripts/audit_harness.py``.
-- Com RAG, siga ``config/rag_scalability_policy.json`` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; fine-tuning so com ``config/fine_tuning_policy.json`` (baseline medido, dataset curado e aprovacao humana).
+- Com RAG, siga ``config/rag_scalability_policy.json`` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; RAG vs Knowledge Graph/GraphRAG segue ``config/knowledge_graph_policy.json`` (grafo so com sinais de relacionamento e decisoes de ontologia confirmadas); fine-tuning so com ``config/fine_tuning_policy.json`` (baseline medido, dataset curado e aprovacao humana).
+- Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado.
 "@
     Write-TextFile -Path (Join-Path $Destino "AGENTS.md") -Content $CodexInstructions
 
@@ -457,7 +458,8 @@ Este e um projeto de solucao criado pelo Synapse no universo ``$($ProjectUnivers
 - Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, ``config/llm_solution_factory_policy.json``, ``config/ai_framework_selection.json``, analise de solucao, governanca, testes e evals.
 - Se faltar contexto essencial, pergunte ao usuario no chat antes de implementar.
 - Todo agente segue ``config/harness_engineering_policy.json``; audite com ``python scripts/audit_harness.py``.
-- Com RAG, siga ``config/rag_scalability_policy.json`` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); fine-tuning so com ``config/fine_tuning_policy.json`` e aprovacao humana.
+- Com RAG, siga ``config/rag_scalability_policy.json`` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); RAG vs Knowledge Graph/GraphRAG segue ``config/knowledge_graph_policy.json``; fine-tuning so com ``config/fine_tuning_policy.json`` e aprovacao humana.
+- Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado.
 "@
     Write-TextFile -Path (Join-Path $Destino "CLAUDE.md") -Content $ClaudeInstructions
 
@@ -1511,6 +1513,44 @@ def test_repeated_trials_separate_capability_from_reliability():
     assert pass_at_k(3, 1, 3) == 1.0
     assert pass_hat_k(3, 1, 3) == 0.0
     assert pass_hat_k(3, 3, 3) == 1.0
+
+
+def test_runtime_guard_and_agent_eval_gate_for_runtime_agents():
+    universe = json.loads((ROOT / "config/project_universe.json").read_text(encoding="utf-8-sig"))["universe"]
+    if universe == "ml":
+        return  # the ML universe ships models, not runtime agents
+    from scripts.synapse_lib.agent_harness import AgentRunGuard, run_agent_eval
+
+    guard = AgentRunGuard.from_policy("contract-check", root=ROOT, allowed_tools={"hybrid_retrieve"})
+    assert guard.authorize("refund_order", {"order_id": "1"}).status == "refused"
+    cases = [
+        json.loads(line)
+        for line in (ROOT / "evals/tool_workflow_cases.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    report = run_agent_eval(ROOT, cases)
+    assert report["summary"]["pass_hat_k"] >= report["reliability_gate_pass_hat_k_min"], report["checks"]
+
+
+def test_mcp_gateway_routes_tools_through_the_runtime_guard():
+    universe = json.loads((ROOT / "config/project_universe.json").read_text(encoding="utf-8-sig"))["universe"]
+    if universe == "ml":
+        return
+    from scripts.synapse_lib.agent_harness import AgentRunGuard
+    from scripts.synapse_lib.mcp_gateway import ToolGateway
+
+    assert (ROOT / "templates/mcp/server.py").exists()
+    executed = []
+    guard = AgentRunGuard.from_policy("contract-check", root=ROOT, allowed_tools={"refund_order"})
+    gateway = ToolGateway(guard=guard, handlers={"refund_order": lambda args, dry_run: executed.append(dry_run) or "ok"})
+    args = {"order_id": "1"}
+    assert gateway.call("refund_order", args, idempotency_key="k1")["status"] == "needs_simulation"
+    assert gateway.call("refund_order", args, idempotency_key="k1", simulate=True)["status"] == "simulated"
+    assert gateway.call("refund_order", args, idempotency_key="k1")["status"] == "needs_approval"
+    gateway.approve("refund_order", args, approver="operador")
+    assert gateway.call("refund_order", args, idempotency_key="k1")["status"] == "executed"
+    assert gateway.call("refund_order", args, idempotency_key="k1")["status"] == "replayed"
+    assert executed == [True, False]
 '@
     Write-TextFile (Join-Path $Destino "tests\test_harness_contract.py") $HarnessContractTest
 
@@ -1651,6 +1691,40 @@ def test_hybrid_retrieval_meets_quality_gates():
 
     assert result["eval_type"] == "retrieval"
     assert result["passed"], result["metrics"]
+
+
+def test_knowledge_graph_strategy_is_inherited_and_gated():
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from scripts.synapse_lib.eval_service import EvalService
+
+    for relative_path in (
+        "config/knowledge_graph_policy.json",
+        "docs/specifications/knowledge_graph_graphrag.md",
+        "templates/knowledge_graph/graph_schema.yaml",
+        "evals/graph_cases.jsonl",
+        "config/tool_registry.json",
+    ):
+        assert (ROOT / relative_path).exists(), relative_path
+    result = EvalService(root=ROOT).run_graph_eval()
+    assert result["passed"], result["metrics"]
+
+
+def test_fine_tuning_release_gate_is_inherited_and_blocks_unsafe_releases():
+    import sys
+
+    sys.path.insert(0, str(ROOT))
+    from scripts.synapse_lib.eval_service import EvalService
+
+    for relative_path in (
+        "scripts/fine_tuning_release.py",
+        "templates/fine_tuning/release_candidate.json",
+        "evals/fine_tuning_cases.jsonl",
+    ):
+        assert (ROOT / relative_path).exists(), relative_path
+    result = EvalService(root=ROOT).run_fine_tuning_eval()
+    assert result["passed"], result["results"]
 
 
 def test_solution_runtime_agents_follow_the_blueprint_contract():
@@ -2232,8 +2306,16 @@ function Finalize-SynapseSolutionProject {
             "scripts\scaffold_solution_agents.py",
             "vector_db",
             "templates\rag",
+            "templates\knowledge_graph",
             "templates\fine_tuning",
             "config\rag_scalability_policy.json",
+            "config\knowledge_graph_policy.json",
+            "evals\graph_cases.jsonl",
+            "docs\specifications\knowledge_graph_graphrag.md",
+            "config\tool_registry.json",
+            "templates\mcp",
+            "evals\fine_tuning_cases.jsonl",
+            "scripts\fine_tuning_release.py",
             "config\fine_tuning_policy.json",
             "config\workflows\synapse\rag-build.json",
             "docs\specifications\technology_layer.md",
@@ -2354,6 +2436,13 @@ function Align-UniverseArtifacts {
         if (!$ProjectUniverse.ai_enabled) {
             $Runtime.rag = [ordered]@{ ready = $false; reason = "ML universe has no retrieval layer" }
             $Runtime.fine_tuning = [ordered]@{ enabled = $false; reason = "LLM fine-tuning does not apply to the ML universe" }
+            $Runtime.knowledge_graph = [ordered]@{ enabled = $false; reason = "ML universe has no retrieval or knowledge graph layer" }
+            foreach ($RuntimeOnlyKey in @("runtime_guard", "tool_registry", "agent_eval_command")) {
+                $Runtime.harness_engineering.PSObject.Properties.Remove($RuntimeOnlyKey)
+            }
+            foreach ($GatewayKey in @("tool_gateway", "tool_gateway_server_template", "tool_gateway_config_example", "tool_gateway_autostart")) {
+                $Runtime.mcp.PSObject.Properties.Remove($GatewayKey)
+            }
         }
         Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
     }
@@ -2382,7 +2471,7 @@ function Align-UniverseArtifacts {
             if (Test-Path $DocPath) {
                 $Doc = Get-Content $DocPath -Raw
                 $Doc = $Doc.Replace(', `config/ai_framework_selection.json`', '')
-                $Doc = $Doc -replace '(?m)^- Com RAG, siga .*(\r?\n|$)', ''
+                $Doc = $Doc -replace '(?m)^- Com (RAG, siga|agentes de runtime,) .*(\r?\n|$)', ''
                 Write-TextFile -Path $DocPath -Content $Doc
             }
         }
@@ -2471,9 +2560,18 @@ function Run-ProjectValidation {
     if ($ProjectUniverse.ai_enabled) {
         $RequiredPaths += @(
             "config\rag_scalability_policy.json",
+            "config\knowledge_graph_policy.json",
             "config\fine_tuning_policy.json",
             "evals\retrieval_cases.jsonl",
+            "evals\graph_cases.jsonl",
             "templates\rag\rag_pipeline.py",
+            "templates\knowledge_graph\graph_schema.yaml",
+            "config\tool_registry.json",
+            "scripts\synapse_lib\agent_harness.py",
+            "scripts\synapse_lib\mcp_gateway.py",
+            "templates\mcp\server.py",
+            "evals\fine_tuning_cases.jsonl",
+            "scripts\fine_tuning_release.py",
             "config\solution_agents.json",
             "config\workflows\synapse\agent-build.json"
         )
@@ -2532,6 +2630,42 @@ function Configure-SolutionVsCodeTasks {
       "args": [
         "scripts/run_evals.py",
         "retrieval"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Evals: Rodar knowledge graph (rotas, caminhos, proveniencia)",
+      "detail": "Carrega o grafo de exemplo e aplica os gates knowledge_graph de evals/quality_gates.yaml.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_evals.py",
+        "graph"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Evals: Rodar harness de agentes (pass^k)",
+      "detail": "Roda evals/tool_workflow_cases.jsonl em tentativas repetidas pelo AgentRunGuard e aplica o gate de confiabilidade pass^k.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_evals.py",
+        "agent"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Evals: Rodar gate de release de fine-tuning",
+      "detail": "Prova que o gate aprova so candidatos com ganho sobre o baseline, sem regressao, no orcamento, com aprovador, shadow/canary e rollback.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/run_evals.py",
+        "fine_tuning"
       ],
       "group": "test",
       "problemMatcher": []

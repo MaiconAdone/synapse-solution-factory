@@ -1,0 +1,98 @@
+{
+  "schema": "synapse-tool-registry.v1",
+  "owner": "policy-guardrails-engineer",
+  "purpose": "Single inventory of the tools runtime agents may call, with the side-effect, approval and idempotency rules the harness runtime guard enforces.",
+  "policy": "config/harness_engineering_policy.json",
+  "runtime_guard": "scripts/synapse_lib/agent_harness.py",
+  "rule": "Tools with status example exist only to exercise evals/tool_workflow_cases.jsonl. Replace them with the tool inventory, permissions and approval matrix confirmed by the user in chat; never invent business tools.",
+  "tools": [
+    {
+      "name": "delegate_to_specialist",
+      "status": "internal",
+      "description": "Hand a sub-task to another solution agent declared in config/solution_agents.json.",
+      "side_effect": false,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": false,
+      "simulation_first": false,
+      "required_args": ["agent_id", "task"]
+    },
+    {
+      "name": "ask_user",
+      "status": "internal",
+      "description": "Ask the user a clarifying question and wait for the answer.",
+      "side_effect": false,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": false,
+      "simulation_first": false,
+      "required_args": ["question"]
+    },
+    {
+      "name": "request_human_approval",
+      "status": "internal",
+      "description": "Open an approval request for a gated action.",
+      "side_effect": false,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": false,
+      "simulation_first": false,
+      "required_args": ["action", "reason"]
+    },
+    {
+      "name": "hybrid_retrieve",
+      "status": "internal",
+      "description": "Permission-filtered hybrid retrieval (scripts/synapse_lib/rag_retrieval.py).",
+      "side_effect": false,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": false,
+      "simulation_first": false,
+      "required_args": ["query"]
+    },
+    {
+      "name": "graph_retrieve",
+      "status": "internal",
+      "description": "Permission-filtered GraphRAG retrieval (scripts/synapse_lib/knowledge_graph.py); only when the knowledge strategy uses a graph.",
+      "side_effect": false,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": false,
+      "simulation_first": false,
+      "required_args": ["query"]
+    },
+    {
+      "name": "order_status_lookup",
+      "status": "example",
+      "description": "Example read-only business lookup.",
+      "side_effect": false,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": false,
+      "simulation_first": false,
+      "required_args": ["order_id"]
+    },
+    {
+      "name": "create_ticket",
+      "status": "example",
+      "description": "Example reversible side effect.",
+      "side_effect": true,
+      "reversible": true,
+      "approval_required": false,
+      "idempotency_key_required": true,
+      "simulation_first": false,
+      "required_args": ["order_id", "reason"]
+    },
+    {
+      "name": "refund_order",
+      "status": "example",
+      "description": "Example irreversible side effect.",
+      "side_effect": true,
+      "reversible": false,
+      "approval_required": true,
+      "idempotency_key_required": true,
+      "simulation_first": true,
+      "required_args": ["order_id"]
+    }
+  ]
+}
