@@ -641,6 +641,19 @@
         "templates/mcp/server.py",
         "templates/mcp/mcp.example.json"
       ]
+    },
+    {
+      "id": "llm-gateway-runtime",
+      "decision": "Single LLM gateway: task->tier->profile->model routing (Haiku 4.5 / Sonnet 5 / Opus 5.5), stable-first prompt caching layout, budget trimming, secrets/PII blocking, deterministic output guardrails, usage/cache traces, improvement loop with quarantined failures and human promotion; measured-results gates for voice and agentic coding",
+      "basis": "Synapse engineering decision (Anthropic prompt caching and model tiers; guardrails/policy.yaml)",
+      "applied_in": [
+        "scripts/synapse_lib/llm_gateway.py",
+        "scripts/synapse_lib/guardrails_runtime.py",
+        "scripts/synapse_lib/improvement_loop.py",
+        "scripts/synapse_lib/measured_evals.py",
+        "templates/agents/langgraph_state_machine.py",
+        "templates/backend/fastapi_service.py"
+      ]
     }
   ]
 }

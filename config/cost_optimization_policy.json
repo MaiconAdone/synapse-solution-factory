@@ -2,6 +2,7 @@
   "version": 1,
   "name": "synapse-cost-aware-orchestration",
   "goal": "Use the cheapest model tier and the smallest context that meet quality for each ML, IA or hybrid request.",
+  "enforced_by": "scripts/synapse_lib/llm_gateway.py",
   "request_profiles": {
     "simple": {
       "token_budget": 1200,

@@ -41,6 +41,8 @@
   },
   "runtime": {
     "enabled": true,
+    "implementation": "scripts/synapse_lib/improvement_loop.py",
+    "failures_become": "quarantined review cases in memory_targets.teacher_review_cases until a reviewer promotes them to an eval suite",
     "mode": "retrieval_augmented_continual_learning",
     "project_memory_namespace_prefix": "synapse-learning-",
     "automatic_project_scope_capture": true,

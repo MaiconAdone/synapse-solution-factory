@@ -50,6 +50,7 @@ def _base_blueprint(
             "loop_limits": "config/harness_engineering_policy.json#control_loop",
             "runtime_guard": "scripts/synapse_lib/agent_harness.py",
             "tool_registry": "config/tool_registry.json",
+            "llm_gateway": "scripts/synapse_lib/llm_gateway.py",
         },
         "success_criteria": PENDING,
         "owner_role": owner_role,

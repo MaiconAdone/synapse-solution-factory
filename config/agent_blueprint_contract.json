@@ -83,7 +83,8 @@
     "default_authority_level": "advisory",
     "external_action_requires_human_approval": true,
     "model_access": "via_llm_gateway_only",
-    "llm_gateway": "provider adapter in the solution that enforces model tier, token budget, sensitive-content blocking and trace logging"
+    "llm_gateway": "provider adapter in the solution that enforces model tier, token budget, sensitive-content blocking and trace logging",
+    "llm_gateway_implementation": "scripts/synapse_lib/llm_gateway.py"
   },
   "solution_agents_file": "config/solution_agents.json",
   "a2a_message_contract": {

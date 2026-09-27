@@ -477,7 +477,7 @@
         "approval",
         "graph"
       ],
-      "scaffold_targets": [
+      "templates": [
         "templates/agents/langgraph_state_machine.py"
       ]
     },
@@ -762,7 +762,7 @@
         "serving",
         "fastapi"
       ],
-      "scaffold_targets": [
+      "templates": [
         "templates/backend/fastapi_service.py"
       ]
     },

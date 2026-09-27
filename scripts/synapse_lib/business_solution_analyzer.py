@@ -10,7 +10,7 @@ from scripts.synapse_lib.knowledge_strategy import KnowledgeGraphRequirements, K
 from scripts.synapse_lib.rag_scalability import RagScalabilityPlanner, RagScaleRequirements
 
 AI_UNIVERSES = {"ia", "chatbolt", "hybrid"}
-AI_TEMPLATE_PREFIXES = ("templates/rag/", "templates/fine_tuning/", "templates/knowledge_graph/", "templates/mcp/")
+AI_TEMPLATE_PREFIXES = ("templates/rag/", "templates/fine_tuning/", "templates/knowledge_graph/", "templates/mcp/", "templates/agents/")
 
 
 class BusinessSolutionAnalyzer:
@@ -216,6 +216,8 @@ class BusinessSolutionAnalyzer:
                 f"- Runtime guard: {harness.get('runtime_guard', 'n/a (no runtime agents)')}",
                 f"- Agent eval: {harness.get('agent_eval_command', 'n/a')}",
                 f"- MCP gateway: {harness.get('mcp_gateway', 'n/a')}",
+                f"- LLM gateway: {harness.get('llm_gateway', 'n/a (no runtime LLM calls)')}",
+                f"- Improvement loop: {harness.get('improvement_loop', '')}",
                 "",
                 "## ML Foundations",
                 "",
@@ -541,6 +543,8 @@ class BusinessSolutionAnalyzer:
                 "tool_registry": "config/tool_registry.json",
                 "agent_eval_command": "python scripts/run_evals.py agent",
                 "mcp_gateway": "templates/mcp/server.py",
+                "llm_gateway": "scripts/synapse_lib/llm_gateway.py",
+                "output_guardrails": "scripts/synapse_lib/guardrails_runtime.py",
             }
         return {
             "active": bool(self.harness_policy),
@@ -550,6 +554,7 @@ class BusinessSolutionAnalyzer:
             "trials_per_agent_case": eval_harness.get("trials_per_agent_case", 3),
             "reliability_gate_pass_hat_k_min": eval_harness.get("reliability_gate_pass_hat_k_min", 0.8),
             "audit_command": "python scripts/audit_harness.py",
+            "improvement_loop": "scripts/synapse_lib/improvement_loop.py",
             **runtime,
         }
 

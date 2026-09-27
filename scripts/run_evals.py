@@ -15,9 +15,10 @@ from scripts.synapse_lib.eval_service import EvalService  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run Synapse evals locally without the web stack.")
-    parser.add_argument("mode", choices=("ml", "ai", "rag", "retrieval", "graph", "agent", "fine_tuning"))
+    parser.add_argument("mode", choices=("ml", "ai", "rag", "retrieval", "graph", "agent", "fine_tuning", "voice", "agentic_coding"))
     parser.add_argument("--cases-path")
     parser.add_argument("--model-id")
+    parser.add_argument("--results", help="voice/agentic_coding: JSON with measured results of a real run")
     parser.add_argument("--runner", help="agent mode: module:function returning proposed tool calls for a case")
     args = parser.parse_args()
 
@@ -39,6 +40,16 @@ def main() -> int:
         result = service.run_agent_eval(
             cases_path=args.cases_path or "evals/tool_workflow_cases.jsonl",
             runner=runner,
+        )
+    elif args.mode == "voice":
+        result = service.run_voice_eval(
+            cases_path=args.cases_path or "evals/voice_agent_cases.jsonl",
+            results_path=args.results,
+        )
+    elif args.mode == "agentic_coding":
+        result = service.run_agentic_coding_eval(
+            cases_path=args.cases_path or "evals/agentic_coding_cases.jsonl",
+            results_path=args.results,
         )
     elif args.mode == "fine_tuning":
         result = service.run_fine_tuning_eval(

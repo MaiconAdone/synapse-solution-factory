@@ -1,4 +1,5 @@
 version: 1
+runtime_enforcement: scripts/synapse_lib/guardrails_runtime.py
 input:
   prompt_injection_check: required
   pii_check: required

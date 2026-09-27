@@ -26,6 +26,7 @@ governado para um de quatro universos: **ML**, **IA**, **Chatbolt** ou
    - [Selecao de tecnologias e templates](#54-selecao-de-tecnologias-e-templates)
    - [Agentes da solucao (runtime)](#55-agentes-da-solucao-runtime)
    - [RAG vs Knowledge Graph (GraphRAG)](#56-rag-vs-knowledge-graph-graphrag)
+   - [Gateway de LLM, guardrails e loop de melhoria](#57-gateway-de-llm-guardrails-e-loop-de-melhoria)
 6. [Governanca de agentes e custo](#6-governanca-de-agentes-e-custo)
 7. [IA agentica para transformacao empresarial](#7-ia-agentica-para-transformacao-empresarial)
 8. [Tratamento estatistico de dados](#8-tratamento-estatistico-de-dados)
@@ -310,9 +311,11 @@ dos agentes da solucao e harness de avaliacao.
 | agent_evals | `evals/tool_workflow_cases.jsonl` | IA, Chatbolt, Hibrido |
 | agent_blueprints | `config/solution_agents.json`, `config/workflows/synapse/agent-build.json` | IA, Chatbolt, Hibrido |
 | observability | `llm_ops/observability.yaml` | IA, Chatbolt, Hibrido |
-| feedback_loop | `config/agent_improvement_loop.json` | todos |
+| feedback_loop | `config/agent_improvement_loop.json`, `scripts/synapse_lib/improvement_loop.py` | todos |
 | runtime_guard | `scripts/synapse_lib/agent_harness.py`, `config/tool_registry.json` | IA, Chatbolt, Hibrido |
 | mcp_gateway | `scripts/synapse_lib/mcp_gateway.py`, `templates/mcp/server.py` | IA, Chatbolt, Hibrido |
+| llm_gateway | `scripts/synapse_lib/llm_gateway.py`, `config/model_providers.json`, `config/cost_optimization_policy.json` | IA, Chatbolt, Hibrido |
+| output_guardrails | `scripts/synapse_lib/guardrails_runtime.py`, `guardrails/policy.yaml` | IA, Chatbolt, Hibrido |
 | knowledge_verification | `config/rag_scalability_policy.json`, `evals/retrieval_cases.jsonl`, `config/knowledge_graph_policy.json`, `evals/graph_cases.jsonl` | IA, Chatbolt, Hibrido |
 | safe_execution | `config/business_transformation.json` | todos |
 
@@ -423,6 +426,40 @@ fontes oficiais, frequencia de atualizacao, volume e hospedagem.
 ```powershell
 python .\scripts\run_evals.py graph
 ```
+
+### 5.7 Gateway de LLM, guardrails e loop de melhoria
+
+Todo agente da solucao chama modelos pelo `LlmGateway`
+(`scripts/synapse_lib/llm_gateway.py`), unico caminho permitido pelo
+`config/agent_blueprint_contract.json`:
+
+| Etapa | Regra |
+|-------|-------|
+| Roteamento | tipo de tarefa -> tier (`config/cost_optimization_policy.json`) -> perfil/orcamento -> modelo (`config/model_providers.json`) |
+| Modelos Anthropic | economy `claude-haiku-4-5`, balanced `claude-sonnet-5`, strong `claude-opus-5-5` (esforco explicito: balanced `medium`, strong `high`) |
+| Prompt caching | contexto estavel primeiro com `cache_control`; contexto dinamico e pergunta depois; hash do contexto estavel no trace |
+| Orcamento | corta contexto dinamico do fim ate caber; senao `blocked_budget` |
+| Entrada | segredos sempre bloqueados; dados pessoais bloqueados para provedor externo |
+| Saida | `scripts/synapse_lib/guardrails_runtime.py`: PII/segredos e schema -> bloqueia; sem citacao ou numero sem base -> pede esclarecimento |
+| Trace | tokens de entrada/saida, cache creation, cache read, latencia e custo estimado em `artifacts/traces/llm_gateway.jsonl` |
+
+O loop de melhoria (`scripts/synapse_lib/improvement_loop.py`) recebe cada
+resultado: falhas viram casos em quarentena para revisao, exemplos bons so sao
+promovidos para retrieval com aprovador humano e nunca para treino automatico.
+Modelos OpenAI por tier ficam `pending_user_confirmation` e exigem um adaptador.
+
+Evals que dependem de medicao real validam o contrato sempre e os gates apenas
+com resultados medidos:
+
+```powershell
+python .\scripts\run_evals.py voice --results <voice_results.json>
+python .\scripts\run_evals.py agentic_coding --results <agentic_results.json>
+```
+
+Templates prontos: `templates/agents/langgraph_state_machine.py` (grafo
+screen -> route -> retrieve -> answer -> act sobre gateway e guard) e
+`templates/backend/fastapi_service.py` (`/health`, `/v1/predict` para ML,
+`/v1/answer` para IA).
 
 ## 6. Governanca de agentes e custo
 
@@ -657,7 +694,7 @@ tests/                  testes do Synapse
 | Analisar solucao (sem gravar) | `python .\scripts\analyze_business_solution.py --project-name x --universe IA --business-problem "..." --print-recommendation` |
 | Testes | `.\.venv\Scripts\python -m pytest tests -q` |
 | Validar stack | `.\scripts\validate_enterprise_stack.ps1` |
-| Evals | `python .\scripts\run_evals.py ml\|ai\|rag\|retrieval\|graph\|agent\|fine_tuning` |
+| Evals | `python .\scripts\run_evals.py ml\|ai\|rag\|retrieval\|graph\|agent\|fine_tuning\|voice\|agentic_coding` |
 | Pipeline RAG local | `python .\templates\rag\rag_pipeline.py --query "..."` |
 | Dataset de fine-tuning | `python .\scripts\prepare_fine_tuning_dataset.py --input ...` |
 | Auditar harness | `python .\scripts\audit_harness.py` |

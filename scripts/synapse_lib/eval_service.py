@@ -5,6 +5,8 @@ from typing import Any
 
 from scripts.synapse_lib.agent_harness import run_agent_eval as run_agent_trials
 from scripts.synapse_lib.fine_tuning_release import run_release_cases
+from scripts.synapse_lib.measured_evals import run_agentic_coding_eval as agentic_coding_checks
+from scripts.synapse_lib.measured_evals import run_voice_eval as voice_checks
 from scripts.synapse_lib.knowledge_graph import InMemoryGraphStore, expand, link_entities, load_graph, shortest_path
 from scripts.synapse_lib.knowledge_strategy import QueryRouter
 from scripts.synapse_lib.schemas.evals import EvalCaseResult
@@ -192,6 +194,45 @@ class EvalService:
         decisions = {item["decision"] for item in outcomes}
         passed = self._passed(results) and {"approved_for_rollout", "blocked"} <= decisions
         return self._response("fine_tuning", passed, metrics, gates, results)
+
+    def run_voice_eval(self, cases_path: str = "evals/voice_agent_cases.jsonl", results_path: str | None = None) -> dict[str, Any]:
+        """Contract check always; release gates only against measured results of a real run."""
+        gates_path = self._resolve_project_path("config/voice_agent_quality_gates.json")
+        if not gates_path.exists():
+            raise EvalServiceError("config/voice_agent_quality_gates.json is required for voice evals")
+        gates = json.loads(gates_path.read_text(encoding="utf-8-sig"))
+        report = voice_checks(self._load_jsonl(cases_path), gates, self._load_results(results_path))
+        return self._measured_response("voice_agent", report, gates.get("release_gates", {}))
+
+    def run_agentic_coding_eval(
+        self, cases_path: str = "evals/agentic_coding_cases.jsonl", results_path: str | None = None
+    ) -> dict[str, Any]:
+        report = agentic_coding_checks(self._load_jsonl(cases_path), self._load_results(results_path))
+        return self._measured_response("agentic_coding", report, {})
+
+    def _load_results(self, results_path: str | None) -> dict[str, Any] | None:
+        if not results_path:
+            return None
+        path = self._resolve_project_path(results_path)
+        if not path.exists():
+            raise EvalServiceError(f"Results file not found: {results_path}")
+        return json.loads(path.read_text(encoding="utf-8-sig"))
+
+    def _measured_response(self, eval_type: str, report: dict[str, Any], gates: dict[str, Any]) -> dict[str, Any]:
+        results = [
+            EvalCaseResult(id=str(item["id"]), passed=item["passed"], checks=item["checks"], notes=[])
+            for item in report["cases"]
+        ]
+        metrics = self._aggregate_results(results)
+        passed = report["contract_ok"] and (report["release_ready"] if report["measured"] else True)
+        response = self._response(eval_type, passed, metrics, gates, results)
+        response.update({
+            "measured": report["measured"],
+            "release_ready": report["release_ready"],
+            "gate_results": report["gates"],
+            "note": "" if report["measured"] else "contract only: pass --results with measured values before claiming release readiness",
+        })
+        return response
 
     def run_graph_eval(self, cases_path: str = "evals/graph_cases.jsonl") -> dict[str, Any]:
         """Load the seed graph and gate query routing, entity linking, paths, ACL and provenance."""

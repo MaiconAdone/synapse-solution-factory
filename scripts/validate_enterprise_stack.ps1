@@ -66,6 +66,12 @@ Require-Path "templates\knowledge_graph\graph_schema.yaml"
 Require-Path "scripts\synapse_lib\fine_tuning_service.py"
 Require-Path "scripts\synapse_lib\fine_tuning_release.py"
 Require-Path "scripts\synapse_lib\mcp_gateway.py"
+Require-Path "scripts\synapse_lib\llm_gateway.py"
+Require-Path "scripts\synapse_lib\guardrails_runtime.py"
+Require-Path "scripts\synapse_lib\improvement_loop.py"
+Require-Path "scripts\synapse_lib\measured_evals.py"
+Require-Path "templates\agents\langgraph_state_machine.py"
+Require-Path "templates\backend\fastapi_service.py"
 Require-Path "templates\mcp\server.py"
 Require-Path "evals\fine_tuning_cases.jsonl"
 Require-Path "scripts\synapse_lib\harness_service.py"
@@ -172,6 +178,13 @@ if ($LASTEXITCODE -ne 0) {
 python scripts\run_evals.py fine_tuning | Out-Null
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Gate de release de fine-tuning (evals/fine_tuning_cases.jsonl) nao passou")
+}
+
+foreach ($MeasuredMode in @("voice", "agentic_coding")) {
+    python scripts\run_evals.py $MeasuredMode | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        $Errors.Add("Contrato de eval $MeasuredMode invalido")
+    }
 }
 
 if ($Errors.Count -gt 0) {

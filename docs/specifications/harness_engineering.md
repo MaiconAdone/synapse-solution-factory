@@ -32,9 +32,11 @@ Three layers:
 | agent_evals | evals/tool_workflow_cases.jsonl | IA, Chatbolt, Hybrid |
 | agent_blueprints | config/solution_agents.json, config/workflows/synapse/agent-build.json | IA, Chatbolt, Hybrid |
 | observability | llm_ops/observability.yaml | IA, Chatbolt, Hybrid |
-| feedback_loop | config/agent_improvement_loop.json | all |
+| feedback_loop | config/agent_improvement_loop.json, scripts/synapse_lib/improvement_loop.py | all |
 | runtime_guard | scripts/synapse_lib/agent_harness.py, config/tool_registry.json | IA, Chatbolt, Hybrid |
 | mcp_gateway | scripts/synapse_lib/mcp_gateway.py, templates/mcp/server.py | IA, Chatbolt, Hybrid |
+| llm_gateway | scripts/synapse_lib/llm_gateway.py, config/model_providers.json, config/cost_optimization_policy.json | IA, Chatbolt, Hybrid |
+| output_guardrails | scripts/synapse_lib/guardrails_runtime.py, guardrails/policy.yaml | IA, Chatbolt, Hybrid |
 | knowledge_verification | config/rag_scalability_policy.json, evals/retrieval_cases.jsonl, config/knowledge_graph_policy.json, evals/graph_cases.jsonl | IA, Chatbolt, Hybrid |
 | safe_execution | config/business_transformation.json | all |
 
@@ -71,6 +73,17 @@ Each decision is appended to a trace with PII and secrets redacted
 (`llm_ops/observability.yaml`); `export_trace` writes JSONL. Tools with status
 `example` in the registry only exercise the eval cases and must be replaced by
 the inventory the user confirms.
+
+## LLM Gateway, Output Guardrails And Improvement Loop
+
+`LlmGateway` (`scripts/synapse_lib/llm_gateway.py`) is the only model path of
+solution agents: tier routing by task type, token budget per request profile,
+stable-first prompt layout with `cache_control`, secrets/PII input blocking,
+output guardrails (`scripts/synapse_lib/guardrails_runtime.py`) and a trace with
+input, output, cache-creation and cache-read tokens, latency and estimated cost.
+Each result can feed `ImprovementLoop` (`scripts/synapse_lib/improvement_loop.py`):
+failures become quarantined review cases; good examples are promoted for
+retrieval only by a named human, never for automatic training.
 
 ## MCP Tool Gateway
 

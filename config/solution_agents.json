@@ -41,7 +41,8 @@
         ],
         "loop_limits": "config/harness_engineering_policy.json#control_loop",
         "runtime_guard": "scripts/synapse_lib/agent_harness.py",
-        "tool_registry": "config/tool_registry.json"
+        "tool_registry": "config/tool_registry.json",
+        "llm_gateway": "scripts/synapse_lib/llm_gateway.py"
       },
       "success_criteria": "Projetos gerados passam diagnose_project e testes proprios em todos os universos",
       "owner_role": "llm-engineering",
@@ -100,7 +101,8 @@
         ],
         "loop_limits": "config/harness_engineering_policy.json#control_loop",
         "runtime_guard": "scripts/synapse_lib/agent_harness.py",
-        "tool_registry": "config/tool_registry.json"
+        "tool_registry": "config/tool_registry.json",
+        "llm_gateway": "scripts/synapse_lib/llm_gateway.py"
       },
       "success_criteria": "retrieval and faithfulness gates in evals/quality_gates.yaml",
       "owner_role": "rag-engineering",
@@ -158,7 +160,8 @@
         ],
         "loop_limits": "config/harness_engineering_policy.json#control_loop",
         "runtime_guard": "scripts/synapse_lib/agent_harness.py",
-        "tool_registry": "config/tool_registry.json"
+        "tool_registry": "config/tool_registry.json",
+        "llm_gateway": "scripts/synapse_lib/llm_gateway.py"
       },
       "success_criteria": "pending_user_confirmation",
       "owner_role": "integration-automation",

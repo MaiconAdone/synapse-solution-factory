@@ -17,7 +17,10 @@
     "tool_registry": "config/tool_registry.json",
     "agent_eval_command": "python scripts/run_evals.py agent",
     "mcp_gateway": "scripts/synapse_lib/mcp_gateway.py",
-    "mcp_server_template": "templates/mcp/server.py"
+    "mcp_server_template": "templates/mcp/server.py",
+    "llm_gateway": "scripts/synapse_lib/llm_gateway.py",
+    "output_guardrails": "scripts/synapse_lib/guardrails_runtime.py",
+    "improvement_loop": "scripts/synapse_lib/improvement_loop.py"
   },
   "harness_layers": {
     "coding_agent_harness": "How Claude Code and Codex operate this repository: instruction maps, permissions, hooks, validation commands and shared memory.",
@@ -131,7 +134,8 @@
       "id": "feedback_loop",
       "goal": "Failures and approved examples become new eval cases and memory, never silent weight updates.",
       "evidence_all": [
-        "config/agent_improvement_loop.json"
+        "config/agent_improvement_loop.json",
+        "scripts/synapse_lib/improvement_loop.py"
       ],
       "applies_to": [
         "ml",
@@ -146,6 +150,33 @@
       "evidence_all": [
         "scripts/synapse_lib/agent_harness.py",
         "config/tool_registry.json"
+      ],
+      "applies_to": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
+      "id": "llm_gateway",
+      "goal": "Every model call goes through the LLM gateway: tier routing, token budget, cache-friendly prompt layout, sensitive-content blocking and usage/cache traces.",
+      "evidence_all": [
+        "scripts/synapse_lib/llm_gateway.py",
+        "config/model_providers.json",
+        "config/cost_optimization_policy.json"
+      ],
+      "applies_to": [
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
+      "id": "output_guardrails",
+      "goal": "Answers pass runtime output guardrails (PII/secrets, schema, citations, unsupported claims) before reaching the user.",
+      "evidence_all": [
+        "scripts/synapse_lib/guardrails_runtime.py",
+        "guardrails/policy.yaml"
       ],
       "applies_to": [
         "ia",

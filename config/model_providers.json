@@ -44,6 +44,52 @@
       ]
     }
   },
+  "model_tiers": {
+    "rule": "Tier comes from config/cost_optimization_policy.json (model_routing/request_profiles); the gateway maps it to a model per provider. Environment overrides: <PROVIDER>_MODEL_<TIER> (e.g. ANTHROPIC_MODEL_STRONG).",
+    "anthropic": {
+      "status": "confirmed_by_user",
+      "economy": "claude-haiku-4-5",
+      "balanced": "claude-sonnet-5",
+      "strong": "claude-opus-5-5"
+    },
+    "openai": {
+      "status": "pending_user_confirmation",
+      "economy": "gpt-5.5",
+      "balanced": "gpt-5.5",
+      "strong": "gpt-5.5"
+    }
+  },
+  "llm_gateway": {
+    "implementation": "scripts/synapse_lib/llm_gateway.py",
+    "default_provider_env": "SYNAPSE_LLM_PROVIDER",
+    "default_provider": "anthropic",
+    "adapters": {
+      "anthropic": "AnthropicAdapter (official anthropic SDK, installed in the generated project only)",
+      "openai": "pending: register an adapter implementing LlmAdapter before routing to openai"
+    },
+    "effort_by_tier": {
+      "economy": null,
+      "balanced": "medium",
+      "strong": "high"
+    },
+    "prompt_layout": "stable context first (system block with cache_control), dynamic context and user message after the breakpoint",
+    "sensitive_content": {
+      "block_secrets_always": true,
+      "block_pii_for_external_providers": true
+    },
+    "pricing_usd_per_million_tokens": {
+      "claude-haiku-4-5": {"input": 1.0, "output": 5.0},
+      "claude-sonnet-5": {"input": 2.0, "output": 10.0},
+      "claude-opus-5-5": {"input": 4.0, "output": 20.0, "cache_read": 0.2}
+    },
+    "cache_pricing_multipliers": {"cache_write": 1.25, "cache_read": 0.1},
+    "trace_path": "artifacts/traces/llm_gateway.jsonl",
+    "trace_fields": [
+      "request_id", "agent_id", "prompt_id", "prompt_version", "provider", "model", "tier", "profile",
+      "input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens",
+      "latency_ms", "estimated_cost_usd", "stable_context_hash", "safety_result", "outcome"
+    ]
+  },
   "guardrails": {
     "do_not_send_secrets_to_external_providers": true,
     "require_evaluation_before_provider_promotion": true,

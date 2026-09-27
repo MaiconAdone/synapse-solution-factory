@@ -60,7 +60,9 @@
   `scripts/synapse_lib/agent_harness.py` com `config/tool_registry.json`
   (gate `python scripts/run_evals.py agent`); ferramentas externas das
   solucoes so via MCP pelo gateway `templates/mcp/server.py`; fine-tuning so
-  vai a rollout com `python scripts/fine_tuning_release.py` aprovado.
+  vai a rollout com `python scripts/fine_tuning_release.py` aprovado; modelos
+  so via `LlmGateway` (`scripts/synapse_lib/llm_gateway.py`) com guardrails
+  de saida e loop de melhoria (`scripts/synapse_lib/improvement_loop.py`).
 - Agentes da solucao (runtime) ficam em `config/solution_agents.json`,
   validados contra `config/agent_blueprint_contract.json` e construidos pelo
   workflow `agent-build`; ferramentas sao confirmadas com o usuario.

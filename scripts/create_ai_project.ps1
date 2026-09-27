@@ -428,7 +428,7 @@ function Create-AssistantInheritanceArtifacts {
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou nivel de risco, pergunte ao usuario antes de implementar. Nao invente essas informacoes.
 - Todo agente segue ``config/harness_engineering_policy.json`` (mapa de contexto, limites do loop, verificacao, observabilidade); audite com ``python scripts/audit_harness.py``.
 - Com RAG, siga ``config/rag_scalability_policy.json`` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; RAG vs Knowledge Graph/GraphRAG segue ``config/knowledge_graph_policy.json`` (grafo so com sinais de relacionamento e decisoes de ontologia confirmadas); fine-tuning so com ``config/fine_tuning_policy.json`` (baseline medido, dataset curado e aprovacao humana).
-- Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado.
+- Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado. Toda chamada de modelo passa pelo ``LlmGateway`` de ``scripts/synapse_lib/llm_gateway.py`` (tier, orcamento, cache de prompt, guardrails de entrada/saida e trace com tokens de cache).
 "@
     Write-TextFile -Path (Join-Path $Destino "AGENTS.md") -Content $CodexInstructions
 
@@ -459,7 +459,7 @@ Este e um projeto de solucao criado pelo Synapse no universo ``$($ProjectUnivers
 - Se faltar contexto essencial, pergunte ao usuario no chat antes de implementar.
 - Todo agente segue ``config/harness_engineering_policy.json``; audite com ``python scripts/audit_harness.py``.
 - Com RAG, siga ``config/rag_scalability_policy.json`` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); RAG vs Knowledge Graph/GraphRAG segue ``config/knowledge_graph_policy.json``; fine-tuning so com ``config/fine_tuning_policy.json`` e aprovacao humana.
-- Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado.
+- Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado. Toda chamada de modelo passa pelo ``LlmGateway`` de ``scripts/synapse_lib/llm_gateway.py`` (tier, orcamento, cache de prompt, guardrails de entrada/saida e trace com tokens de cache).
 "@
     Write-TextFile -Path (Join-Path $Destino "CLAUDE.md") -Content $ClaudeInstructions
 
@@ -1551,6 +1551,38 @@ def test_mcp_gateway_routes_tools_through_the_runtime_guard():
     assert gateway.call("refund_order", args, idempotency_key="k1")["status"] == "executed"
     assert gateway.call("refund_order", args, idempotency_key="k1")["status"] == "replayed"
     assert executed == [True, False]
+
+
+def test_llm_gateway_routes_tiers_blocks_secrets_and_traces_cache_usage():
+    universe = json.loads((ROOT / "config/project_universe.json").read_text(encoding="utf-8-sig"))["universe"]
+    if universe == "ml":
+        return
+    from scripts.synapse_lib.llm_gateway import LlmGateway, LlmRequest, LlmResponse
+
+    class FakeAdapter:
+        provider = "anthropic"
+
+        def complete(self, prompt, model, max_tokens, effort):
+            assert prompt["system"][0]["cache_control"] == {"type": "ephemeral"}
+            return LlmResponse(text="ok [kb:1]", model=model, usage={"input_tokens": 10, "output_tokens": 5, "cache_read_input_tokens": 100})
+
+    gateway = LlmGateway({"anthropic": FakeAdapter()}, root=ROOT, provider="anthropic")
+    answered = gateway.complete(LlmRequest(task_type="classification", user_message="classifique", stable_context="regras", sources=["kb:1"], dynamic_context=["kb:1 texto"]))
+    assert answered["outcome"] == "answered" and answered["tier"] == "economy"
+    assert answered["cache_read_input_tokens"] == 100
+    blocked = gateway.complete(LlmRequest(task_type="classification", user_message="token: sk-abcdefghijklmnop1234"))
+    assert blocked["outcome"] == "blocked_input"
+
+
+def test_improvement_loop_quarantines_failures_and_requires_human_promotion(tmp_path):
+    from scripts.synapse_lib.improvement_loop import ImprovementLoop
+
+    policy = json.loads((ROOT / "config/agent_improvement_loop.json").read_text(encoding="utf-8-sig"))
+    loop = ImprovementLoop(root=tmp_path, policy=policy)
+    good = loop.capture({"agent_id": "a", "outcome": "answered", "quality_passed": True})
+    loop.capture({"agent_id": "a", "outcome": "blocked_output", "quality_passed": False, "findings": ["pii:email"]})
+    assert len(loop.pending_reviews()) == 1
+    assert loop.promote(good["event_id"], approver="revisor")["approved_for_training"] is False
 '@
     Write-TextFile (Join-Path $Destino "tests\test_harness_contract.py") $HarnessContractTest
 
@@ -2314,6 +2346,7 @@ function Finalize-SynapseSolutionProject {
             "docs\specifications\knowledge_graph_graphrag.md",
             "config\tool_registry.json",
             "templates\mcp",
+            "templates\agents",
             "evals\fine_tuning_cases.jsonl",
             "scripts\fine_tuning_release.py",
             "config\fine_tuning_policy.json",
@@ -2443,6 +2476,7 @@ function Align-UniverseArtifacts {
             foreach ($GatewayKey in @("tool_gateway", "tool_gateway_server_template", "tool_gateway_config_example", "tool_gateway_autostart")) {
                 $Runtime.mcp.PSObject.Properties.Remove($GatewayKey)
             }
+            $Runtime.llm_gateway = [ordered]@{ enabled = $false; reason = "ML universe makes no runtime LLM calls" }
         }
         Write-TextFile -Path $RuntimePath -Content ($Runtime | ConvertTo-Json -Depth 20)
     }
@@ -2570,6 +2604,9 @@ function Run-ProjectValidation {
             "scripts\synapse_lib\agent_harness.py",
             "scripts\synapse_lib\mcp_gateway.py",
             "templates\mcp\server.py",
+            "scripts\synapse_lib\llm_gateway.py",
+            "scripts\synapse_lib\guardrails_runtime.py",
+            "templates\agents\langgraph_state_machine.py",
             "evals\fine_tuning_cases.jsonl",
             "scripts\fine_tuning_release.py",
             "config\solution_agents.json",

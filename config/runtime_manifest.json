@@ -89,6 +89,15 @@
     "tool_registry": "config/tool_registry.json",
     "agent_eval_command": "python scripts/run_evals.py agent"
   },
+  "llm_gateway": {
+    "enabled": true,
+    "implementation": "scripts/synapse_lib/llm_gateway.py",
+    "provider_config": "config/model_providers.json",
+    "cost_policy": "config/cost_optimization_policy.json",
+    "output_guardrails": "scripts/synapse_lib/guardrails_runtime.py",
+    "improvement_loop": "scripts/synapse_lib/improvement_loop.py",
+    "trace_path": "artifacts/traces/llm_gateway.jsonl"
+  },
   "knowledge_graph": {
     "enabled": true,
     "default_strategy": "rag",

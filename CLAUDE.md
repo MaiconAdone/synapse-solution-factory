@@ -44,6 +44,19 @@ Ao usar Anthropic, priorize:
 - Contexto dinamico pequeno, especifico e filtrado.
 - Logs de uso com cache creation, cache read, input tokens e output tokens quando a API expuser esses campos.
 
+Nas solucoes criadas isso e executavel: todo agente chama modelos pelo
+`LlmGateway` (`scripts/synapse_lib/llm_gateway.py`). Ele escolhe tier e perfil
+por `config/cost_optimization_policy.json`, mapeia o tier para o modelo em
+`config/model_providers.json` (`model_tiers`: economy `claude-haiku-4-5`,
+balanced `claude-sonnet-5`, strong `claude-opus-5-5`; override por
+`ANTHROPIC_MODEL_<TIER>`), monta o prompt com contexto estavel primeiro e
+`cache_control`, corta contexto dinamico para caber no orcamento, bloqueia
+segredos/dados pessoais, aplica guardrails de saida
+(`scripts/synapse_lib/guardrails_runtime.py`) e grava trace com tokens de
+entrada, saida, cache creation, cache read e custo estimado. Falhas e acertos
+alimentam `scripts/synapse_lib/improvement_loop.py` (falha vira caso em
+quarentena; exemplo so e promovido com aprovador humano).
+
 Evite:
 
 - Reenviar repositorios inteiros.
