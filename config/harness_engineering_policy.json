@@ -20,7 +20,9 @@
     "mcp_server_template": "templates/mcp/server.py",
     "llm_gateway": "scripts/synapse_lib/llm_gateway.py",
     "output_guardrails": "scripts/synapse_lib/guardrails_runtime.py",
-    "improvement_loop": "scripts/synapse_lib/improvement_loop.py"
+    "improvement_loop": "scripts/synapse_lib/improvement_loop.py",
+    "cicd": "scripts/synapse_lib/cicd.py",
+    "drift_monitor": "scripts/synapse_lib/drift.py"
   },
   "harness_layers": {
     "coding_agent_harness": "How Claude Code and Codex operate this repository: instruction maps, permissions, hooks, validation commands and shared memory.",
@@ -209,6 +211,33 @@
       "applies_to": [
         "ia",
         "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
+      "id": "cicd",
+      "goal": "Every change goes through the local pipeline: harness audit, tests, eval gates of the universe, versioned build, dev -> staging -> prod with no-regression checks, named prod approver, smoke checks and automatic rollback.",
+      "evidence_all": [
+        "config/cicd_policy.json",
+        "scripts/synapse_lib/cicd.py",
+        "scripts/synapse_ci.py"
+      ],
+      "applies_to": [
+        "ml",
+        "ia",
+        "chatbolt",
+        "hybrid"
+      ]
+    },
+    {
+      "id": "drift_monitoring",
+      "goal": "Production data and predictions are compared with training data by PSI; drift opens a retraining request pending human approval and a review case in the improvement loop.",
+      "evidence_all": [
+        "scripts/synapse_lib/drift.py",
+        "ml_systems/monitoring_plan.yaml"
+      ],
+      "applies_to": [
+        "ml",
         "hybrid"
       ]
     },

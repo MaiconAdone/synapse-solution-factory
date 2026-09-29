@@ -27,6 +27,7 @@ governado para um de quatro universos: **ML**, **IA**, **Chatbolt** ou
    - [Agentes da solucao (runtime)](#55-agentes-da-solucao-runtime)
    - [RAG vs Knowledge Graph (GraphRAG)](#56-rag-vs-knowledge-graph-graphrag)
    - [Gateway de LLM, guardrails e loop de melhoria](#57-gateway-de-llm-guardrails-e-loop-de-melhoria)
+   - [CI/CD local e drift](#58-cicd-local-e-drift)
 6. [Governanca de agentes e custo](#6-governanca-de-agentes-e-custo)
 7. [IA agentica para transformacao empresarial](#7-ia-agentica-para-transformacao-empresarial)
 8. [Tratamento estatistico de dados](#8-tratamento-estatistico-de-dados)
@@ -317,6 +318,8 @@ dos agentes da solucao e harness de avaliacao.
 | llm_gateway | `scripts/synapse_lib/llm_gateway.py`, `config/model_providers.json`, `config/cost_optimization_policy.json` | IA, Chatbolt, Hibrido |
 | output_guardrails | `scripts/synapse_lib/guardrails_runtime.py`, `guardrails/policy.yaml` | IA, Chatbolt, Hibrido |
 | knowledge_verification | `config/rag_scalability_policy.json`, `evals/retrieval_cases.jsonl`, `config/knowledge_graph_policy.json`, `evals/graph_cases.jsonl` | IA, Chatbolt, Hibrido |
+| cicd | `config/cicd_policy.json`, `scripts/synapse_lib/cicd.py`, `scripts/synapse_ci.py` | todos |
+| drift_monitoring | `scripts/synapse_lib/drift.py`, `ml_systems/monitoring_plan.yaml` | ML, Hibrido |
 | safe_execution | `config/business_transformation.json` | todos |
 
 **Runtime executavel.** O `AgentRunGuard` envolve cada execucao de agente da
@@ -460,6 +463,35 @@ Templates prontos: `templates/agents/langgraph_state_machine.py` (grafo
 screen -> route -> retrieve -> answer -> act sobre gateway e guard) e
 `templates/backend/fastapi_service.py` (`/health`, `/v1/predict` para ML,
 `/v1/answer` para IA).
+
+### 5.8 CI/CD local e drift
+
+- Politica: `config/cicd_policy.json`
+- Especificacao: `docs/specifications/cicd_local.md`
+
+Sem nuvem e sem Docker: so Python e git. O mesmo pipeline roda manualmente,
+pelo hook `pre-push` (instalado por padrao nos projetos criados) e, no Synapse,
+pelo GitHub Actions como wrapper opcional.
+
+| Fase | O que faz |
+|------|-----------|
+| CI | auditoria do harness -> pytest -> evals do universo -> build versionado com manifesto SHA-256 |
+| dev / staging | promocao automatica se o CI passou e nao ha regressao de metricas contra a versao ativa |
+| prod | exige aprovador nomeado (`Maicon Adone`) |
+| smoke | integridade do manifesto, evals de smoke (ML `ml`, IA `agent`) e `/health` do FastAPI |
+| rollback | automatico quando o smoke falha; manual pelo CLI |
+| drift (ML/Hibrido) | PSI por feature; >= 0.2 abre pedido de retreino pendente de aprovacao e caso no loop de melhoria |
+
+```powershell
+python .\scripts\synapse_ci.py pipeline
+python .\scripts\synapse_ci.py promote --env prod --approver "Maicon Adone"
+python .\scripts\synapse_ci.py rollback --env prod --reason "<texto>" --actor "<nome>"
+python .\scripts\synapse_ci.py drift --reference data\processed\treino.csv --current data\processed\producao.csv
+python .\scripts\synapse_ci.py status
+```
+
+Historico em `artifacts/cicd/runs.jsonl` e relatorios em `artifacts/cicd/reports/`
+(fora do git).
 
 ## 6. Governanca de agentes e custo
 
@@ -698,6 +730,7 @@ tests/                  testes do Synapse
 | Pipeline RAG local | `python .\templates\rag\rag_pipeline.py --query "..."` |
 | Dataset de fine-tuning | `python .\scripts\prepare_fine_tuning_dataset.py --input ...` |
 | Auditar harness | `python .\scripts\audit_harness.py` |
+| CI/CD local | `python .\scripts\synapse_ci.py pipeline\|promote\|rollback\|drift\|status` |
 | Agentes da solucao | `python .\scripts\scaffold_solution_agents.py --validate-only` |
 | Transformacao empresarial | `python .\scripts\run_business_transformation.py --brief ...` |
 | Tratar dados | `python .\scripts\treat_dataset.py --input .\data\raw\arquivo.csv` |

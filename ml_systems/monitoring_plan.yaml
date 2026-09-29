@@ -1,4 +1,10 @@
 version: 1
+implementation: scripts/synapse_lib/drift.py
+command: python scripts/synapse_ci.py drift --reference <treino.csv> --current <producao.csv>
+thresholds:
+  metric: population_stability_index
+  psi_drift: 0.2
+  psi_warning: 0.1
 signals:
   data_drift:
     enabled: true

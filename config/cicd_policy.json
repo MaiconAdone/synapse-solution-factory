@@ -1,0 +1,89 @@
+{
+  "schema": "synapse-cicd-policy.v1",
+  "owner": "devops",
+  "purpose": "Local CI/CD with no cloud or containers: validate, test, gate by evals, build a versioned bundle, promote dev -> staging -> prod with smoke checks, no-regression comparison, human approval for prod, automatic rollback and drift monitoring feeding retraining requests.",
+  "applies_to_universes": ["ml", "ia", "chatbolt", "hybrid"],
+  "spec_path": "docs/specifications/cicd_local.md",
+  "reference_implementation": {
+    "pipeline": "scripts/synapse_lib/cicd.py",
+    "drift": "scripts/synapse_lib/drift.py",
+    "cli": "scripts/synapse_ci.py"
+  },
+  "triggers": {
+    "local_command": "python scripts/synapse_ci.py pipeline",
+    "pre_push_hook": {
+      "install_by_default": true,
+      "install_command": "python scripts/synapse_ci.py install-hook --init-git",
+      "runs": "python scripts/synapse_ci.py ci --no-build --trigger pre-push"
+    },
+    "github_actions": "optional wrapper that calls the same CLI; the pipeline never depends on it"
+  },
+  "stages": [
+    {"id": "validate", "command": ["{python}", "scripts/audit_harness.py", "--universe", "{universe}"]},
+    {"id": "tests", "command": ["{python}", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--basetemp", "artifacts/cicd/pytest-tmp", "tests"]},
+    {"id": "evals"},
+    {"id": "build"}
+  ],
+  "evals_by_universe": {
+    "ml": ["ml"],
+    "ia": ["rag", "retrieval", "graph", "agent", "fine_tuning"],
+    "chatbolt": ["rag", "retrieval", "graph", "agent", "fine_tuning"],
+    "hybrid": ["ml", "rag", "retrieval", "graph", "agent", "fine_tuning"]
+  },
+  "optional_evals": {
+    "voice": "evals/voice_agent_cases.jsonl",
+    "agentic_coding": "evals/agentic_coding_cases.jsonl"
+  },
+  "build": {
+    "output_dir": "artifacts/builds",
+    "include": [
+      "config", "scripts", "templates", "evals", "prompts", "guardrails", "llm_ops", "ml_systems",
+      "rag_pipelines", "playbooks", "agents", "docs/specifications", "artifacts/models", "requirements.txt"
+    ],
+    "exclude_names": ["__pycache__", ".pytest_cache", ".venv"],
+    "exclude_suffixes": [".pyc", ".pyo", ".log"],
+    "manifest": "build_manifest.json"
+  },
+  "environments": ["dev", "staging", "prod"],
+  "releases_dir": "artifacts/releases",
+  "promotion": {
+    "dev": {"from": "build", "requires": ["ci_passed"]},
+    "staging": {"from": "dev", "requires": ["ci_passed", "no_regression"]},
+    "prod": {"from": "staging", "requires": ["ci_passed", "no_regression", "named_approver"]}
+  },
+  "approvers": {
+    "prod": ["Maicon Adone"]
+  },
+  "no_regression_metrics": [
+    "pass_rate", "recall_at_k", "mrr", "ndcg_at_k", "pass_hat_k", "routing_accuracy",
+    "entity_recall", "path_found_rate", "relation_citation_rate"
+  ],
+  "smoke": {
+    "evals_by_universe": {
+      "ml": ["ml"],
+      "ia": ["agent"],
+      "chatbolt": ["agent"],
+      "hybrid": ["ml", "agent"]
+    },
+    "fastapi_health": "optional: runs only when fastapi is installed"
+  },
+  "rollback": {
+    "auto_on_smoke_failure": true,
+    "manual_command": "python scripts/synapse_ci.py rollback --env <env> --reason <texto> --actor <nome>"
+  },
+  "history": {
+    "runs": "artifacts/cicd/runs.jsonl",
+    "reports_dir": "artifacts/cicd/reports"
+  },
+  "drift": {
+    "applies_to_universes": ["ml", "hybrid"],
+    "metric": "population_stability_index",
+    "psi_threshold": 0.2,
+    "psi_warning": 0.1,
+    "bins": 10,
+    "min_rows": 30,
+    "on_drift": "append a retraining request pending human approval and capture a failure in the improvement loop; never retrain automatically",
+    "retraining_requests": "artifacts/cicd/retraining_requests.jsonl",
+    "command": "python scripts/synapse_ci.py drift --reference <treino.csv> --current <producao.csv>"
+  }
+}

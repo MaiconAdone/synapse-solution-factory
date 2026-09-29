@@ -16,6 +16,10 @@ logs/
 output/
 data/
 artifacts/mlflow/
+artifacts/builds/
+artifacts/releases/
+artifacts/cicd/
+artifacts/traces/
 artifacts/**/*.log
 artifacts/**/*.pid
 artifacts/**/*.db

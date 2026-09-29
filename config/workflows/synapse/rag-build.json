@@ -2,6 +2,10 @@
   "name": "rag-build",
   "description": "Build, evaluate, and publish a RAG knowledge base.",
   "policy": "config/rag_scalability_policy.json",
+  "executable_pipeline": {
+    "evaluate_and_stage": "python scripts/synapse_ci.py pipeline",
+    "switch_index_alias": "python scripts/synapse_ci.py promote --env prod --approver <aprovador>"
+  },
   "steps": [
     {"name": "confirm_scale_decisions", "role": "rag-engineering"},
     {"name": "ingest_sources", "role": "data-engineering"},

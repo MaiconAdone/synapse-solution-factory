@@ -63,6 +63,9 @@
   vai a rollout com `python scripts/fine_tuning_release.py` aprovado; modelos
   so via `LlmGateway` (`scripts/synapse_lib/llm_gateway.py`) com guardrails
   de saida e loop de melhoria (`scripts/synapse_lib/improvement_loop.py`).
+- CI/CD local sem nuvem/Docker segue `config/cicd_policy.json`
+  (`python scripts/synapse_ci.py pipeline`; prod so com `--approver`; drift
+  ML/Hibrido com `python scripts/synapse_ci.py drift`).
 - Agentes da solucao (runtime) ficam em `config/solution_agents.json`,
   validados contra `config/agent_blueprint_contract.json` e construidos pelo
   workflow `agent-build`; ferramentas sao confirmadas com o usuario.

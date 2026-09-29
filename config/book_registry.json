@@ -41,6 +41,7 @@
       "applied_in": [
         "ml_systems/data_contract.yaml",
         "ml_systems/monitoring_plan.yaml",
+        "scripts/synapse_lib/drift.py",
         "ml_systems/model_card_template.md",
         "playbooks/ml_systems.md"
       ]
@@ -653,6 +654,17 @@
         "scripts/synapse_lib/measured_evals.py",
         "templates/agents/langgraph_state_machine.py",
         "templates/backend/fastapi_service.py"
+      ]
+    },
+    {
+      "id": "local-cicd",
+      "decision": "CI/CD with no cloud or containers: harness audit, tests, eval gates by universe, SHA-256 versioned build, dev/staging/prod folders with pointer, no-regression shadow check, named prod approver, smoke checks with automatic rollback, pre-push hook by default, PSI drift (0.2 drift / 0.1 warning) opening retraining requests",
+      "basis": "Synapse engineering decision (continuous delivery practice; PSI as industry drift metric)",
+      "applied_in": [
+        "config/cicd_policy.json",
+        "scripts/synapse_lib/cicd.py",
+        "scripts/synapse_lib/drift.py",
+        "scripts/synapse_ci.py"
       ]
     }
   ]

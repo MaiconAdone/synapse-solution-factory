@@ -102,6 +102,7 @@ class BusinessSolutionAnalyzer:
             "knowledge_strategy": self._knowledge_strategy(effective, text),
             "model_adaptation": self._model_adaptation(effective, text),
             "harness_engineering": self._harness_engineering(effective),
+            "cicd": self._cicd(effective),
             "solution_agents": self._solution_agents(effective, stack),
             "business_transformation": self._business_transformation(text),
             "architecture_decision": self._architecture_decision(effective, stack),
@@ -218,6 +219,14 @@ class BusinessSolutionAnalyzer:
                 f"- MCP gateway: {harness.get('mcp_gateway', 'n/a')}",
                 f"- LLM gateway: {harness.get('llm_gateway', 'n/a (no runtime LLM calls)')}",
                 f"- Improvement loop: {harness.get('improvement_loop', '')}",
+                "",
+                "## CI/CD Local",
+                "",
+                f"- Stages: {', '.join(analysis.get('cicd', {}).get('stages', []))}",
+                f"- Eval gates: {', '.join(analysis.get('cicd', {}).get('eval_gates', []))}",
+                f"- Environments: {' -> '.join(analysis.get('cicd', {}).get('environments', []))}",
+                f"- Prod approvers: {', '.join(analysis.get('cicd', {}).get('prod_approvers', []))}",
+                f"- Drift monitoring: {analysis.get('cicd', {}).get('drift_active', False)}",
                 "",
                 "## ML Foundations",
                 "",
@@ -556,6 +565,28 @@ class BusinessSolutionAnalyzer:
             "audit_command": "python scripts/audit_harness.py",
             "improvement_loop": "scripts/synapse_lib/improvement_loop.py",
             **runtime,
+        }
+
+    def _cicd(self, universe: str) -> dict[str, Any]:
+        policy = self._load_optional_json("config/cicd_policy.json")
+        if not policy:
+            return {"active": False, "reason": "config/cicd_policy.json not found"}
+        return {
+            "active": True,
+            "policy_path": "config/cicd_policy.json",
+            "spec_path": "docs/specifications/cicd_local.md",
+            "stages": [stage["id"] for stage in policy["stages"]],
+            "eval_gates": policy["evals_by_universe"].get(universe, []),
+            "environments": policy["environments"],
+            "prod_approvers": policy["approvers"]["prod"],
+            "drift_active": universe in policy["drift"]["applies_to_universes"],
+            "drift_psi_threshold": policy["drift"]["psi_threshold"],
+            "commands": {
+                "pipeline": "python scripts/synapse_ci.py pipeline",
+                "prod": "python scripts/synapse_ci.py promote --env prod --approver <aprovador>",
+                "rollback": "python scripts/synapse_ci.py rollback --env <env> --reason <texto> --actor <nome>",
+                "drift": policy["drift"]["command"],
+            },
         }
 
     def _first_signal(self, text: str, mapping: dict[str, Any]) -> Any:

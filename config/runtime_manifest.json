@@ -89,6 +89,16 @@
     "tool_registry": "config/tool_registry.json",
     "agent_eval_command": "python scripts/run_evals.py agent"
   },
+  "cicd": {
+    "enabled": true,
+    "policy_file": "config/cicd_policy.json",
+    "pipeline": "scripts/synapse_lib/cicd.py",
+    "cli": "scripts/synapse_ci.py",
+    "drift_monitor": "scripts/synapse_lib/drift.py",
+    "environments": ["dev", "staging", "prod"],
+    "pre_push_hook": true,
+    "requires_cloud_or_containers": false
+  },
   "llm_gateway": {
     "enabled": true,
     "implementation": "scripts/synapse_lib/llm_gateway.py",
@@ -258,6 +268,8 @@
       "config/harness_engineering_policy.json",
       "config/knowledge_graph_policy.json",
       "config/tool_registry.json",
+      "config/cicd_policy.json",
+      "docs/specifications/cicd_local.md",
       "docs/specifications/scalable_rag_vector_db.md",
       "docs/specifications/fine_tuning.md",
       "docs/specifications/harness_engineering.md",

@@ -1,6 +1,12 @@
 {
   "name": "ml-release",
   "description": "Release an ML/LLM change with evaluation and documentation gates.",
+  "executable_pipeline": {
+    "ci_and_staging": "python scripts/synapse_ci.py pipeline",
+    "prod": "python scripts/synapse_ci.py promote --env prod --approver <aprovador>",
+    "rollback": "python scripts/synapse_ci.py rollback --env prod --reason <texto> --actor <nome>",
+    "monitor": "python scripts/synapse_ci.py drift --reference <treino.csv> --current <producao.csv>"
+  },
   "steps": [
     {"name": "define_problem", "role": "machine-learning"},
     {"name": "design_eval", "role": "testing-qa"},

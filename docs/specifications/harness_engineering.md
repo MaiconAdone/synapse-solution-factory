@@ -38,6 +38,8 @@ Three layers:
 | llm_gateway | scripts/synapse_lib/llm_gateway.py, config/model_providers.json, config/cost_optimization_policy.json | IA, Chatbolt, Hybrid |
 | output_guardrails | scripts/synapse_lib/guardrails_runtime.py, guardrails/policy.yaml | IA, Chatbolt, Hybrid |
 | knowledge_verification | config/rag_scalability_policy.json, evals/retrieval_cases.jsonl, config/knowledge_graph_policy.json, evals/graph_cases.jsonl | IA, Chatbolt, Hybrid |
+| cicd | config/cicd_policy.json, scripts/synapse_lib/cicd.py, scripts/synapse_ci.py | all |
+| drift_monitoring | scripts/synapse_lib/drift.py, ml_systems/monitoring_plan.yaml | ML, Hybrid |
 | safe_execution | config/business_transformation.json | all |
 
 Audit a project:

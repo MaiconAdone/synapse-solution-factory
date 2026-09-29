@@ -17,6 +17,6 @@ jobs:
       - name: Validate enterprise stack
         shell: pwsh
         run: ./scripts/validate_enterprise_stack.ps1
-      - name: Run tests
+      - name: Local CI pipeline (harness audit, tests, eval gates)
         shell: pwsh
-        run: python -m pytest tests
+        run: python scripts/synapse_ci.py ci --no-build --trigger github-actions

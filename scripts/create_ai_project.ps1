@@ -427,6 +427,7 @@ function Create-AssistantInheritanceArtifacts {
 - Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, ``config/llm_solution_factory_policy.json``, ``config/ai_framework_selection.json``, analise de solucao, governanca, testes e evals.
 - Se faltar objetivo, problema de negocio, universo, metrica de sucesso, dados/fontes ou nivel de risco, pergunte ao usuario antes de implementar. Nao invente essas informacoes.
 - Todo agente segue ``config/harness_engineering_policy.json`` (mapa de contexto, limites do loop, verificacao, observabilidade); audite com ``python scripts/audit_harness.py``.
+- CI/CD local sem nuvem/Docker (``config/cicd_policy.json``): ``python scripts/synapse_ci.py pipeline`` (auditoria, testes, evals, build, dev, staging); prod so com ``--approver``; rollback com ``python scripts/synapse_ci.py rollback``; drift (ML/Hibrido) com ``python scripts/synapse_ci.py drift``. O hook pre-push roda o CI antes de cada push.
 - Com RAG, siga ``config/rag_scalability_policy.json`` e pergunte ao usuario as decisoes de escala antes de escolher o vector database; RAG vs Knowledge Graph/GraphRAG segue ``config/knowledge_graph_policy.json`` (grafo so com sinais de relacionamento e decisoes de ontologia confirmadas); fine-tuning so com ``config/fine_tuning_policy.json`` (baseline medido, dataset curado e aprovacao humana).
 - Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado. Toda chamada de modelo passa pelo ``LlmGateway`` de ``scripts/synapse_lib/llm_gateway.py`` (tier, orcamento, cache de prompt, guardrails de entrada/saida e trace com tokens de cache).
 "@
@@ -458,6 +459,7 @@ Este e um projeto de solucao criado pelo Synapse no universo ``$($ProjectUnivers
 - Todos os canais devem acessar a mesma Solution Factory do projeto: memoria compartilhada, ``config/llm_solution_factory_policy.json``, ``config/ai_framework_selection.json``, analise de solucao, governanca, testes e evals.
 - Se faltar contexto essencial, pergunte ao usuario no chat antes de implementar.
 - Todo agente segue ``config/harness_engineering_policy.json``; audite com ``python scripts/audit_harness.py``.
+- CI/CD local (``config/cicd_policy.json``): ``python scripts/synapse_ci.py pipeline``; prod so com ``--approver``; rollback e drift pelo mesmo CLI; hook pre-push instalado.
 - Com RAG, siga ``config/rag_scalability_policy.json`` (decisoes de escala perguntadas ao usuario, busca hibrida, indices versionados); RAG vs Knowledge Graph/GraphRAG segue ``config/knowledge_graph_policy.json``; fine-tuning so com ``config/fine_tuning_policy.json`` e aprovacao humana.
 - Com agentes de runtime, toda execucao passa pelo ``AgentRunGuard`` de ``scripts/synapse_lib/agent_harness.py`` com ferramentas de ``config/tool_registry.json`` (substitua as ferramentas ``example`` pelo inventario confirmado pelo usuario); gates: ``python scripts/run_evals.py agent`` (pass^k) e ``python scripts/run_evals.py graph`` quando houver grafo. Ferramentas externas so via MCP pelo gateway ``templates/mcp/server.py`` (registre em ``.mcp.json`` apos confirmar o inventario); fine-tuning so vai a rollout com ``python scripts/fine_tuning_release.py --candidate <arquivo>`` aprovado. Toda chamada de modelo passa pelo ``LlmGateway`` de ``scripts/synapse_lib/llm_gateway.py`` (tier, orcamento, cache de prompt, guardrails de entrada/saida e trace com tokens de cache).
 "@
@@ -1586,6 +1588,43 @@ def test_improvement_loop_quarantines_failures_and_requires_human_promotion(tmp_
 '@
     Write-TextFile (Join-Path $Destino "tests\test_harness_contract.py") $HarnessContractTest
 
+    $CicdContractTest = @'
+from pathlib import Path
+import json
+import random
+import sys
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+
+def test_local_cicd_plan_matches_universe_and_eval_suites():
+    from scripts.synapse_lib.cicd import CicdPipeline
+
+    plan = CicdPipeline(ROOT).plan()
+    universe = json.loads((ROOT / "config/project_universe.json").read_text(encoding="utf-8-sig"))["universe"]
+    assert plan["universe"] == universe
+    assert plan["stages"] == ["validate", "tests", "evals", "build"]
+    assert plan["environments"] == ["dev", "staging", "prod"] and plan["prod_approvers"]
+    for mode in plan["evals"]:
+        assert mode in (ROOT / "scripts/run_evals.py").read_text(encoding="utf-8")
+    assert plan["drift_active"] == (universe in {"ml", "hybrid"})
+
+
+def test_drift_monitor_flags_shifted_distribution(tmp_path):
+    from scripts.synapse_lib.drift import DriftMonitor
+
+    policy = json.loads((ROOT / "config/cicd_policy.json").read_text(encoding="utf-8-sig"))["drift"]
+    monitor = DriftMonitor(root=tmp_path, policy=policy)
+    rng = random.Random(7)
+    reference = [{"x": rng.gauss(0, 1)} for _ in range(300)]
+    stable = monitor.compare(reference, [{"x": rng.gauss(0, 1)} for _ in range(300)])
+    shifted = monitor.compare(reference, [{"x": rng.gauss(2, 1)} for _ in range(300)])
+    assert stable["status"] != "drift" and shifted["status"] == "drift"
+'@
+    Write-TextFile (Join-Path $Destino "tests\test_cicd_contract.py") $CicdContractTest
+
     $BusinessTransformationTest = @'
 from pathlib import Path
 import json
@@ -1820,6 +1859,7 @@ def test_chatbot_eval_cases_cover_safety_and_context():
             "tests/test_evals_contract.py",
             "tests/test_data_contract.py",
             "tests/test_harness_contract.py",
+            "tests/test_cicd_contract.py",
             "tests/test_business_transformation_contract.py",
             $(if ($ProjectUniverse.ml_enabled) { "tests/test_ml_contract.py" }),
             $(if ($ProjectUniverse.ai_enabled) { "tests/test_ai_contract.py" }),
@@ -2563,7 +2603,12 @@ function Run-ProjectValidation {
         "tests\test_evals_contract.py",
         "tests\test_data_contract.py",
         "tests\test_harness_contract.py",
+        "tests\test_cicd_contract.py",
         "tests\test_business_transformation_contract.py",
+        "config\cicd_policy.json",
+        "scripts\synapse_ci.py",
+        "scripts\synapse_lib\cicd.py",
+        "scripts\synapse_lib\drift.py",
         "scripts\synapse_lib\business_transformation.py",
         "evals\business_transformation_cases.jsonl",
         "config\harness_engineering_policy.json",
@@ -2736,6 +2781,18 @@ function Configure-SolutionVsCodeTasks {
       ],
       "group": "test",
       "problemMatcher": []
+    },
+    {
+      "label": "Synapse CI/CD: pipeline local (CI + dev + staging)",
+      "detail": "Auditoria do harness, testes, evals do universo, build versionado e promocao dev/staging com smoke e rollback automatico.",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/synapse_ci.py",
+        "pipeline"
+      ],
+      "group": "build",
+      "problemMatcher": []
     }$RagTask
   ]
 }
@@ -2753,6 +2810,27 @@ function Configure-SolutionVsCodeTasks {
     }
 
     Write-Host "Tasks VS Code do projeto configuradas." -ForegroundColor Green
+}
+
+function Initialize-ProjectCicd {
+    $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
+    if (!$PythonCommand) {
+        Write-Host "Aviso: python nao encontrado; instale o hook depois com 'python scripts/synapse_ci.py install-hook --init-git'." -ForegroundColor Yellow
+        return
+    }
+    try {
+        $Output = & $PythonCommand.Source (Join-Path $Destino "scripts\synapse_ci.py") install-hook --init-git 2>&1 | Out-String
+        $Result = $Output | ConvertFrom-Json
+        if ($Result.installed) {
+            Write-Host "CI/CD local ativo: hook pre-push instalado ($($Result.hook))." -ForegroundColor Green
+        }
+        else {
+            Write-Host "Aviso: hook pre-push nao instalado: $($Result.reason)" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "Aviso: falha ao instalar o hook pre-push. $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 }
 
 function Activate-GeneratedProject {
@@ -2844,6 +2922,7 @@ try {
     Align-UniverseArtifacts
     Configure-SolutionVsCodeTasks
     Run-ProjectValidation
+    Initialize-ProjectCicd
     Activate-GeneratedProject
     Normalize-GeneratedProjectFilesystem
 }
@@ -2859,3 +2938,4 @@ Write-Host "Proximos comandos:" -ForegroundColor Cyan
 Write-Host "  cd $Destino"
 Write-Host "  .\.venv\Scripts\Activate.ps1"
 Write-Host "  code ."
+Write-Host "  python scripts\synapse_ci.py pipeline"

@@ -296,6 +296,18 @@ Antes de chamar LLM:
 - use GraphRAG apenas quando relacoes forem essenciais (roteado por
   `QueryRouter` em `scripts/synapse_lib/knowledge_strategy.py`)
 
+## CI/CD Local e Drift
+
+- `config/cicd_policy.json` e `docs/specifications/cicd_local.md`: CI/CD sem
+  nuvem nem Docker. `python scripts/synapse_ci.py pipeline` roda auditoria do
+  harness, pytest, evals do universo, build versionado e promove dev e staging
+  (smoke, sem regressao, rollback automatico). Prod so com
+  `--approver "Maicon Adone"`. O hook `pre-push` e instalado por padrao nos
+  projetos criados.
+- Drift (ML/Hibrido): `python scripts/synapse_ci.py drift --reference ... --current ...`
+  (PSI >= 0.2) abre pedido de retreino pendente de aprovacao e caso no loop de
+  melhoria; nunca retreina sozinho.
+
 ## Build e Validacao
 
 Depois de alterar codigo:

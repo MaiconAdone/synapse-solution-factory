@@ -70,6 +70,11 @@ Require-Path "scripts\synapse_lib\llm_gateway.py"
 Require-Path "scripts\synapse_lib\guardrails_runtime.py"
 Require-Path "scripts\synapse_lib\improvement_loop.py"
 Require-Path "scripts\synapse_lib\measured_evals.py"
+Require-Path "config\cicd_policy.json"
+Require-Path "scripts\synapse_lib\cicd.py"
+Require-Path "scripts\synapse_lib\drift.py"
+Require-Path "scripts\synapse_ci.py"
+Require-Path "docs\specifications\cicd_local.md"
 Require-Path "templates\agents\langgraph_state_machine.py"
 Require-Path "templates\backend\fastapi_service.py"
 Require-Path "templates\mcp\server.py"
@@ -178,6 +183,11 @@ if ($LASTEXITCODE -ne 0) {
 python scripts\run_evals.py fine_tuning | Out-Null
 if ($LASTEXITCODE -ne 0) {
     $Errors.Add("Gate de release de fine-tuning (evals/fine_tuning_cases.jsonl) nao passou")
+}
+
+python scripts\synapse_ci.py plan | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    $Errors.Add("Plano de CI/CD local invalido (config/cicd_policy.json)")
 }
 
 foreach ($MeasuredMode in @("voice", "agentic_coding")) {
